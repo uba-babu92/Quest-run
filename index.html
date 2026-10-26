@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Quest Run</title>
+<meta name="theme-color" content="#7B2FF7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Quest Run">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+:root{
+  --violet:#7B2FF7; --violet-2:#9B5CFF; --violet-soft:#EFE7FF;
+  --gold:#FFB800; --gold-text:#A36F00; --silver:#AEB4C0;
+  --bg:#F7F6FB; --card:#FFFFFF; --text:#16131F; --muted:#6E6982; --line:#E7E4EF;
+  --shadow:0 6px 22px rgba(50,20,110,.09);
+  --radius:18px;
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px);
+}
+[data-theme="dark"]{
+  --bg:#000; --card:#141318; --text:#F3F1F8; --muted:#9A95AB; --line:#26242E;
+  --violet-soft:#22163A; --gold-text:#FFC933; --shadow:none;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.pixel{font-family:"Press Start 2P",ui-monospace,monospace;letter-spacing:.02em}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+
+/* ---------- layout ---------- */
+.screen{position:fixed;inset:0;bottom:calc(64px + var(--safe-b));overflow-y:auto;padding-top:var(--safe-t)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+.logo{font-size:13px;color:var(--violet);line-height:1}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:var(--card);
+  box-shadow:var(--shadow);border:1px solid var(--line);font-weight:700;font-size:15px}
+.chip .star{color:var(--gold)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;height:calc(64px + var(--safe-b));padding-bottom:var(--safe-b);
+  display:flex;background:var(--card);border-top:1px solid var(--line);z-index:500}
+.tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted)}
+.tabbar button svg{width:24px;height:24px}
+.tabbar button.on{color:var(--violet)}
+h2{font-size:22px;margin:4px 16px 12px}
+
+/* ---------- map + quests ---------- */
+#map{height:44vh;min-height:260px;margin:0 16px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:var(--line)}
+.week{margin:16px 16px 6px;display:flex;align-items:baseline;justify-content:space-between}
+.week b{font-size:18px}
+.bonusbar{margin:0 16px 12px;padding:12px 14px;border-radius:14px;background:var(--violet-soft);display:flex;align-items:center;gap:12px}
+.bonusbar .bar{flex:1;height:10px;border-radius:99px;background:rgba(123,47,247,.18);overflow:hidden}
+.bonusbar .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--violet),var(--violet-2));border-radius:99px;transition:width .6s}
+.bonusbar small{font-weight:700;color:var(--violet);white-space:nowrap}
+.qlist{display:flex;flex-direction:column;gap:10px;padding:0 16px 20px}
+.quest{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--shadow);border:1px solid var(--line);text-align:left;width:100%}
+.quest .num{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;background:var(--violet);flex:none}
+.quest.rare .num{background:linear-gradient(135deg,#5A12D6,#B07BFF)}
+.quest.done .num{background:var(--gold);color:#2a1d00}
+.quest .t{flex:1;min-width:0}
+.quest .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quest .t span{font-size:13px;color:var(--muted)}
+.badge{font-size:11px;font-weight:800;padding:4px 8px;border-radius:99px;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.b-common{background:#ECEEF2;color:#5B6270}
+.b-rare{background:var(--violet-soft);color:var(--violet)}
+.b-legend{background:#FFF1C7;color:#8A5B00}
+[data-theme="dark"] .b-common{background:#24262c;color:#c4c9d3}
+[data-theme="dark"] .b-legend{background:#3a2c00;color:#FFC933}
+.b-done{background:var(--gold);color:#2a1d00}
+
+.pin{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;
+  background:var(--violet);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+.pin.rare{background:linear-gradient(135deg,#5A12D6,#B07BFF)}
+.pin.done{background:var(--gold);color:#2a1d00}
+.pin.home{background:#16131F;width:28px;height:28px;font-size:13px}
+.me{width:18px;height:18px;border-radius:50%;background:#2F80ED;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,128,237,.25)}
+.leaflet-container{font:inherit}
+[data-theme="dark"] .leaflet-control-attribution{background:rgba(0,0,0,.6)!important;color:#aaa}
+[data-theme="dark"] .leaflet-control-attribution a{color:#ccc}
+
+/* ---------- sheet / modal ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(10,5,25,.45);z-index:900;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.sheet{width:100%;max-width:560px;background:var(--card);border-radius:24px 24px 0 0;padding:10px 18px calc(22px + var(--safe-b));animation:up .25s cubic-bezier(.2,.9,.3,1.2);max-height:88vh;overflow-y:auto}
+.sheet .grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
+.sheet h3{margin:8px 0 4px;font-size:22px}
+.sheet p{margin:8px 0;line-height:1.45}
+.hint{background:var(--violet-soft);border-radius:14px;padding:12px 14px;margin:12px 0;line-height:1.45}
+.hint b{color:var(--violet)}
+.row{display:flex;gap:10px;margin-top:14px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:54px;border-radius:16px;font-weight:800;font-size:16px;
+  background:var(--violet);color:#fff;box-shadow:0 5px 0 #4E12B0;transition:transform .08s,box-shadow .08s;text-decoration:none}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #4E12B0}
+.btn.ghost{background:var(--card);color:var(--text);border:2px solid var(--line);box-shadow:0 5px 0 var(--line)}
+.btn.gold{background:var(--gold);color:#2a1d00;box-shadow:0 5px 0 #B07D00}
+.btn[disabled]{opacity:.6}
+.link{display:block;margin:16px auto 0;color:var(--muted);font-weight:600;text-decoration:underline;font-size:14px}
+.opt{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:14px;border:2px solid var(--line);margin-top:10px;text-align:left;font-weight:600}
+.opt small{display:block;font-weight:400;color:var(--muted)}
+.feedback{text-align:center;font-weight:800;font-size:18px;margin:14px 0 0}
+@keyframes fade{from{opacity:0}}
+@keyframes up{from{transform:translateY(100%)}}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%) translateY(20px);opacity:0;z-index:2000;
+  background:#16131F;color:#fff;padding:12px 16px;border-radius:14px;font-weight:600;font-size:14px;max-width:88vw;text-align:center;transition:.25s;pointer-events:none}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- cards ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:0 16px 24px}
+.card{position:relative;border-radius:16px;padding:5px;aspect-ratio:3/4.2;text-align:left;width:100%;
+  background:linear-gradient(145deg,#D9DDE4,#9AA1AE,#E9ECF1);box-shadow:var(--shadow)}
+.card.rare{background:linear-gradient(145deg,#B07BFF,#5A12D6,#C9A6FF)}
+.card.legend{background:linear-gradient(145deg,#FFE27A,#D38E00,#FFF3B0)}
+.card .in{position:relative;height:100%;border-radius:12px;overflow:hidden;background:#1a1525;display:flex;flex-direction:column}
+.card .ph{flex:1;background-size:cover;background-position:center;display:grid;place-items:center;color:rgba(255,255,255,.85);font-size:34px;
+  background-color:#2a2140;background-image:radial-gradient(circle at 30% 20%,rgba(155,92,255,.5),transparent 60%)}
+.card .ph svg{width:38%;opacity:.85}
+.card .cap{padding:8px 9px 9px;background:#fff;color:#16131F}
+.card .cap b{display:block;font-size:13px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.card .cap span{font-size:11px;color:#6E6982}
+.card .r{position:absolute;top:8px;left:8px}
+.card .pts{position:absolute;top:8px;right:8px;font-size:11px;font-weight:800;background:rgba(0,0,0,.6);color:var(--gold);padding:4px 7px;border-radius:99px}
+.card.rare .in::after,.card.legend .in::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 45%,transparent 60%);background-size:250% 100%;animation:shine 3.2s infinite}
+@keyframes shine{0%{background-position:130% 0}60%,100%{background-position:-60% 0}}
+.empty{margin:30px 24px;text-align:center;color:var(--muted);line-height:1.5}
+.empty .pixel{font-size:12px;color:var(--violet);display:block;margin-bottom:12px}
+
+/* ---------- profile ---------- */
+.panel{margin:0 16px 14px;padding:16px;border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);border:1px solid var(--line)}
+.panel h4{margin:0 0 12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.lvl{display:flex;align-items:center;gap:14px}
+.lvl .n{width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,var(--violet),var(--violet-2));color:#fff;display:grid;place-items:center;font-size:20px}
+.xp{height:12px;border-radius:99px;background:var(--violet-soft);overflow:hidden;margin-top:8px}
+.xp i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),#FFD75E);border-radius:99px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stats b{display:block;font-size:22px}
+.stats span{font-size:12px;color:var(--muted)}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{flex:1;height:38px;border-radius:9px;font-weight:700;font-size:14px;color:var(--muted)}
+.seg button.on{background:var(--violet);color:#fff}
+.set{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.set:first-of-type{border-top:0}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:38px;height:38px;border-radius:11px;background:var(--violet-soft);color:var(--violet);font-size:22px;font-weight:800}
+.stepper b{min-width:58px;text-align:center;font-size:17px}
+.setbtn{color:var(--violet);font-weight:700}
+.danger{color:#E0245E;font-weight:700}
+
+/* ---------- onboarding ---------- */
+#onb{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;padding:calc(20px + var(--safe-t)) 22px calc(22px + var(--safe-b))}
+#onb .btn{flex:none;width:100%}
+#onb .dots{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+#onb .dots i{width:8px;height:8px;border-radius:9px;background:var(--line)}
+#onb .dots i.on{background:var(--violet);width:22px}
+#onb .body{flex:1;display:flex;flex-direction:column;justify-content:center}
+#onb h1{font-size:30px;line-height:1.15;margin:0 0 12px}
+#onb p{font-size:17px;line-height:1.5;color:var(--muted);margin:0 0 18px}
+.hero{display:grid;place-items:center;margin-bottom:28px}
+.hero .logo{font-size:24px;margin-top:18px}
+.hero .tag{margin-top:12px;font-weight:700;font-size:17px;color:var(--text)}
+.big-step{display:flex;align-items:center;justify-content:space-between;padding:18px;border-radius:18px;background:var(--card);border:1px solid var(--line);margin-bottom:12px;box-shadow:var(--shadow)}
+.big-step .stepper b{font-size:22px}
+#onbmap{height:42vh;border-radius:18px;overflow:hidden;margin-bottom:12px;background:var(--line)}
+.loader{width:56px;height:56px;margin:0 auto 24px;border-radius:14px;background:var(--violet);animation:spin 1.1s infinite cubic-bezier(.6,0,.4,1)}
+@keyframes spin{to{transform:rotate(360deg) scale(.9);border-radius:50%}}
+
+/* ---------- victory (toujours sombre, arcade) ---------- */
+#victory{position:fixed;inset:0;z-index:1500;background:radial-gradient(circle at 50% 35%,#2a1150 0%,#000 65%);color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 24px calc(24px + var(--safe-b));text-align:center;overflow:hidden}
+#confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.v-title{font-size:20px;line-height:1.5;color:#fff;text-shadow:0 0 18px rgba(155,92,255,.9);animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.v-title.gold{color:#FFD23F;text-shadow:0 0 22px rgba(255,184,0,.8);font-size:24px}
+.v-pts{font-size:34px;color:#FFD23F;margin:18px 0 6px;text-shadow:0 0 16px rgba(255,184,0,.7)}
+.v-sub{color:#cfc6e8;font-size:15px;margin-bottom:18px}
+.flip{width:min(62vw,250px);aspect-ratio:3/4.2;perspective:900px;margin:8px auto 26px}
+.flip .fi{position:relative;width:100%;height:100%;transition:transform .8s cubic-bezier(.3,1.4,.5,1);transform-style:preserve-3d}
+.flip.on .fi{transform:rotateY(180deg)}
+.flip .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flip .front{transform:rotateY(180deg)}
+.flip .back{border-radius:16px;background:linear-gradient(145deg,#5A12D6,#9B5CFF);border:5px solid #C9A6FF;display:grid;place-items:center;color:#fff;font-size:40px;
+  box-shadow:0 0 40px rgba(155,92,255,.7);animation:wobble 1s infinite}
+@keyframes wobble{50%{transform:scale(1.03) rotate(-1deg)}}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+#victory .btn{flex:none;width:min(80vw,320px);position:relative;z-index:2}
+.v-card .card{width:min(62vw,250px);margin:8px auto 26px}
+</style>
+</head>
+<body>
+
+<!-- ============ ÉCRAN QUÊTES ============ -->
+<section id="s-quests" class="screen">
+  <div class="topbar">
+    <div class="logo pixel">QUEST RUN</div>
+    <div class="chip"><span class="star">★</span><span id="pts">0</span></div>
+  </div>
+  <div id="map"></div>
+  <div class="week"><b>Quêtes de la semaine</b><span class="muted" id="daysleft"></span></div>
+  <div class="bonusbar"><div class="bar"><i id="bonusfill" style="width:0"></i></div><small id="bonustxt"></small></div>
+  <div class="qlist" id="qlist"></div>
+</section>
+
+<!-- ============ ÉCRAN COLLECTION ============ -->
+<section id="s-coll" class="screen hidden">
+  <div class="topbar">
+    <div class="logo pixel">COLLECTION</div>
+    <div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
+  </div>
+  <h2 id="colltitle">Ma collection</h2>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- ============ ÉCRAN PROFIL ============ -->
+<section id="s-prof" class="screen hidden">
+  <div class="topbar">
+    <div class="logo pixel">PROFIL</div>
+    <div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
+  </div>
+  <div id="prof"></div>
+</section>
+
+<nav class="tabbar" id="tabbar">
+  <button data-tab="quests" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>Quêtes</button>
+  <button data-tab="coll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="11" height="15" rx="2"/><path d="M17 6.5l3 .8-3.2 12.3-6-1.6"/></svg>Collection</button>
+  <button data-tab="prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profil</button>
+</nav>
+
+<div id="onb" class="hidden"></div>
+<div id="victory" class="hidden"><canvas id="confetti"></canvas><div id="vin"></div></div>
+<div id="toast"></div>
+<input type="file" id="photo" accept="image/*" capture="environment" class="hidden">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+/* =========================================================
+   Quest Run — V1
+   Cours. Explore. Collectionne.
+   ========================================================= */
+
+const KEY = 'questrun.v1';
+const PTS = { common: 100, rare: 250 };
+const WEEK_BONUS = 500;
+const LEVEL_XP = 1000;
+const ROAD = 1.15;            // un trajet à pied fait ~15 % de plus que la ligne droite
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter'
+];
+const DEFAULT_CENTER = [48.8397, 2.2399]; // Boulogne-Billancourt
+
+const DEFAULTS = {
+  onboarded: false, home: null, goal: { runs: 3, km: 7 }, theme: 'light',
+  points: 0, week: null, places: [], placesFor: null,
+  blacklist: [], collection: [], reports: [], weeksCleared: 0
+};
+
+const $ = s => document.querySelector(s);
+const clone = o => JSON.parse(JSON.stringify(o));
+let S = load();
+
+function load() {
+  try { return Object.assign(clone(DEFAULTS), JSON.parse(localStorage.getItem(KEY)) || {}); }
+  catch (e) { return clone(DEFAULTS); }
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { toast('Mémoire du téléphone pleine'); }
+}
+
+/* ---------- petites aides ---------- */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => n.toLocaleString('fr-FR');
+function dist(a, b) {
+  const R = 6371000, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+function bearing(a, b) {
+  const r = Math.PI / 180;
+  const y = Math.sin((b.lng - a.lng) * r) * Math.cos(b.lat * r);
+  const x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lng - a.lng) * r);
+  return (Math.atan2(y, x) / r + 360) % 360;
+}
+function hash(str) { let h = 1779033703 ^ str.length; for (let i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = h << 13 | h >>> 19; } return h >>> 0; }
+function rng(seed) { let a = hash(seed); return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function weekId(d = new Date()) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y = t.getUTCFullYear(); const w = Math.ceil(((t - Date.UTC(y, 0, 1)) / 86400000 + 1) / 7);
+  return y + '-W' + String(w).padStart(2, '0');
+}
+function daysLeft() { const d = new Date().getDay() || 7; return 8 - d; }
+function roundTripKm(p) { return (p.dist * 2 * ROAD / 1000); }
+let toastT;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
+
+/* ---------- photos (IndexedDB) ---------- */
+const idb = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('questrun', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('photos');
+      r.onsuccess = () => { this.db = r.result; res(this.db); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  async put(k, v) { const db = await this.open(); return new Promise((res, rej) => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(v, k); tx.oncomplete = res; tx.onerror = () => rej(tx.error); }); },
+  async get(k) { const db = await this.open(); return new Promise(res => { const r = db.transaction('photos').objectStore('photos').get(k); r.onsuccess = () => res(r.result); r.onerror = () => res(null); }); },
+  async clear() { const db = await this.open(); return new Promise(res => { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').clear(); tx.oncomplete = res; }); }
+};
+const photoUrls = {};
+async function photoUrl(pid) {
+  if (photoUrls[pid] !== undefined) return photoUrls[pid];
+  try { const b = await idb.get(pid); photoUrls[pid] = b ? URL.createObjectURL(b) : null; }
+  catch (e) { photoUrls[pid] = null; }
+  return photoUrls[pid];
+}
+function shrink(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(), u = URL.createObjectURL(file);
+    img.onload = () => {
+      const m = 900, k = Math.min(1, m / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(u);
+      c.toBlob(b => b ? res(b) : rej(new Error('photo')), 'image/jpeg', .82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(u); rej(new Error('photo')); };
+    img.src = u;
+  });
+}
+
+/* ---------- lieux (OpenStreetMap) ---------- */
+const FEM = new Set(['Statue', 'Sculpture', 'Fresque', 'Mosaïque', 'Installation', 'Fontaine', 'Croix', 'Borne ancienne', 'Stèle', "Œuvre d'art", 'Mairie', 'Église', 'Chapelle', 'Synagogue', 'Mosquée']);
+function article(label) { return label === 'Ruines' ? 'Des ruines' : (FEM.has(label) ? 'Une ' : 'Un ') + label.toLowerCase(); }
+
+function classify(t) {
+  if (t.access === 'private' || t.access === 'no') return null;
+  const name = t['name:fr'] || t.name || '';
+  let label = null, rarity = 'common';
+  if (t.amenity === 'townhall') label = 'Mairie';
+  else if (t.historic === 'castle') label = 'Château';
+  else if (t.historic === 'manor') label = 'Manoir';
+  else if (t.historic === 'ruins') { label = 'Ruines'; rarity = 'rare'; }
+  else if (t.historic === 'monument') label = 'Monument';
+  else if (t.tourism === 'museum') label = 'Musée';
+  else if (t.tourism === 'viewpoint') label = 'Point de vue';
+  else if (t.tourism === 'artwork') {
+    label = { statue: 'Statue', sculpture: 'Sculpture', mural: 'Fresque', bust: 'Buste', relief: 'Bas-relief', mosaic: 'Mosaïque', graffiti: 'Graffiti', installation: 'Installation', fountain: 'Fontaine' }[t.artwork_type] || "Œuvre d'art";
+    rarity = 'rare';
+  }
+  else if (t.historic === 'memorial') {
+    const m = t.memorial;
+    if (m === 'plaque' || m === 'blue_plaque' || m === 'stolperstein') return null; // trop nombreux, peu fun
+    if (m === 'war_memorial') label = 'Monument aux morts';
+    else { label = { statue: 'Statue', bust: 'Buste', stele: 'Stèle', obelisk: 'Obélisque', sculpture: 'Sculpture' }[m] || 'Mémorial'; rarity = 'rare'; }
+  }
+  else if (t.amenity === 'fountain') {
+    if (t.fountain === 'drinking' || t.fountain === 'bubbler' || t.drinking_water === 'yes') return null;
+    label = 'Fontaine'; rarity = 'rare';
+  }
+  else if (t.historic === 'wayside_cross') { label = 'Croix'; rarity = 'rare'; }
+  else if (t.historic === 'boundary_stone' || t.historic === 'milestone') { label = 'Borne ancienne'; rarity = 'rare'; }
+  else if (t.leisure === 'park') label = 'Parc';
+  else if (t.leisure === 'garden') { if (t.garden === 'private' || t['garden:type'] === 'residential') return null; label = 'Jardin'; }
+  else if (t.amenity === 'place_of_worship') {
+    label = t.religion === 'christian' ? (t.building === 'chapel' ? 'Chapelle' : 'Église')
+      : ({ jewish: 'Synagogue', muslim: 'Mosquée', buddhist: 'Temple' }[t.religion] || 'Lieu de culte');
+  }
+  if (!label) return null;
+  if (rarity === 'common' && !name) return null;
+  return { label, rarity, name };
+}
+
+function overpassQuery(home, radius) {
+  const a = `(around:${radius},${home.lat.toFixed(5)},${home.lng.toFixed(5)})`;
+  return `[out:json][timeout:50];(
+nwr["amenity"="townhall"]["name"]${a};
+nwr["historic"~"^(monument|castle|manor|ruins|memorial|wayside_cross|boundary_stone|milestone)$"]${a};
+nwr["tourism"~"^(artwork|museum|viewpoint)$"]${a};
+nwr["amenity"="fountain"]${a};
+nwr["leisure"~"^(park|garden)$"]["name"]${a};
+nwr["amenity"="place_of_worship"]["name"]${a};
+);out center tags;`;
+}
+
+async function fetchPlaces(home, km) {
+  const radius = Math.min(10000, Math.round(km * 1000 * 0.72));
+  const body = 'data=' + encodeURIComponent(overpassQuery(home, radius));
+  let last;
+  for (const ep of OVERPASS) {
+    try {
+      const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 60000);
+      const r = await fetch(ep, { method: 'POST', body, signal: ctrl.signal, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+      clearTimeout(to);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const j = await r.json();
+      return parsePlaces(j.elements || [], home);
+    } catch (e) { last = e; }
+  }
+  throw last || new Error('réseau');
+}
+
+function parsePlaces(els, home) {
+  const out = [], seen = new Set();
+  for (const el of els) {
+    const t = el.tags || {};
+    const lat = el.lat ?? el.center?.lat, lng = el.lon ?? el.center?.lon;
+    if (lat == null || lng == null) continue;
+    const c = classify(t); if (!c) continue;
+    const id = el.type[0] + el.id;
+    // évite les doublons (même nom au même endroit)
+    const dk = (c.name || c.label) + '|' + lat.toFixed(3) + lng.toFixed(3);
+    if (seen.has(dk)) continue; seen.add(dk);
+    const p = { id, name: c.name, label: c.label, rarity: c.rarity, lat, lng, area: el.type !== 'node' };
+    if (t.artist_name) p.artist = t.artist_name;
+    p.dist = Math.round(dist(home, p));
+    if (p.rarity === 'rare') { // zone de 100 m : le vrai point est dedans, mais pas au centre
+      const r = rng(id), ang = r() * 2 * Math.PI, off = 25 + r() * 45;
+      p.zlat = lat + (off * Math.cos(ang)) / 111320;
+      p.zlng = lng + (off * Math.sin(ang)) / (111320 * Math.cos(lat * Math.PI / 180));
+    }
+    out.push(p);
+  }
+  // garde la taille raisonnable pour la mémoire du téléphone
+  const rares = out.filter(p => p.rarity === 'rare'), commons = out.filter(p => p.rarity === 'common');
+  const r = rng('cap'); rares.sort(() => r() - .5);
+  return commons.slice(0, 1500).concat(rares.slice(0, 1500));
+}
+
+const placeById = id => S.places.find(p => p.id === id);
+function shownName(p, found) {
+  if (p.rarity === 'rare' && !found) return p.label + ' mystère';
+  return p.name || p.label;
+}
+function hintFor(p) {
+  const h = [`<b>${esc(article(p.label))}</b> se cache dans cette zone de 100 m.`];
+  if (p.name) h.push(`Son nom commence par « <b>${esc(p.name.slice(0, 3))}…</b> ».`);
+  if (p.artist) h.push(`Œuvre de ${esc(p.artist)}.`);
+  h.push('Le bouton « J\'y suis » te dit si tu chauffes.');
+  return h.join(' ');
+}
+
+/* ---------- génération des quêtes ---------- */
+function pickQuests(n, seed, exclude) {
+  const km = S.goal.km, ideal = km * 1000 / 2 / ROAD;
+  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
+  const ok = p => !exclude.has(p.id) && !found.has(p.id) && !black.has(p.id);
+  let pool = S.places.filter(p => ok(p) && Math.abs(p.dist - ideal) <= ideal * 0.28);
+  if (pool.length < n * 3) pool = S.places.filter(p => ok(p) && Math.abs(p.dist - ideal) <= ideal * 0.5);
+  if (pool.length < n) pool = S.places.filter(ok);
+  const r = rng(seed);
+  const score = p => Math.abs(p.dist - ideal) / ideal + r() * 0.6;
+  const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
+  const wantRare = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
+  const picked = [], minGap = Math.min(70, 300 / (n + 1));
+  const home = S.home;
+  const farEnough = p => picked.every(q => { const d = Math.abs(bearing(home, p) - bearing(home, q)); return Math.min(d, 360 - d) >= minGap; });
+  const take = (list, k) => {
+    for (const strict of [true, false]) for (const p of list) {
+      if (k <= 0) return k;
+      if (picked.includes(p) || (strict && !farEnough(p))) continue;
+      picked.push(p); k--;
+    }
+    return k;
+  };
+  let left = take(rares, wantRare);
+  left = take(commons, n - wantRare + left);
+  if (picked.length < n) take(rares.concat(commons), n - picked.length);
+  return picked;
+}
+
+function ensureWeek(force) {
+  const id = weekId();
+  if (!force && S.week && S.week.id === id) return;
+  const keep = force && S.week && S.week.id === id ? S.week.quests.filter(q => q.status === 'done') : [];
+  const n = Math.max(0, S.goal.runs - keep.length);
+  const exclude = new Set(keep.map(q => q.pid));
+  const fresh = pickQuests(n, id + '|' + (S.home ? S.home.lat.toFixed(3) + S.home.lng.toFixed(3) : '') + '|' + Date.now() * (force ? 1 : 0), exclude)
+    .map(p => ({ pid: p.id, status: 'todo' }));
+  S.week = { id, quests: keep.concat(fresh), bonus: keep.length > 0 && S.week ? S.week.bonus : false };
+  save();
+}
+
+/* ---------- thème ---------- */
+const mq = matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const dark = S.theme === 'dark' || (S.theme === 'auto' && mq.matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name=theme-color]').content = dark ? '#000000' : '#F7F6FB';
+  if (map) setTiles(map, dark);
+  if (onbMap) setTiles(onbMap, dark);
+}
+mq.addEventListener?.('change', applyTheme);
+const TILES = {
+  light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+};
+function setTiles(m, dark) {
+  const url = dark ? TILES.dark : TILES.light;
+  if (m._qrTiles && m._qrTiles._url === url) return;
+  if (m._qrTiles) m.removeLayer(m._qrTiles);
+  m._qrTiles = L.tileLayer(url, { maxZoom: 19, subdomains: 'abcd', attribution: '© OpenStreetMap © CARTO' }).addTo(m);
+}
+
+/* ---------- carte principale ---------- */
+let map = null, layer = null, meMarker = null, watchId = null, lastPos = null;
+function initMap() {
+  if (map || typeof L === 'undefined') return;
+  map = L.map('map', { zoomControl: false, attributionControl: true }).setView(S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER, 13);
+  setTiles(map, document.documentElement.dataset.theme === 'dark');
+  layer = L.layerGroup().addTo(map);
+  startWatch();
+}
+function startWatch() {
+  if (!navigator.geolocation || watchId != null) return;
+  watchId = navigator.geolocation.watchPosition(p => {
+    lastPos = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() };
+    const ll = [p.coords.latitude, p.coords.longitude];
+    if (!meMarker) meMarker = L.marker(ll, { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 1000 }).addTo(map);
+    else meMarker.setLatLng(ll);
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 10000 });
+}
+const pinIcon = (cls, txt) => L.divIcon({ className: '', html: `<div class="pin ${cls}">${txt}</div>`, iconSize: [34, 34], iconAnchor: [17, 17] });
+
+function renderMap() {
+  if (!map) return;
+  layer.clearLayers();
+  const pts = [[S.home.lat, S.home.lng]];
+  L.marker([S.home.lat, S.home.lng], { icon: L.divIcon({ className: '', html: '<div class="pin home">⌂</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(layer);
+  S.week.quests.forEach((q, i) => {
+    const p = placeById(q.pid); if (!p) return;
+    const done = q.status === 'done';
+    if (p.rarity === 'rare' && !done) {
+      L.circle([p.zlat, p.zlng], { radius: 100, color: '#7B2FF7', weight: 2, dashArray: '6 6', fillColor: '#9B5CFF', fillOpacity: .15 }).addTo(layer).on('click', () => openQuest(i));
+      L.marker([p.zlat, p.zlng], { icon: pinIcon('rare', '?') }).addTo(layer).on('click', () => openQuest(i));
+      pts.push([p.zlat, p.zlng]);
+    } else {
+      L.marker([p.lat, p.lng], { icon: pinIcon((p.rarity === 'rare' ? 'rare ' : '') + (done ? 'done' : ''), done ? '✓' : i + 1) }).addTo(layer).on('click', () => openQuest(i));
+      pts.push([p.lat, p.lng]);
+    }
+  });
+  map.fitBounds(pts, { padding: [36, 36], maxZoom: 15 });
+}
+
+/* ---------- écran quêtes ---------- */
+function renderPoints() {
+  $('#pts').textContent = fmt(S.points);
+  document.querySelectorAll('.ptsmirror').forEach(e => e.textContent = fmt(S.points));
+}
+function renderQuests() {
+  renderPoints();
+  const qs = S.week.quests, done = qs.filter(q => q.status === 'done').length;
+  const dl = daysLeft();
+  $('#daysleft').textContent = dl === 1 ? 'Dernier jour' : `${dl} jours restants`;
+  $('#bonusfill').style.width = (qs.length ? done / qs.length * 100 : 0) + '%';
+  $('#bonustxt').textContent = S.week.bonus ? 'Bonus gagné ✓' : `${done}/${qs.length} · bonus +${WEEK_BONUS} ★`;
+  if (!qs.length) {
+    $('#qlist').innerHTML = `<div class="empty">Aucun lieu trouvé à la bonne distance.<br>Essaie une autre distance dans le Profil.</div>`;
+  } else {
+    $('#qlist').innerHTML = qs.map((q, i) => {
+      const p = placeById(q.pid); if (!p) return '';
+      const done = q.status === 'done';
+      return `<button class="quest ${p.rarity} ${done ? 'done' : ''}" data-i="${i}">
+        <div class="num">${done ? '✓' : p.rarity === 'rare' ? '?' : i + 1}</div>
+        <div class="t"><b>${esc(shownName(p, done))}</b><span>${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km A/R</span></div>
+        ${done ? `<span class="badge b-done">+${PTS[p.rarity]}</span>` : `<span class="badge b-${p.rarity}">${p.rarity === 'rare' ? 'Rare' : 'Commune'}</span>`}
+      </button>`;
+    }).join('');
+    $('#qlist').querySelectorAll('.quest').forEach(b => b.onclick = () => openQuest(+b.dataset.i));
+  }
+  renderMap();
+}
+
+/* ---------- fiche d'une quête ---------- */
+function sheet(html) {
+  closeSheet();
+  const b = document.createElement('div'); b.className = 'backdrop'; b.id = 'bd';
+  b.innerHTML = `<div class="sheet"><div class="grab"></div>${html}</div>`;
+  b.onclick = e => { if (e.target === b) closeSheet(); };
+  document.body.appendChild(b);
+  return b.querySelector('.sheet');
+}
+function closeSheet() { const b = $('#bd'); if (b) b.remove(); }
+function mapsLink(lat, lng) {
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent);
+  return ios ? `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=w` : `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=walking`;
+}
+
+function openQuest(i) {
+  const q = S.week.quests[i], p = placeById(q.pid); if (!p) return;
+  const done = q.status === 'done', rare = p.rarity === 'rare';
+  const tlat = rare && !done ? p.zlat : p.lat, tlng = rare && !done ? p.zlng : p.lng;
+  if (map && current === 'quests') map.setView([tlat, tlng], rare && !done ? 16 : 15, { animate: true });
+  if (done) {
+    const c = S.collection.find(c => c.pid === p.id);
+    const sh = sheet(`<span class="badge b-done">Trouvé</span><h3>${esc(shownName(p, true))}</h3>
+      <p class="muted">${esc(p.label)} · trouvé le ${c ? new Date(c.date).toLocaleDateString('fr-FR') : ''} · +${PTS[p.rarity]} ★</p>
+      <div class="row"><button class="btn ghost" id="seecard">Voir la carte</button></div>`);
+    sh.querySelector('#seecard').onclick = () => { closeSheet(); showCard(c); };
+    return;
+  }
+  const sh = sheet(`<span class="badge b-${p.rarity}">${rare ? 'Rare' : 'Commune'} · +${PTS[p.rarity]} ★</span>
+    <h3>${esc(shownName(p, false))}</h3>
+    <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour</p>
+    ${rare ? `<div class="hint">${hintFor(p)}</div>` : `<p>Cours jusqu'au lieu, valide ton arrivée, prends ta photo et rentre.</p>`}
+    <div class="row">
+      <a class="btn ghost" href="${mapsLink(tlat, tlng)}" target="_blank" rel="noopener">Itinéraire</a>
+      <button class="btn" id="here">J'y suis !</button>
+    </div>
+    <div class="feedback" id="fb"></div>
+    <button class="link" id="lost">Je ne trouve pas</button>`);
+  sh.querySelector('#here').onclick = () => checkIn(i, sh);
+  sh.querySelector('#lost').onclick = () => report(i);
+}
+
+// Position fraîche si elle arrive vite, sinon la dernière position suivie (moins de 30 s).
+function getPos() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) return rej(new Error('Pas de GPS'));
+    let done = false;
+    const finish = (fn, v) => { if (!done) { done = true; clearTimeout(t1); clearTimeout(t2); fn(v); } };
+    const recent = () => lastPos && Date.now() - lastPos.t < 30000;
+    const t1 = setTimeout(() => { if (recent()) finish(res, lastPos); }, 6000);
+    const t2 = setTimeout(() => recent() ? finish(res, lastPos) : finish(rej, { code: 3 }), 20000);
+    navigator.geolocation.getCurrentPosition(
+      p => finish(res, { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0 }),
+      e => recent() ? finish(res, lastPos) : finish(rej, e),
+      { enableHighAccuracy: true, timeout: 19000, maximumAge: 5000 });
+  });
+}
+
+async function checkIn(i, sh) {
+  const q = S.week.quests[i], p = placeById(q.pid);
+  const btn = sh.querySelector('#here'), fb = sh.querySelector('#fb');
+  btn.disabled = true; btn.textContent = 'Localisation…'; fb.textContent = '';
+  try {
+    const pos = await getPos();
+    const d = dist(pos, p);
+    const allowed = (p.area ? 80 : 35) + Math.min(pos.acc, 40);
+    if (d <= allowed) { closeSheet(); takePhoto(i); return; }
+    if (p.rarity === 'rare' && d < 400) {
+      fb.innerHTML = d < 70 ? '🔥 Brûlant ! C\'est tout près.' : d < 150 ? '♨️ Tu chauffes…' : '🧊 Tu refroidis, cherche dans la zone.';
+    } else {
+      fb.textContent = `Encore ${d >= 1000 ? (d / 1000).toFixed(1).replace('.', ',') + ' km' : Math.round(d) + ' m'} !`;
+    }
+  } catch (e) {
+    fb.textContent = e && e.code === 1 ? 'Autorise la localisation dans les réglages.' : 'GPS indisponible, réessaie.';
+  }
+  btn.disabled = false; btn.textContent = "J'y suis !";
+}
+
+function takePhoto(i) {
+  const q = S.week.quests[i], p = placeById(q.pid);
+  const sh = sheet(`<div style="text-align:center"><div class="pixel" style="color:var(--violet);font-size:14px;line-height:1.6;margin:8px 0 10px">LIEU TROUVÉ !</div>
+    <h3>${esc(shownName(p, true))}</h3>
+    <p class="muted">Prends ta photo : elle devient l'image de ta carte.</p></div>
+    <div class="row"><button class="btn gold" id="shoot">📸 Prendre la photo</button></div>
+    <button class="link" id="nophoto">Continuer sans photo</button>`);
+  const input = $('#photo');
+  input.value = '';
+  input.onchange = async () => {
+    const f = input.files && input.files[0]; if (!f) return;
+    let blob = null;
+    try { blob = await shrink(f); } catch (e) { toast('Photo illisible, carte sans photo'); }
+    closeSheet(); award(i, blob);
+  };
+  sh.querySelector('#shoot').onclick = () => input.click();
+  sh.querySelector('#nophoto').onclick = () => { closeSheet(); award(i, null); };
+}
+
+async function award(i, blob) {
+  const q = S.week.quests[i], p = placeById(q.pid);
+  if (q.status === 'done') return;
+  const pts = PTS[p.rarity];
+  q.status = 'done';
+  S.points += pts;
+  const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: p.rarity, pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
+  S.collection.push(card);
+  if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
+  const allDone = S.week.quests.every(x => x.status === 'done');
+  let bonus = false;
+  if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.weeksCleared++; bonus = true; }
+  save();
+  await victory(card, pts);
+  if (bonus) await questClear();
+  renderQuests();
+}
+
+/* ---------- signaler un lieu ---------- */
+function report(i) {
+  const q = S.week.quests[i], p = placeById(q.pid);
+  const sh = sheet(`<h3>Je ne trouve pas</h3><p class="muted">Pas grave : tu ne perds aucun point, on te donne une autre quête.</p>
+    <button class="opt" data-r="introuvable">🔍<span>Introuvable<small>J'ai cherché, il n'y est pas</small></span></button>
+    <button class="opt" data-r="disparu">🚧<span>Disparu<small>Enlevé, détruit ou en travaux</small></span></button>
+    <button class="opt" data-r="inaccessible">🔒<span>Inaccessible<small>Fermé, privé ou dangereux</small></span></button>`);
+  sh.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    S.reports.push({ pid: p.id, name: p.name || p.label, reason: b.dataset.r, date: Date.now() });
+    S.blacklist.push(p.id);
+    const exclude = new Set(S.week.quests.map(x => x.pid));
+    const [np] = pickQuests(1, 'swap|' + p.id + '|' + Date.now(), exclude).filter(x => x.rarity === p.rarity).concat(pickQuests(1, 'swap2|' + p.id, exclude));
+    if (np) S.week.quests[i] = { pid: np.id, status: 'todo' }; else S.week.quests.splice(i, 1);
+    save(); closeSheet(); renderQuests();
+    toast(np ? 'Merci ! Nouvelle quête ajoutée.' : 'Merci ! Plus de lieux dispo à cette distance.');
+  });
+}
+
+/* ---------- cartes ---------- */
+const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>';
+function cardHtml(c) {
+  const cls = c.rarity === 'rare' ? 'rare' : c.rarity === 'legend' ? 'legend' : '';
+  const tag = c.rarity === 'rare' ? 'Rare' : c.rarity === 'legend' ? 'Légendaire' : 'Commune';
+  return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
+    <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
+    <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span></div>
+    <span class="badge b-${c.rarity} r">${tag}</span><span class="pts">+${c.pts}</span>
+  </div></div>`;
+}
+function fillPhotos(root) {
+  root.querySelectorAll('[data-ph]').forEach(async el => {
+    const c = S.collection.find(x => x.pid === el.dataset.ph);
+    if (!c || !c.photo) return;
+    const u = await photoUrl(c.pid);
+    if (u) { el.style.backgroundImage = `url("${u}")`; el.innerHTML = ''; }
+  });
+}
+function renderColl() {
+  renderPoints();
+  const n = S.collection.length, r = S.collection.filter(c => c.rarity === 'rare').length;
+  $('#colltitle').innerHTML = `Ma collection <span class="muted" style="font-size:15px;font-weight:600">· ${n} lieu${n > 1 ? 'x' : ''} · ${r} rare${r > 1 ? 's' : ''}</span>`;
+  if (!n) {
+    $('#grid').innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUNE CARTE</span>Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.</div>`;
+    return;
+  }
+  $('#grid').innerHTML = S.collection.slice().reverse().map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('');
+  fillPhotos($('#grid'));
+  $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showCard(S.collection.find(c => c.pid === el.dataset.pid)));
+}
+
+/* ---------- moments arcade ---------- */
+let confettiRun = 0;
+function confetti(colors) {
+  const cv = $('#confetti'), cx = cv.getContext('2d');
+  const W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio;
+  const run = ++confettiRun;
+  const parts = Array.from({ length: 170 }, () => ({
+    x: W / 2 + (Math.random() - .5) * W * .2, y: H * .38, vx: (Math.random() - .5) * 26 * devicePixelRatio,
+    vy: (-Math.random() * 22 - 8) * devicePixelRatio, s: (5 + Math.random() * 7) * devicePixelRatio,
+    c: colors[Math.random() * colors.length | 0], r: Math.random() * 6, vr: (Math.random() - .5) * .4
+  }));
+  const t0 = performance.now();
+  (function step(t) {
+    if (run !== confettiRun) return;
+    cx.clearRect(0, 0, W, H);
+    for (const p of parts) {
+      p.vy += .6 * devicePixelRatio; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); cx.restore();
+    }
+    if (t - t0 < 4200) requestAnimationFrame(step); else cx.clearRect(0, 0, W, H);
+  })(t0);
+}
+function countUp(el, to, ms = 900) {
+  const t0 = performance.now();
+  (function f(t) { const k = Math.min(1, (t - t0) / ms); el.textContent = '+' + fmt(Math.round(to * (1 - Math.pow(1 - k, 3)))) + ' ★'; if (k < 1) requestAnimationFrame(f); })(t0);
+}
+function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+function overlay(html) {
+  const v = $('#victory'); $('#vin').innerHTML = html; v.classList.remove('hidden');
+  return new Promise(res => { $('#vin').querySelector('[data-close]').onclick = () => { v.classList.add('hidden'); confettiRun++; res(); }; });
+}
+async function victory(card, pts) {
+  const p = overlay(`<div class="v-title pixel">LIEU TROUVÉ !</div>
+    <div class="v-pts pixel" id="vp">+0 ★</div>
+    <div class="flip" id="flip"><div class="fi"><div class="face back pixel">?</div><div class="face front">${cardHtml(card)}</div></div></div>
+    <button class="btn gold" data-close>Continuer</button>`);
+  fillPhotos($('#vin'));
+  countUp($('#vp'), pts);
+  vibrate([30, 40, 30]);
+  setTimeout(() => {
+    $('#flip').classList.add('on'); vibrate(60);
+    confetti(card.rarity === 'rare' ? ['#7B2FF7', '#B07BFF', '#FFD23F', '#fff'] : ['#FFD23F', '#FFB800', '#fff', '#C0C6D0']);
+  }, 900);
+  return p;
+}
+async function questClear() {
+  const p = overlay(`<div class="v-title gold pixel">QUEST<br>CLEAR!</div>
+    <div class="v-pts pixel" id="vp">+0 ★</div>
+    <div class="v-sub">Toutes les quêtes de la semaine sont faites. Bonus débloqué !</div>
+    <button class="btn gold" data-close>Génial</button>`);
+  countUp($('#vp'), WEEK_BONUS, 1300);
+  confetti(['#FFD23F', '#FFB800', '#7B2FF7', '#fff']);
+  vibrate([60, 60, 60, 60, 120]);
+  return p;
+}
+function showCard(c) {
+  if (!c) return;
+  overlay(`<div class="v-card">${cardHtml(c)}</div><button class="btn ghost" data-close style="background:transparent;color:#fff;border-color:#444;box-shadow:0 5px 0 #333">Fermer</button>`);
+  fillPhotos($('#vin'));
+}
+
+/* ---------- profil + réglages ---------- */
+function renderProf() {
+  renderPoints();
+  const lvl = Math.floor(S.points / LEVEL_XP) + 1, xp = S.points % LEVEL_XP;
+  const g = S.goal;
+  $('#prof').innerHTML = `
+  <div class="panel"><div class="lvl"><div class="n pixel">${lvl}</div><div style="flex:1">
+    <b style="font-size:18px">Niveau ${lvl}</b><div class="muted" style="font-size:14px">${fmt(xp)} / ${fmt(LEVEL_XP)} ★ pour le niveau ${lvl + 1}</div>
+    <div class="xp"><i style="width:${xp / LEVEL_XP * 100}%"></i></div></div></div></div>
+  <div class="panel stats">
+    <div><b>${S.collection.length}</b><span>lieux</span></div>
+    <div><b>${S.collection.filter(c => c.rarity === 'rare').length}</b><span>rares</span></div>
+    <div><b>${S.weeksCleared}</b><span>semaines<br>complètes</span></div>
+  </div>
+  <div class="panel"><h4>Thème</h4><div class="seg" id="theme">
+    <button data-v="light">Clair</button><button data-v="dark">Sombre</button><button data-v="auto">Auto</button></div></div>
+  <div class="panel"><h4>Objectif</h4>
+    <div class="set"><span>Sorties / semaine</span><div class="stepper"><button data-k="runs" data-d="-1">−</button><b id="g-runs">${g.runs}</b><button data-k="runs" data-d="1">+</button></div></div>
+    <div class="set"><span>Distance / sortie</span><div class="stepper"><button data-k="km" data-d="-1">−</button><b id="g-km">${g.km} km</b><button data-k="km" data-d="1">+</button></div></div>
+    <div class="set"><span class="muted" style="font-size:14px">Change ton objectif puis :</span><button class="setbtn" id="regen">Nouvelles quêtes</button></div>
+  </div>
+  <div class="panel"><h4>Lieux</h4>
+    <div class="set"><span>Point de départ</span><button class="setbtn" id="home">Changer</button></div>
+    <div class="set"><span>Recharger les lieux</span><button class="setbtn" id="reload">Recharger</button></div>
+    <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div>
+  </div>
+  <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run V1 · lieux © OpenStreetMap</p>`;
+  document.querySelectorAll('#theme button').forEach(b => {
+    b.classList.toggle('on', b.dataset.v === S.theme);
+    b.onclick = () => { S.theme = b.dataset.v; save(); applyTheme(); renderProf(); };
+  });
+  document.querySelectorAll('.stepper button').forEach(b => b.onclick = () => {
+    const k = b.dataset.k, d = +b.dataset.d;
+    S.goal[k] = k === 'runs' ? Math.min(7, Math.max(1, S.goal[k] + d)) : Math.min(21, Math.max(3, S.goal[k] + d));
+    save(); $('#g-runs').textContent = S.goal.runs; $('#g-km').textContent = S.goal.km + ' km';
+  });
+  $('#regen').onclick = async () => {
+    const f = S.placesFor;
+    if (f && f.km < S.goal.km) { await loadPlaces(); }
+    ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
+  };
+  $('#home').onclick = () => onboarding(2);
+  $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
+  $('#wipe').onclick = async () => {
+    if (!confirm('Effacer toutes tes cartes, tes points et tes réglages ?')) return;
+    localStorage.removeItem(KEY); try { await idb.clear(); } catch (e) {}
+    location.reload();
+  };
+}
+
+async function loadPlaces() {
+  toast('Recherche des lieux…');
+  try {
+    S.places = await fetchPlaces(S.home, S.goal.km);
+    S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
+    save();
+    toast(`${S.places.length} lieux trouvés`);
+  } catch (e) { toast('Pas de réseau, réessaie plus tard.'); throw e; }
+}
+
+/* ---------- onglets ---------- */
+let current = 'quests';
+function tab(name) {
+  current = name;
+  ['quests', 'coll', 'prof'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
+  document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  if (name === 'quests') { initMap(); renderQuests(); setTimeout(() => map && map.invalidateSize(), 50); }
+  if (name === 'coll') renderColl();
+  if (name === 'prof') renderProf();
+}
+document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
+
+/* ---------- onboarding ---------- */
+let onbMap = null;
+function onboarding(step = 0) {
+  const o = $('#onb'); o.classList.remove('hidden');
+  const dots = n => `<div class="dots">${[0, 1, 2].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div>`;
+  if (step === 0) {
+    o.innerHTML = `<div class="body"><div class="hero">
+        <img src="icon.svg" width="112" height="112" alt="">
+        <div class="logo pixel">QUEST RUN</div>
+        <div class="tag">Cours. Explore. Collectionne.</div></div>
+      <p style="text-align:center">Chaque semaine, des quêtes t'envoient vers de vrais lieux de ta ville. Trouve-les, gagne des points et collectionne leurs cartes.</p></div>
+      <button class="btn" id="go">Commencer</button>`;
+    $('#go').onclick = () => onboarding(1);
+  }
+  if (step === 1) {
+    o.innerHTML = `${dots(0)}<div class="body"><h1>Ton objectif de la semaine</h1>
+      <p>Chaque sortie = une quête. Le lieu est choisi pour faire un aller-retour de la bonne distance.</p>
+      <div class="big-step"><b>Sorties</b><div class="stepper"><button data-k="runs" data-d="-1">−</button><b id="o-runs">${S.goal.runs}</b><button data-k="runs" data-d="1">+</button></div></div>
+      <div class="big-step"><b>Distance</b><div class="stepper"><button data-k="km" data-d="-1">−</button><b id="o-km">${S.goal.km} km</b><button data-k="km" data-d="1">+</button></div></div></div>
+      <button class="btn" id="go">Suivant</button>`;
+    o.querySelectorAll('.stepper button').forEach(b => b.onclick = () => {
+      const k = b.dataset.k, d = +b.dataset.d;
+      S.goal[k] = k === 'runs' ? Math.min(7, Math.max(1, S.goal[k] + d)) : Math.min(21, Math.max(3, S.goal[k] + d));
+      $('#o-runs').textContent = S.goal.runs; $('#o-km').textContent = S.goal.km + ' km';
+    });
+    $('#go').onclick = () => { save(); onboarding(2); };
+  }
+  if (step === 2) {
+    o.innerHTML = `${dots(1)}<div class="body"><h1>D'où tu pars ?</h1>
+      <p>Touche la carte pour placer ton point de départ, ou utilise ta position.</p>
+      <div id="onbmap"></div>
+      <button class="btn ghost" id="locate" style="flex:none">📍 Utiliser ma position</button></div>
+      <button class="btn" id="go" style="margin-top:12px">C'est mon point de départ</button>`;
+    if (onbMap) { onbMap.remove(); onbMap = null; }
+    const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
+    let chosen = S.home ? { ...S.home } : null;
+    onbMap = L.map('onbmap', { zoomControl: false }).setView(start, 14);
+    setTiles(onbMap, document.documentElement.dataset.theme === 'dark');
+    const mk = L.marker(start, { icon: L.divIcon({ className: '', html: '<div class="pin home">⌂</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) });
+    if (chosen) mk.addTo(onbMap);
+    const setPt = (lat, lng) => { chosen = { lat, lng }; mk.setLatLng([lat, lng]).addTo(onbMap); };
+    onbMap.on('click', e => setPt(e.latlng.lat, e.latlng.lng));
+    $('#locate').onclick = async () => {
+      $('#locate').textContent = 'Localisation…';
+      try { const p = await getPos(); setPt(p.lat, p.lng); onbMap.setView([p.lat, p.lng], 15); }
+      catch (e) { toast('Position indisponible : touche la carte.'); }
+      $('#locate').textContent = '📍 Utiliser ma position';
+    };
+    $('#go').onclick = () => {
+      if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
+      S.home = chosen; save(); onboarding(3);
+    };
+  }
+  if (step === 3) {
+    o.innerHTML = `${dots(2)}<div class="body" style="text-align:center"><div class="loader"></div>
+      <h1 id="lt">On cherche les lieux autour de toi…</h1><p id="ls">Statues, fontaines, monuments, parcs…</p></div>
+      <button class="btn hidden" id="go">Voir mes quêtes</button>`;
+    fetchPlaces(S.home, S.goal.km).then(pl => {
+      S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
+      S.week = null; S.onboarded = true; ensureWeek(); save();
+      const r = pl.filter(p => p.rarity === 'rare').length;
+      o.querySelector('.loader').style.animation = 'none';
+      $('#lt').textContent = `${pl.length} lieux trouvés !`;
+      $('#ls').innerHTML = `Dont <b style="color:var(--violet)">${r} rares</b> à dénicher. Tes ${S.week.quests.length} quêtes de la semaine sont prêtes.`;
+      $('#go').classList.remove('hidden');
+      $('#go').onclick = () => { o.classList.add('hidden'); if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
+    }).catch(() => {
+      o.querySelector('.loader').style.animation = 'none';
+      $('#lt').textContent = 'Connexion impossible';
+      $('#ls').textContent = 'Vérifie ton réseau et réessaie.';
+      $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
+      $('#go').onclick = () => onboarding(3);
+    });
+  }
+}
+
+/* ---------- démarrage ---------- */
+applyTheme();
+if (typeof L === 'undefined') {
+  document.body.innerHTML = '<div class="empty" style="margin-top:40vh">Pas de connexion : la carte ne peut pas se charger.<br><br><button class="btn" onclick="location.reload()">Réessayer</button></div>';
+} else if (!S.onboarded || !S.home) {
+  onboarding(0);
+} else {
+  ensureWeek();
+  tab('quests');
+}
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
