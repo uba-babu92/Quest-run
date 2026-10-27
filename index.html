@@ -240,6 +240,22 @@ h2{font-size:22px;margin:4px 16px 12px}
 .route{width:100%;height:120px;margin-top:10px}
 .v-actions{display:flex;flex-direction:column;gap:10px;align-items:center;position:relative;z-index:2}
 
+/* ---------- niveaux + trophées ---------- */
+.lvl .n{flex-direction:column;line-height:1.1}
+.lvl .ttl{display:block;font-size:13px;font-weight:800;color:var(--violet);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
+.trophies{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tro{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:14px;background:var(--bg);border:1px solid var(--line);text-align:center}
+.tro .ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:linear-gradient(135deg,#FFE27A,#E8A400);box-shadow:0 3px 10px rgba(232,164,0,.35)}
+.tro.off .ic{background:var(--line);filter:grayscale(1);opacity:.55;box-shadow:none;font-size:18px}
+.tro b{font-size:12px;line-height:1.2}
+.tro.off b{color:var(--muted)}
+.big-ic{font-size:84px;line-height:1;margin:10px 0 6px;filter:drop-shadow(0 0 24px rgba(255,184,0,.6));animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+.lvl-badge{width:120px;height:120px;border-radius:32px;margin:16px auto 10px;display:grid;place-items:center;font-size:40px;color:#fff;background:linear-gradient(135deg,var(--violet),var(--violet-2));box-shadow:0 0 50px rgba(155,92,255,.8);animation:pop .6s cubic-bezier(.2,1.6,.4,1)}
+/* sport */
+#run .sports{display:flex;gap:8px;justify-content:center}
+#run .sports button{padding:8px 12px;border-radius:999px;background:#26232f;color:#c9c2e0;font-weight:800;font-size:14px;border:2px solid transparent}
+#run .sports button.on{background:rgba(123,47,247,.25);border-color:#9B5CFF;color:#fff}
+
 /* ---------- mode course, façon Strava (toujours sombre) ---------- */
 #run{position:fixed;inset:0;z-index:1400;background:#000;color:#fff;display:flex;flex-direction:column}
 #runmap{position:absolute;inset:0;background:#111}
@@ -329,7 +345,7 @@ h2{font-size:22px;margin:4px 16px 12px}
     <div class="ttl" id="rttl">Course à pied</div>
     <div class="stats3">
       <div><b id="rtime">0:00</b><span>temps</span></div>
-      <div><b id="rpace">–:––</b><span>allure (/km)</span></div>
+      <div><b id="rpace">–:––</b><span id="rpacel">allure (/km)</span></div>
       <div><b id="rdist">0,00</b><span>distance (km)</span></div>
     </div>
     <div class="splits" id="rsplits"></div>
@@ -350,10 +366,16 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v19';
+const VERSION = 'v20';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
-const LEVEL_XP = 1000;
+const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
+  [6000, 'Aventurier'], [8500, 'Chasseur de trésors'], [12000, 'Gardien de la ville'], [16000, 'Légende du quartier'], [21000, 'Maître des cartes'], [27000, 'Mythe urbain']];
+function levelOf(pts) {
+  let i = 0; while (i + 1 < LEVELS.length && pts >= LEVELS[i + 1][0]) i++;
+  const next = LEVELS[i + 1];
+  return { n: i + 1, name: LEVELS[i][1], from: LEVELS[i][0], to: next ? next[0] : null, nextName: next ? next[1] : null };
+}
 const ROAD = 1.15;            // un trajet à pied fait ~15 % de plus que la ligne droite
 const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
@@ -914,17 +936,18 @@ async function award(i, blob) {
   q.status = 'done';
   S.points += pts;
   const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: p.rarity, pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
-  if (RUN) { card.run = RUN.id; RUN.found = p.id; }
+  if (RUN) { card.run = RUN.id; card.sport = RUN.sport || 'run'; RUN.found = p.id; }
   const w = await Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 2500))]);
   if (w && w.img) card.img = w.img;
   S.collection.push(card);
   if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
   const allDone = S.week.quests.every(x => x.status === 'done');
   let bonus = false;
-  if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.weeksCleared++; bonus = true; }
+  if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.weeksCleared++; (S.clearedWeeks = S.clearedWeeks || []).push(S.week.id); bonus = true; }
   save();
   await victory(card, pts);
   if (bonus) await questClear();
+  await celebrate();
   renderQuests();
   if (RUN) runBack();
 }
@@ -1060,7 +1083,7 @@ function cardHtml(c) {
   const tag = c.rarity === 'rare' ? 'Rare' : c.rarity === 'legend' ? 'Légendaire' : 'Commune';
   return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
     <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
-    <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + km(runOf(c).dist) + ' km' : ''}</span></div>
+    <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + sportOf(runOf(c)).ic + ' ' + km(runOf(c).dist) + ' km' : ''}</span></div>
     <span class="badge b-${c.rarity} r">${tag}</span><span class="pts">+${c.pts}</span>
   </div></div>`;
 }
@@ -1179,9 +1202,9 @@ function showFiche(c) {
     ${cardHtml(c)}
     <h2>${esc(c.name)}</h2>
     <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-    ${r ? `<div class="box"><span class="pixel">TA COURSE</span>
-      <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>
-      ${routeSvg(r.pts)}${splitsList(r.splits)}</div>` : ''}
+    ${r ? `<div class="box"><span class="pixel">TA SORTIE · ${sportOf(r).ic} ${esc(sportOf(r).name.toUpperCase())}</span>
+      <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div>
+      ${routeSvg(r.pts)}${splitsList(r.splits, r.sport)}</div>` : ''}
     <div class="box" id="story"><span class="pixel">HISTOIRE</span><p class="muted" style="color:#b9b0d6">Chargement…</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
   </div>`, true);
@@ -1189,6 +1212,84 @@ function showFiche(c) {
   fillStory($('#story'), p, c, () => { $('#vin').querySelector('[data-close]').click(); setTimeout(() => showFiche(c), 50); });
   return pr;
 }
+
+/* ---------- trophées ---------- */
+const CAT = { culte: ['Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Temple', 'Lieu de culte'], vert: ['Parc', 'Jardin'], statue: ['Statue', 'Buste', 'Sculpture'], musee: ['Musée'] };
+function tstats() {
+  const runs = S.runs || [], col = S.collection;
+  const labels = new Set(col.map(c => c.label));
+  const has = k => CAT[k].some(l => labels.has(l));
+  const weeks = (S.clearedWeeks || []).slice().sort();
+  let streak = 0, best = 0, prev = null;
+  for (const w of weeks) { const [y, n] = w.split('-W').map(Number); const cur = y * 53 + n; streak = prev != null && cur === prev + 1 ? streak + 1 : 1; best = Math.max(best, streak); prev = cur; }
+  return { cards: col.length, rares: col.filter(c => c.rarity === 'rare').length, km: runs.reduce((a, r) => a + r.dist, 0) / 1000, maxRun: Math.max(0, ...runs.map(r => r.dist)) / 1000,
+    weeks: S.weeksCleared || 0, streak: best, early: runs.some(r => new Date(r.date).getHours() < 8), night: runs.some(r => new Date(r.date).getHours() >= 21),
+    all4: has('culte') && has('vert') && has('statue') && has('musee'), bike: runs.some(r => r.sport === 'bike'), walk: runs.some(r => r.sport === 'walk') };
+}
+const TROPHIES = [
+  ['card1', '🃏', 'Première carte', 'Trouver ton premier lieu', t => t.cards >= 1],
+  ['card5', '📚', 'Collectionneur', '5 cartes', t => t.cards >= 5],
+  ['card10', '🗂️', 'Archiviste', '10 cartes', t => t.cards >= 10],
+  ['card25', '🏛️', 'Conservateur', '25 cartes', t => t.cards >= 25],
+  ['card50', '👑', 'Musée vivant', '50 cartes', t => t.cards >= 50],
+  ['rare1', '💎', 'Œil de lynx', 'Ton premier lieu rare', t => t.rares >= 1],
+  ['rare5', '🔮', 'Chasseur de rares', '5 lieux rares', t => t.rares >= 5],
+  ['rare15', '🐉', 'Trésor caché', '15 lieux rares', t => t.rares >= 15],
+  ['km10', '👟', 'Premiers pas', '10 km au total', t => t.km >= 10],
+  ['km50', '🔥', 'Moteur chaud', '50 km au total', t => t.km >= 50],
+  ['km100', '🚀', 'Centurion', '100 km au total', t => t.km >= 100],
+  ['km250', '🌍', 'Globe-trotteur', '250 km au total', t => t.km >= 250],
+  ['run10', '🏅', 'Grande sortie', 'Une sortie de 10 km', t => t.maxRun >= 10],
+  ['week1', '⭐', 'Quest Clear', 'Ta première semaine complète', t => t.weeks >= 1],
+  ['week4', '🏆', 'Régulier', '4 semaines complètes', t => t.weeks >= 4],
+  ['streak2', '⚡', 'Sur ta lancée', '2 semaines complètes d\'affilée', t => t.streak >= 2],
+  ['early', '🌅', 'Lève-tôt', 'Partir avant 8 h', t => t.early],
+  ['night', '🌙', 'Noctambule', 'Partir après 21 h', t => t.night],
+  ['all4', '🧭', 'Touche-à-tout', 'Un lieu de culte, un parc, une statue et un musée', t => t.all4],
+  ['bike', '🚴', 'En selle', 'Une sortie à vélo', t => t.bike],
+  ['walk', '🚶', 'Flâneur', 'Une sortie en marchant', t => t.walk]
+];
+// au premier lancement de cette version : on note ce qui est déjà acquis, sans fête
+function initProgress() {
+  if (!S.trophies) { const t = tstats(); S.trophies = {}; TROPHIES.forEach(([id, , , , ok]) => { if (ok(t)) S.trophies[id] = Date.now(); }); }
+  if (!S.lastLevel) S.lastLevel = levelOf(S.points).n;
+  save();
+}
+// fête les nouveaux niveaux et trophées, l'un après l'autre
+async function celebrate() {
+  const lv = levelOf(S.points);
+  if (lv.n > (S.lastLevel || 1)) {
+    S.lastLevel = lv.n; save();
+    const lp = overlay(`<div class="v-title gold pixel">NIVEAU ${lv.n} !</div><div class="lvl-badge pixel">${lv.n}</div>
+      <div class="v-sub" style="font-size:24px;color:#fff;font-weight:900;margin:4px 0 6px">${esc(lv.name)}</div>
+      <div class="v-sub">${lv.to ? `Prochain titre : <b style="color:#FFD23F">${esc(lv.nextName)}</b> à ${fmt(lv.to)} ★` : 'Tu as atteint le titre suprême !'}</div>
+      <button class="btn gold" data-close>Trop bien</button>`);
+    confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); vibrate([60, 40, 120]);
+    await lp;
+  }
+  const t = tstats();
+  for (const [id, ic, name, desc, ok] of TROPHIES) {
+    if (S.trophies[id] || !ok(t)) continue;
+    S.trophies[id] = Date.now(); save();
+    const p = overlay(`<div class="v-title gold pixel">TROPHÉE !</div><div class="big-ic">${ic}</div>
+      <div class="v-sub" style="font-size:24px;color:#fff;font-weight:900;margin:4px 0 6px">${esc(name)}</div>
+      <div class="v-sub">${esc(desc)}</div><button class="btn gold" data-close>Génial</button>`);
+    confetti(['#FFD23F', '#FFB800', '#fff']); vibrate([40, 40, 80]);
+    await p;
+  }
+}
+
+/* ---------- sports ---------- */
+const SPORTS = {
+  run: { ic: '🏃', name: 'Course à pied', short: 'Course', router: 'routed-foot', maxV: 9 },
+  walk: { ic: '🚶', name: 'Marche', short: 'Marche', router: 'routed-foot', maxV: 4.5 },
+  bike: { ic: '🚴', name: 'Vélo', short: 'Vélo', router: 'routed-bike', maxV: 20 }
+};
+const sportOf = r => SPORTS[(r && r.sport) || 'run'] || SPORTS.run;
+function speed(ms, m) { if (m < 50 || ms <= 0) return '–'; return (m / 1000 / (ms / 3600000)).toFixed(1).replace('.', ','); }
+// allure (min/km) à pied, vitesse (km/h) à vélo
+const rate = (ms, m, sport) => sport === 'bike' ? speed(ms, m) : pace(ms, m);
+const rateUnit = sport => sport === 'bike' ? 'km/h' : '/km';
 
 /* ---------- mode course, façon Strava ---------- */
 const RUN_KEY = 'questrun.run';
@@ -1210,10 +1311,10 @@ document.addEventListener('visibilitychange', () => { if (RUN && document.visibi
 const fmtKm = d => d < 1000 ? `${Math.round(d)} m` : `${(d / 1000).toFixed(1).replace('.', ',')} km`;
 
 /* --- itinéraire à pied (OpenStreetMap, sans clé) --- */
-const ROUTER = 'https://routing.openstreetmap.de/routed-foot/route/v1/driving/';
-async function routeVia(points) {
+const ROUTER = p => `https://routing.openstreetmap.de/${p}/route/v1/driving/`;
+async function routeVia(points, prof = 'routed-foot') {
   const coords = points.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
-  const j = await getJSON(`${ROUTER}${coords}?overview=full&geometries=geojson&alternatives=${points.length === 2 ? 'true' : 'false'}`, 12000);
+  const j = await getJSON(`${ROUTER(prof)}${coords}?overview=full&geometries=geojson&alternatives=${points.length === 2 ? 'true' : 'false'}`, 12000);
   if (j.code !== 'Ok' || !j.routes?.length) throw new Error(j.code || 'itinéraire');
   return j.routes.map(r => ({ pts: r.geometry.coordinates.map(c => [c[1], c[0]]), dist: r.distance }));
 }
@@ -1225,14 +1326,14 @@ function overlap(a, b) {
   for (let i = 0; i < a.length; i += step) { n++; const p = { lat: a[i][0], lng: a[i][1] }; for (let j = 0; j < b.length; j += 2) if (dist(p, { lat: b[j][0], lng: b[j][1] }) < 30) { hit++; break; } }
   return n ? hit / n : 0;
 }
-async function makeRoute(from, to, avoid) {
+async function makeRoute(from, to, avoid, prof) {
   try {
-    let cands = await routeVia([from, to]);
+    let cands = await routeVia([from, to], prof);
     if (avoid && avoid.length > 4) {
       // détour par un point du côté opposé à l'aller, pour faire une boucle
       const mid = avoid[Math.floor(avoid.length / 2)], cx = (from.lat + to.lat) / 2, cy = (from.lng + to.lng) / 2;
       const via = { lat: cx - (mid[0] - cx) * 0.9, lng: cy - (mid[1] - cy) * 0.9 };
-      try { cands = cands.concat(await routeVia([from, via, to])); } catch (e) {}
+      try { cands = cands.concat(await routeVia([from, via, to], prof)); } catch (e) {}
       const best = Math.min(...cands.map(c => c.dist));
       cands.sort((a, b) => (overlap(a.pts, avoid) + (a.dist > best * 1.6 ? 1 : 0)) - (overlap(b.pts, avoid) + (b.dist > best * 1.6 ? 1 : 0)));
     }
@@ -1282,7 +1383,10 @@ async function planRoute() {
   const t = runTarget(); if (!t) return;
   const from = lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : { lat: S.home.lat, lng: S.home.lng };
   RUN.route = null; drawRun();
-  RUN.route = await makeRoute(from, t, RUN.phase === 'back' ? RUN.goRoute : null);
+  const want = RUN.sport;
+  const R = await makeRoute(from, t, RUN.phase === 'back' ? RUN.goRoute : null, sportOf(RUN).router);
+  if (!RUN || RUN.sport !== want) return; // sport changé entre-temps
+  RUN.route = R;
   if (RUN.phase === 'go') RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
   saveRun(); showRoute(true); drawRun();
 }
@@ -1296,7 +1400,7 @@ function showRoute(fit) {
 function startRun(i) {
   const q = S.week.quests[i]; if (!q) return;
   // écran « prêt » : le chrono ne tourne pas encore
-  RUN = { id: 'r' + Date.now(), qi: i, pid: q.pid, start: Date.now(), elapsed: 0, resumedAt: Date.now(), paused: true, ready: true, dist: 0, pts: [], phase: 'go', lastKm: 0, found: null, route: null };
+  RUN = { id: 'r' + Date.now(), qi: i, pid: q.pid, start: Date.now(), elapsed: 0, resumedAt: Date.now(), paused: true, ready: true, dist: 0, pts: [], phase: 'go', lastKm: 0, found: null, route: null, sport: S.sport || 'run' };
   saveRun();
   openRun();
   planRoute();
@@ -1305,7 +1409,7 @@ function goRun() {
   if (!RUN) return;
   RUN.ready = false; RUN.paused = false; RUN.start = Date.now(); RUN.resumedAt = Date.now();
   saveRun();
-  speak("C'est parti ! Direction " + runTarget().name + '.');
+  speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.');
   vibrate(60);
   if (lastPos) { runMap.setView([lastPos.lat, lastPos.lng], 16); followMe([lastPos.lat, lastPos.lng]); }
   drawRun();
@@ -1353,11 +1457,11 @@ function onRunPos(pos) {
     if (!last) RUN.pts.push([pos.lat, pos.lng, pos.t, 0]);
     else {
       const d = dist({ lat: last[0], lng: last[1] }, pos), dt = Math.max(1, (pos.t - last[2]) / 1000);
-      if (d >= 5 && (pos.sim || d / dt < 9)) {   // ignore les sauts GPS (plus de 32 km/h)
+      if (d >= 5 && (pos.sim || d / dt < sportOf(RUN).maxV)) {   // ignore les sauts GPS
         RUN.dist += d; RUN.pts.push([pos.lat, pos.lng, pos.t, RUN.dist]);
         runLine.addLatLng([pos.lat, pos.lng]);
         const k = Math.floor(RUN.dist / 1000);
-        if (k > RUN.lastKm) { RUN.lastKm = k; const sp = splits(); speak(`${k} kilomètre${k > 1 ? 's' : ''}. Dernier kilomètre en ${pace(sp[k - 1] || elapsed(), 1000).replace(':', ' minutes ')}.`); }
+        if (k > RUN.lastKm) { RUN.lastKm = k; const sp = splits(); speak(RUN.sport === 'bike' ? `${k} kilomètre${k > 1 ? 's' : ''}. ${speed(sp[k - 1] || elapsed(), 1000)} kilomètres heure.` : `${k} kilomètre${k > 1 ? 's' : ''}. Dernier kilomètre en ${pace(sp[k - 1] || elapsed(), 1000).replace(':', ' minutes ')}.`); }
       }
     }
     if (!S.testMode || simT) followMe([pos.lat, pos.lng]);
@@ -1411,7 +1515,7 @@ function splitsHtml(sp, curMs, curM) {
   return shown.map((x, i) => {
     const h = 14 + 26 * (mx === mn ? 1 : (mx - x.ms) / (mx - mn)); // plus rapide = plus haut
     const n = all.length - shown.length + i + 1;
-    return `<div class="sp ${x.done ? 'done' : 'cur'}"><small>${pace(x.ms, 1000)}</small><i style="height:${h.toFixed(0)}px"></i><small>${x.done ? n + ' km' : 'en cours'}</small></div>`;
+    return `<div class="sp ${x.done ? 'done' : 'cur'}"><small>${rate(x.ms, 1000, RUN && RUN.sport)}</small><i style="height:${h.toFixed(0)}px"></i><small>${x.done ? n + ' km' : 'en cours'}</small></div>`;
   }).join('');
 }
 function drawRun() {
@@ -1422,10 +1526,12 @@ function drawRun() {
   $('#rdist').textContent = km(RUN.dist);
   // allure actuelle : sur les ~250 derniers mètres (moyenne en pause)
   const P = RUN.pts, last = P[P.length - 1];
-  let cur = pace(t, RUN.dist);
+  const sp0 = RUN.sport;
+  $('#rpacel').textContent = sp0 === 'bike' ? 'vitesse (km/h)' : 'allure (/km)';
+  let cur = rate(t, RUN.dist, sp0);
   if (last && !RUN.paused && Date.now() - last[2] < 20000) {
     let j = P.length - 1; while (j > 0 && last[3] - P[j][3] < 250) j--;
-    if (last[3] - P[j][3] >= 60) cur = pace(last[2] - P[j][2], last[3] - P[j][3]);
+    if (last[3] - P[j][3] >= 60) cur = rate(last[2] - P[j][2], last[3] - P[j][3], sp0);
   }
   $('#rpace').textContent = cur;
   const sp = splits();
@@ -1437,25 +1543,28 @@ function drawRun() {
   const tg = runTarget(), here = lastPos;
   const R = RUN.route;
   if (RUN.ready) {
-    $('#rttl').innerHTML = R ? `Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}` : 'Calcul de l\'itinéraire…';
+    $('#rttl').innerHTML = R ? `${sportOf(RUN).ic} Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}` : 'Calcul de l\'itinéraire…';
     $('#rleft').innerHTML = here ? `<span class="gps ${here.acc <= 30 ? 'ok' : ''}">GPS ${here.acc <= 30 ? 'prêt ✓' : 'en recherche… (±' + Math.round(here.acc) + ' m)'}</span>` : '<span class="gps">Recherche du GPS…</span>';
   } else {
-    $('#rttl').textContent = RUN.paused ? '⏸ En pause' : (RUN.phase === 'back' ? 'Retour maison' : 'Course à pied');
+    $('#rttl').textContent = RUN.paused ? '⏸ En pause' : `${sportOf(RUN).ic} ${RUN.phase === 'back' ? 'Retour maison' : sportOf(RUN).name}`;
     const left = here ? (leftOnRoute(here) ?? (tg ? dist(here, tg) : null)) : null;
     $('#rleft').textContent = left != null ? `Plus que ${fmtKm(left)}` : 'Recherche du GPS…';
   }
   // boutons
-  const want = RUN.ready ? 'ready' : RUN.paused ? 'paused' : 'run';
+  const want = RUN.ready ? 'ready-' + RUN.sport : RUN.paused ? 'paused' : 'run';
   const box = $('#rbtns');
   if (box.dataset.mode !== want) {
     box.dataset.mode = want;
-    box.innerHTML = want === 'ready'
-      ? `<div class="lbl"><button class="round" id="rgo" aria-label="Démarrer"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l11-6.5z"/></svg></button>Démarrer</div>`
+    box.innerHTML = RUN.ready
+      ? `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;width:100%">
+          <div class="sports">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${RUN.sport === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div>
+          <div class="lbl"><button class="round" id="rgo" aria-label="Démarrer"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l11-6.5z"/></svg></button>Démarrer</div></div>`
       : want === 'run'
         ? `<div class="lbl"><button class="round" id="rpause" aria-label="Pause"><svg viewBox="0 0 24 24" fill="#fff"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg></button>Pause</div>`
         : `<div class="lbl"><button class="round" id="rpause" aria-label="Reprendre"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l11-6.5z"/></svg></button>Reprendre</div>
            <div class="lbl"><button class="round stop" id="rstop" aria-label="Terminer"><svg viewBox="0 0 24 24" fill="#fff"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg></button>Terminer</div>`;
     const g = $('#rgo'); if (g) g.onclick = goRun;
+    box.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => { if (!RUN || RUN.sport === b.dataset.sp) return; RUN.sport = S.sport = b.dataset.sp; save(); saveRun(); drawRun(); planRoute(); });
     const pz = $('#rpause'); if (pz) pz.onclick = togglePause;
     const st = $('#rstop'); if (st) st.onclick = () => { if (RUN && RUN.dist < 100 && !confirm('Terminer la course ?')) return; finishRun(); };
   }
@@ -1488,21 +1597,21 @@ function routeSvg(pts) {
   const P = xs.map((x, i) => [((x - x0) * sc + ox).toFixed(1), ((ys[i] - y0) * sc + oy).toFixed(1)]);
   return `<svg class="route" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><polyline points="${P.map(p => p.join(',')).join(' ')}" fill="none" stroke="#FFD23F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${P[0][0]}" cy="${P[0][1]}" r="5" fill="#9B5CFF"/><circle cx="${P[P.length - 1][0]}" cy="${P[P.length - 1][1]}" r="5" fill="#fff"/></svg>`;
 }
-function splitsList(sp) {
+function splitsList(sp, sport) {
   if (!sp || !sp.length) return '';
-  return `<div class="runlist" style="margin-top:10px">${sp.map((ms, i) => `<div class="r" style="border-color:rgba(255,255,255,.1);color:#e8e3f6"><span>Km ${i + 1}</span><b>${pace(ms, 1000)} /km</b></div>`).join('')}</div>`;
+  return `<div class="runlist" style="margin-top:10px">${sp.map((ms, i) => `<div class="r" style="border-color:rgba(255,255,255,.1);color:#e8e3f6"><span>Km ${i + 1}</span><b>${rate(ms, 1000, sport)} ${rateUnit(sport)}</b></div>`).join('')}</div>`;
 }
 async function finishRun() {
   if (!RUN) return;
   if (RUN.ready) { closeRunScreen(); RUN = null; saveRun(); return; }
   if (!RUN.paused) { RUN.elapsed = elapsed(); RUN.paused = true; }
-  const r = { id: RUN.id, date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round) };
+  const r = { id: RUN.id, sport: RUN.sport || 'run', date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round) };
   closeRunScreen();
   const card = r.found ? S.collection.find(c => c.pid === r.found) : null;
   let keep = true;
   const pr = overlay(`<div class="fiche" style="text-align:center">
     <div class="v-title pixel" style="margin-bottom:18px">COURSE<br>TERMINÉE</div>
-    <div class="box"><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>${routeSvg(r.pts)}${splitsList(r.splits)}</div>
+    <div class="box"><span class="pixel">${sportOf(r).ic} ${sportOf(r).name.toUpperCase()}</span><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div>${routeSvg(r.pts)}${splitsList(r.splits, r.sport)}</div>
     ${card ? `<p class="v-sub">Course enregistrée sur ta carte <b style="color:#FFD23F">${esc(card.name)}</b></p>` : ''}
     <div class="v-actions"><button class="btn gold" data-close>Enregistrer</button><button class="link" id="nokeep" style="color:#b9b0d6;margin:0">Ne pas enregistrer</button></div>
   </div>`, true);
@@ -1510,6 +1619,7 @@ async function finishRun() {
   await pr;
   if (keep && r.dist >= 50) S.runs.push(r); else if (card) delete card.run;
   RUN = null; saveRun(); save();
+  await celebrate();
   if (current === 'prof') renderProf(); else renderQuests();
 }
 function stopSim() { clearInterval(simT); simT = null; const b = $('#rsim'); if (b) b.textContent = '▶ Simuler (test)'; }
@@ -1591,11 +1701,15 @@ function goalPicker(el, onChange) {
 /* ---------- profil + réglages ---------- */
 function renderProf() {
   renderPoints();
-  const lvl = Math.floor(S.points / LEVEL_XP) + 1, xp = S.points % LEVEL_XP;
+  const lv = levelOf(S.points), pct = lv.to ? (S.points - lv.from) / (lv.to - lv.from) * 100 : 100;
+  const nT = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).length;
   $('#prof').innerHTML = `
-  <div class="panel"><div class="lvl"><div class="n pixel">${lvl}</div><div style="flex:1">
-    <b style="font-size:18px">Niveau ${lvl}</b><div class="muted" style="font-size:14px">${fmt(xp)} / ${fmt(LEVEL_XP)} ★ pour le niveau ${lvl + 1}</div>
-    <div class="xp"><i style="width:${xp / LEVEL_XP * 100}%"></i></div></div></div></div>
+  <div class="panel"><div class="lvl"><div class="n pixel">${lv.n}</div><div style="flex:1">
+    <span class="ttl">Niveau ${lv.n}</span><b style="font-size:20px">${esc(lv.name)}</b>
+    <div class="muted" style="font-size:13px;margin-top:2px">${lv.to ? `${fmt(lv.to - S.points)} ★ avant <b>${esc(lv.nextName)}</b>` : 'Titre suprême atteint !'}</div>
+    <div class="xp"><i style="width:${pct}%"></i></div></div></div></div>
+  <div class="panel"><h4>Trophées · ${nT}/${TROPHIES.length}</h4><div class="trophies">${TROPHIES.map(([id, ic, name, desc]) => { const on = S.trophies && S.trophies[id];
+    return `<button class="tro ${on ? '' : 'off'}" data-d="${esc(desc)}"><span class="ic">${on ? ic : '🔒'}</span><b>${esc(name)}</b></button>`; }).join('')}</div></div>
   <div class="panel stats">
     <div><b>${S.collection.length}</b><span>lieux</span></div>
     <div><b>${S.collection.filter(c => c.rarity === 'rare').length}</b><span>rares</span></div>
@@ -1608,7 +1722,7 @@ function renderProf() {
   </div>
   <div class="panel"><h4>Mes courses</h4>${S.runs.length ? `
     <div class="stats" style="margin-bottom:8px"><div><b>${S.runs.length}</b><span>courses</span></div><div><b>${(S.runs.reduce((a, r) => a + r.dist, 0) / 1000).toFixed(1).replace('.', ',')}</b><span>km au total</span></div><div><b>${pace(S.runs.reduce((a, r) => a + r.time, 0), S.runs.reduce((a, r) => a + r.dist, 0))}</b><span>allure moy.</span></div></div>
-    <div class="runlist">${S.runs.slice(-6).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${km(r.dist)} km · ${dur(r.time)} · ${pace(r.time, r.dist)}/km</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première course.</p>'}
+    <div class="runlist">${S.runs.slice(-6).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première course.</p>'}
   </div>
   <div class="panel"><h4>Lieux</h4>
     <div class="set"><span>Point de départ</span><button class="setbtn" id="home">Changer</button></div>
@@ -1629,6 +1743,7 @@ function renderProf() {
     b.onclick = () => { S.theme = b.dataset.v; save(); applyTheme(); renderProf(); };
   });
   goalPicker($('#pgoal'));
+  document.querySelectorAll('.tro').forEach(b => b.onclick = () => toast(b.dataset.d));
   $('#regen').onclick = async () => {
     const f = S.placesFor;
     if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) { return; } }
@@ -1734,7 +1849,7 @@ function onboarding(step = 0) {
       ls.textContent = k === 1 ? 'Ça prend un peu de temps, on fouille ta ville…' : 'Les serveurs sont chargés, on insiste encore un peu…';
     }).then(pl => {
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
-      S.week = null; S.onboarded = true; ensureWeek(); save();
+      S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
       const r = pl.filter(p => p.rarity === 'rare').length;
       o.querySelector('.loader').style.animation = 'none';
       $('#lt').textContent = `${pl.length} lieux trouvés !`;
@@ -1758,7 +1873,7 @@ if (typeof L === 'undefined') {
 } else if (!S.onboarded || !S.home) {
   onboarding(0);
 } else {
-  ensureWeek(); fixDays();
+  ensureWeek(); fixDays(); initProgress();
   tab('quests');
   upgradePlaces().catch(() => {});
   try { const r = JSON.parse(localStorage.getItem(RUN_KEY)); if (r && Date.now() - r.start < 6 * 3600e3) { RUN = r; openRun(); toast('Course reprise'); } else localStorage.removeItem(RUN_KEY); } catch (e) {}

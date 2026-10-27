@@ -29,7 +29,9 @@
 - Validation par **GPS** (35 m, 80 m pour un parc/bâtiment). La **photo** devient l'image de la carte (facultative).
 - **Bonus +500** quand toutes les quêtes de la semaine sont faites (écran « QUEST CLEAR! »).
 - Bouton **« Je ne trouve pas »** : introuvable / disparu / inaccessible → lieu retiré, nouvelle quête, aucun point perdu.
-- Niveaux : 1 000 pts par niveau.
+- Niveaux (27/10) : **12 paliers avec un titre** (Promeneur 0 → Curieux 300 → Coureur du quartier 800 → Éclaireur 1 500 → Pisteur 2 500 → Explorateur 4 000 → Aventurier 6 000 → Chasseur de trésors 8 500 → Gardien de la ville 12 000 → Légende du quartier 16 000 → Maître des cartes 21 000 → Mythe urbain 27 000). Écran arcade à chaque niveau.
+- **21 trophées** (cartes, rares, km cumulés, sortie de 10 km, semaines complètes, série, lève-tôt, noctambule, touche-à-tout, vélo, marche) avec animation, rangés dans le Profil (`TROPHIES`).
+- **Sport** choisi sur l'écran prêt : course / marche / vélo (itinéraire piéton ou vélo, vitesse en km/h à vélo). Le sport est gardé sur la sortie et sur la carte. Mêmes points pour tous les sports (à revoir si le vélo est trop facile).
 - **Pas dans la V1** : boss, mythologie, boutique, boosters, légendaires, comptes.
 
 ## Design (validé le 26/10)
