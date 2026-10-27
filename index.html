@@ -373,6 +373,14 @@ button.chip{cursor:pointer}
 #run .tools button{color:#9a93b3;font-weight:700;padding:6px 4px}
 #run .gps{font-size:12px;font-weight:700;color:#FFB800}
 #run .gps.ok{color:#4ADE80}
+/* navigation façon Google Maps */
+#run .rturn{position:relative;z-index:500;margin:8px 12px 0;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#5A12D6,#7B2FF7);display:flex;gap:12px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+#run .rturn .ar{font-size:34px;width:44px;text-align:center;line-height:1;flex:none}
+#run .rturn b{display:block;font-size:24px;font-weight:900;letter-spacing:-.01em}
+#run .rturn span{font-size:15px;opacity:.92}
+#run .rtop .x.sm{font-size:15px}
+.me-arrow{width:34px;height:34px;transition:transform .4s}
+.me-arrow svg{width:34px;height:34px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))}
 .runlist .r{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
 .runlist .r:first-child{border-top:0}
 .runlist .r b{font-variant-numeric:tabular-nums}
@@ -434,7 +442,9 @@ button.chip{cursor:pointer}
 <div id="run" class="hidden">
   <div id="runmap"></div>
   <div class="rtop"><button class="x" id="rclose" aria-label="Fermer">✕</button>
-    <div class="tgt" id="rtgt"><div class="dot">★</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div></div>
+    <div class="tgt" id="rtgt"><div class="dot">★</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div>
+    <button class="x sm" id="rview" aria-label="Vue d'ensemble">🗺️</button><button class="x sm" id="rreroute" aria-label="Nouvel itinéraire">↻</button></div>
+  <div class="rturn hidden" id="rturn"><div class="ar" id="rtar">⬆</div><div style="min-width:0"><b id="rtd"></b><span id="rtt"></span></div></div>
   <div class="rbottom"><div class="fabrow"><button class="fab" id="rhere">📍 J'y suis</button></div><div class="rcard">
     <div class="ttl" id="rttl">Course à pied</div>
     <div class="stats3">
@@ -460,7 +470,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v30';
+const VERSION = 'v31';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -1499,11 +1509,29 @@ const fmtKm = d => d < 1000 ? `${Math.round(d)} m` : `${(d / 1000).toFixed(1).re
 
 /* --- itinéraire à pied (OpenStreetMap, sans clé) --- */
 const ROUTER = p => `https://routing.openstreetmap.de/${p}/route/v1/driving/`;
+// BRouter : profil randonnée (préfère sentiers, parcs, chemins balisés), trekking à vélo
+const BROUTER_PROF = { 'routed-foot': 'hiking-mountain', 'routed-bike': 'trekking' };
+async function brouter(points, prof, alt = 0) {
+  const ll = points.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
+  const j = await getJSON(`https://brouter.de/brouter?lonlats=${ll}&profile=${BROUTER_PROF[prof] || 'hiking-mountain'}&alternativeidx=${alt}&format=geojson`, 15000);
+  const f = j.features && j.features[0]; if (!f || !f.geometry) throw new Error('brouter');
+  const c = f.geometry.coordinates;
+  return { pts: c.map(x => [x[1], x[0]]), ele: c.map(x => x[2]), dist: +f.properties['track-length'] || 0, engine: 'BRouter' };
+}
 async function routeVia(points, prof = 'routed-foot') {
+  try {
+    const tries = [brouter(points, prof, 0)];
+    if (points.length === 2) tries.push(brouter(points, prof, 1));
+    const ok = (await Promise.allSettled(tries)).filter(x => x.status === 'fulfilled').map(x => x.value);
+    if (ok.length) return ok;
+  } catch (e) {}
+  return osrmVia(points, prof);
+}
+async function osrmVia(points, prof = 'routed-foot') {
   const coords = points.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
   const j = await getJSON(`${ROUTER(prof)}${coords}?overview=full&geometries=geojson&alternatives=${points.length === 2 ? 'true' : 'false'}`, 12000);
   if (j.code !== 'Ok' || !j.routes?.length) throw new Error(j.code || 'itinéraire');
-  return j.routes.map(r => ({ pts: r.geometry.coordinates.map(c => [c[1], c[0]]), dist: r.distance }));
+  return j.routes.map(r => ({ pts: r.geometry.coordinates.map(c => [c[1], c[0]]), dist: r.distance, engine: 'OSRM' }));
 }
 function withCum(pts) { let c = 0; return pts.map((p, i) => { if (i) c += dist({ lat: pts[i - 1][0], lng: pts[i - 1][1] }, { lat: p[0], lng: p[1] }); return [p[0], p[1], c]; }); }
 // part d'un trajet qui passe à moins de 30 m d'un autre trajet
@@ -1524,12 +1552,36 @@ async function makeRoute(from, to, avoid, prof) {
       const best = Math.min(...cands.map(c => c.dist));
       cands.sort((a, b) => (overlap(a.pts, avoid) + (a.dist > best * 1.6 ? 1 : 0)) - (overlap(b.pts, avoid) + (b.dist > best * 1.6 ? 1 : 0)));
     }
-    const r = cands[0];
-    return { pts: withCum(r.pts), dist: r.dist, real: true };
+    const r = cands[0], pts = withCum(r.pts);
+    return { pts, dist: r.dist || pts[pts.length - 1][2], real: true, engine: r.engine, ele: r.ele, turns: turnsOf(pts) };
   } catch (e) {
-    return { pts: withCum([[from.lat, from.lng], [to.lat, to.lng]]), dist: dist(from, to), real: false };
+    return { pts: withCum([[from.lat, from.lng], [to.lat, to.lng]]), dist: dist(from, to), real: false, turns: [] };
   }
 }
+// virages : changement de direction de plus de 30° (mesuré sur ~15 m avant et après)
+function turnsOf(P) {
+  const out = [];
+  for (let i = 1; i < P.length - 1; i++) {
+    let a = i - 1; while (a > 0 && P[i][2] - P[a][2] < 15) a--;
+    let b = i + 1; while (b < P.length - 1 && P[b][2] - P[i][2] < 15) b++;
+    const bin = bearing({ lat: P[a][0], lng: P[a][1] }, { lat: P[i][0], lng: P[i][1] });
+    const bout = bearing({ lat: P[i][0], lng: P[i][1] }, { lat: P[b][0], lng: P[b][1] });
+    const d = ((bout - bin + 540) % 360) - 180;
+    if (Math.abs(d) < 30) continue;
+    const last = out[out.length - 1];
+    if (last && P[i][2] - last.along < 20) { if (Math.abs(d) > Math.abs(last.d)) { last.d = d; last.along = P[i][2]; } continue; }
+    out.push({ along: P[i][2], d: Math.round(d) });
+  }
+  return out;
+}
+function turnText(d) {
+  const r = d > 0, a = Math.abs(d);
+  if (a >= 160) return { ar: '↶', t: 'fais demi-tour' };
+  if (a < 55) return { ar: r ? '↗' : '↖', t: `légèrement à ${r ? 'droite' : 'gauche'}` };
+  if (a < 135) return { ar: r ? '↱' : '↰', t: `tourne à ${r ? 'droite' : 'gauche'}` };
+  return { ar: r ? '↱' : '↰', t: `tourne franchement à ${r ? 'droite' : 'gauche'}` };
+}
+
 // point de l'itinéraire le plus proche (sur les segments, pas seulement les virages)
 function nearestOnRoute(pos, R = RUN && RUN.route) {
   if (!R || !R.pts.length) return null;
@@ -1552,11 +1604,12 @@ function leftOnRoute(pos) {
   return Math.max(0, R.dist - n.along) + n.d;
 }
 // garde ta position dans le haut de la carte (le bas est caché par l'encadré)
-function followMe(ll) {
+function followMe(ll, zoom) {
   if (!runMap) return;
-  const z = runMap.getZoom(), H = runMap.getSize().y;
+  const z = zoom || runMap.getZoom(), H = runMap.getSize().y;
   const p = runMap.project(ll, z).add([0, H * 0.2]);
-  runMap.panTo(runMap.unproject(p, z), { animate: true });
+  if (zoom) runMap.setView(runMap.unproject(p, z), z, { animate: false });
+  else runMap.panTo(runMap.unproject(p, z), { animate: true });
 }
 
 function runTarget() {
@@ -1574,9 +1627,12 @@ async function planRoute() {
   const R = await makeRoute(from, t, RUN.phase === 'back' ? RUN.goRoute : null, sportOf(RUN).router);
   if (!RUN || RUN.sport !== want) return; // sport changé entre-temps
   RUN.route = R;
-  if (RUN.phase === 'go') RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
-  saveRun(); showRoute(true); drawRun();
+  if (RUN.phase === 'go' && !RUN.goRoute) RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
+  if (RUN.phase === 'go' && RUN.rerouted) RUN.goRoute = RUN.goRoute.concat(RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]));
+  saveRun(); showRoute(RUN.ready || RUN.nav === false); drawRun();
   // D+ et D− de l'itinéraire (un point tous les ~100 m)
+  RUN.said = []; RUN.offSince = null;
+  if (R.ele && R.ele.some(x => x != null)) { const c = climb(R.ele); R.up = c.up; R.down = c.down; delete R.ele; saveRun(); drawRun(); return; }
   try {
     const P = RUN.route.pts, step = Math.max(1, Math.floor(P.length / 90));
     const sample = P.filter((_, i) => i % step === 0 || i === P.length - 1).map(p => ({ lat: p[0], lng: p[1] }));
@@ -1606,7 +1662,8 @@ function goRun() {
   saveRun();
   speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.');
   vibrate(60);
-  if (lastPos) { runMap.setView([lastPos.lat, lastPos.lng], 16); followMe([lastPos.lat, lastPos.lng]); }
+  RUN.nav = true;
+  if (lastPos) followMe([lastPos.lat, lastPos.lng], 17);
   drawRun();
 }
 function openRun() {
@@ -1619,7 +1676,8 @@ function openRun() {
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(runMap);
     routeLine = L.polyline([], { color: '#9B5CFF', weight: 7, opacity: .85, lineCap: 'round' }).addTo(runMap);
     runLine = L.polyline([], { color: '#FFD23F', weight: 5, opacity: .95 }).addTo(runMap);
-    runMe = L.marker([S.home.lat, S.home.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 1000 }).addTo(runMap);
+    runMe = L.marker([S.home.lat, S.home.lng], { icon: L.divIcon({ className: '', html: '<div class="me-arrow"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#2F80ED" stroke="#fff" stroke-width="2"/><path d="M12 5l5 12-5-3-5 3z" fill="#fff"/></svg></div>', iconSize: [34, 34], iconAnchor: [17, 17] }), zIndexOffset: 1000 }).addTo(runMap);
+    runMap.on('dragstart', () => { if (RUN && !RUN.ready) { RUN.nav = false; drawRun(); } });
   }
   runLine.setLatLngs(RUN.pts.map(p => [p[0], p[1]]));
   setRunTarget();
@@ -1628,7 +1686,7 @@ function openRun() {
   showRoute(true);
   setTimeout(() => { runMap.invalidateSize(); showRoute(RUN && RUN.ready); }, 80);
   if (navigator.geolocation && runWatch == null)
-    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, alt: p.coords.altitude, altAcc: p.coords.altitudeAccuracy, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, alt: p.coords.altitude, altAcc: p.coords.altitudeAccuracy, heading: p.coords.heading, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   clearInterval(runTick); runTick = setInterval(drawRun, 1000);
   drawRun();
 }
@@ -1665,11 +1723,30 @@ function onRunPos(pos) {
         if (k > RUN.lastKm) { RUN.lastKm = k; const sp = splits(); speak(RUN.sport === 'bike' ? `${k} kilomètre${k > 1 ? 's' : ''}. ${speed(sp[k - 1] || elapsed(), 1000)} kilomètres heure.` : `${k} kilomètre${k > 1 ? 's' : ''}. Dernier kilomètre en ${pace(sp[k - 1] || elapsed(), 1000).replace(':', ' minutes ')}.`); }
       }
     }
-    if (!S.testMode || simT) followMe([pos.lat, pos.lng]);
+    if (RUN.nav !== false && (!S.testMode || simT)) followMe([pos.lat, pos.lng]);
     saveRun();
+  }
+  // direction de la flèche : boussole du GPS, sinon sens du déplacement
+  let hd = pos.heading != null && !isNaN(pos.heading) ? pos.heading : null;
+  const P2 = RUN.pts; if (hd == null && P2.length > 1) { const a = P2[Math.max(0, P2.length - 4)], b = P2[P2.length - 1]; if (b[3] - a[3] > 6) hd = bearing({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }); }
+  if (hd != null) { const el = runMe.getElement && runMe.getElement(); const ar = el && el.querySelector('.me-arrow'); if (ar) ar.style.transform = `rotate(${hd}deg)`; }
+  // hors du chemin plus de 15 s : nouvel itinéraire depuis ta position
+  if (!RUN.ready && !RUN.paused && RUN.route && RUN.route.real && !arriving) {
+    const n = nearestOnRoute(pos);
+    if (n && n.d > 40 + Math.min(pos.acc || 0, 30) / 2) {
+      RUN.offSince = RUN.offSince || Date.now();
+      if (Date.now() - RUN.offSince > 15000 && (!RUN.lastReroute || Date.now() - RUN.lastReroute > 30000)) reroute(true);
+    } else RUN.offSince = null;
   }
   checkArrival(pos);
   drawRun();
+}
+function reroute(auto) {
+  if (!RUN) return;
+  RUN.lastReroute = Date.now(); RUN.offSince = null; RUN.rerouted = true;
+  speak(auto ? 'Tu es sorti du chemin. Nouvel itinéraire.' : 'Nouvel itinéraire.');
+  toast('↻ Nouvel itinéraire depuis ta position');
+  planRoute();
 }
 let arriving = false;
 function checkArrival(pos) {
@@ -1744,7 +1821,7 @@ function drawRun() {
   const tg = runTarget(), here = lastPos;
   const R = RUN.route;
   if (RUN.ready) {
-    $('#rttl').innerHTML = R ? `${sportOf(RUN).ic} Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}${R.up != null ? `<br>${hillBadge(R.up + R.down)} <span style="font-weight:600">aller ↗${R.up} m ↘${R.down} m</span>` : ''}` : 'Calcul de l\'itinéraire…';
+    $('#rttl').innerHTML = R ? `${sportOf(RUN).ic} Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}${S.dev && R.engine ? ` · <span style="font-weight:600">${R.engine}</span>` : ''}${R.up != null ? `<br>${hillBadge(R.up + R.down)} <span style="font-weight:600">aller ↗${R.up} m ↘${R.down} m</span>` : ''}` : 'Calcul de l\'itinéraire…';
     $('#rleft').innerHTML = here ? `<span class="gps ${here.acc <= 30 ? 'ok' : ''}">GPS ${here.acc <= 30 ? 'prêt ✓' : 'en recherche… (±' + Math.round(here.acc) + ' m)'}</span>` : '<span class="gps">Recherche du GPS…</span>';
   } else {
     $('#rttl').textContent = (RUN.paused ? '⏸ En pause' : `${sportOf(RUN).ic} ${RUN.phase === 'back' ? 'Retour maison' : sportOf(RUN).name}`) + (RUN.dplus ? ` · ↗ ${Math.round(RUN.dplus)} m` : '');
@@ -1770,6 +1847,26 @@ function drawRun() {
     const st = $('#rstop'); if (st) st.onclick = () => { if (RUN && RUN.dist < 100 && !confirm('Terminer la course ?')) return; finishRun(); };
   }
   $('#rhere').classList.toggle('hidden', RUN.ready);
+  // prochaine indication
+  const banner = $('#rturn');
+  if (!RUN.ready && R && R.real && here) {
+    const n = nearestOnRoute(here), cur = n ? n.along : 0, total = R.dist;
+    const nx = (R.turns || []).find(x => x.along > cur + 3);
+    const toEnd = Math.max(0, total - cur);
+    let ar = '⬆', big = '', small = '';
+    if (nx && nx.along - cur < 2000) {
+      const tt = turnText(nx.d), dd = Math.round((nx.along - cur) / 10) * 10;
+      ar = tt.ar; big = dd <= 15 ? 'Maintenant' : `Dans ${fmtKm(dd)}`; small = tt.t;
+      const key = R.pts.length + ':' + nx.along;
+      if (dd <= 60 && dd > 15 && !(RUN.said || []).includes(key)) { (RUN.said = RUN.said || []).push(key); speak(`Dans ${dd} mètres, ${tt.t}.`); }
+    } else if (toEnd < 150) { ar = RUN.phase === 'back' ? '🏠' : '🏁'; big = `${fmtKm(toEnd)}`; small = RUN.phase === 'back' ? 'et tu es chez toi' : 'ton lieu est tout près'; }
+    else { big = 'Tout droit'; small = `sur ${fmtKm(nx ? nx.along - cur : toEnd)}`; }
+    $('#rtar').textContent = ar; $('#rtd').textContent = big; $('#rtt').textContent = small;
+    banner.classList.remove('hidden');
+  } else banner.classList.add('hidden');
+  $('#rview').textContent = RUN.nav === false ? '🧭' : '🗺️';
+  $('#rview').classList.toggle('hidden', RUN.ready);
+  $('#rreroute').classList.toggle('hidden', RUN.ready);
   $('#rhere').textContent = RUN.phase === 'back' ? '🏠 Je suis rentré' : '📍 J\'y suis';
 }
 function togglePause() {
@@ -1836,6 +1933,13 @@ $('#rclose').onclick = () => {
   if (RUN.ready) { finishRun(); return; }
   if (confirm('Terminer la course maintenant ?')) finishRun();
 };
+$('#rview').onclick = () => {
+  if (!RUN) return;
+  if (RUN.nav === false) { RUN.nav = true; if (lastPos) followMe([lastPos.lat, lastPos.lng], 17); }
+  else { RUN.nav = false; showRoute(true); }
+  drawRun();
+};
+$('#rreroute').onclick = () => reroute(false);
 $('#rvoice').onclick = () => { S.voice = !S.voice; save(); $('#rvoice').textContent = S.voice ? '🔊 Voix' : '🔇 Voix'; if (S.voice) speak('Voix activée.'); };
 $('#rhere').onclick = () => {
   if (!RUN) return;
