@@ -325,7 +325,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v12';
+const VERSION = 'v13';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -945,6 +945,15 @@ function wikiFor(p) {
     finally { delete wikiBusy[p.id]; }
   })();
 }
+// Histoires écrites à l'avance par le robot (Mistral) pour les lieux sans article
+const storyTiles = {};
+async function storyFor(p) {
+  if (!p || p.lat == null) return null;
+  const k = tileKey(p.lat, p.lng);
+  if (!storyTiles[k]) storyTiles[k] = fetch(`data/stories/${k}.json`, { cache: 'no-cache' }).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  const m = await storyTiles[k];
+  return m[p.id] || null;
+}
 function osmFacts(p) {
   const f = [];
   if (p.artist) f.push(`Œuvre de <b>${esc(p.artist)}</b>.`);
@@ -1082,13 +1091,15 @@ function showFiche(c) {
     <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
   </div>`, true);
   fillPhotos($('#vin'));
-  wikiFor(p).then(w => {
+  wikiFor(p).then(async w => {
+    const ai = w && w.text ? null : await storyFor(p);
     const box = $('#story'); if (!box) return;
     const facts = osmFacts(p);
     let h = '<span class="pixel">HISTOIRE</span>';
     if (w && w.img && c.photo) h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
     if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
-    else h += `<p>${facts || "Pas encore d'article Wikipédia pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>`;
+    else if (ai) h += `<p>${esc(ai)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">✨ Texte généré par IA, peut contenir des erreurs.</p>`;
+    else h += `<p>${facts || "Pas encore d'histoire pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>`;
     box.innerHTML = h;
   });
   return pr;

@@ -1,0 +1,33 @@
+name: Robot des histoires
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['tools/build-stories.mjs', '.github/workflows/stories.yml']
+  schedule:
+    - cron: '17 6 * * 1'   # chaque lundi à 6 h 17 (UTC), après le robot des lieux
+
+permissions:
+  contents: write
+
+concurrency:
+  group: stories
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Écrire les histoires avec Mistral
+        env:
+          MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+        run: |
+          git config user.name "Robot des histoires"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node tools/build-stories.mjs

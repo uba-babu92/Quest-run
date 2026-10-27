@@ -54,6 +54,12 @@
 - La **course est collée à la carte** : km, temps, allure, tracé au dos (fiche). Historique dans le Profil.
 - Mode test : bouton « ▶ Simuler » dans l'écran de course (25 m/s, chrono accéléré ≈ 4:40/km).
 
+## Robot des histoires (27/10)
+- Pour les lieux **nommés sans Wikipédia**, `tools/build-stories.mjs` (workflow `stories.yml`, chaque lundi) demande à **Mistral** (`mistral-small-latest`, offre gratuite) 2-3 phrases, par lots de 12.
+- Clé dans le **secret GitHub `MISTRAL_API_KEY`** — jamais dans le code (dépôt public).
+- Consigne : pas de date/nom/fait inventé ; sinon décrire le type de lieu et l'ambiance. L'appli affiche « ✨ Texte généré par IA ».
+- Résultat : `data/stories/<case>.json` (`{ "n123": "texte" }`). L'appli l'affiche si Wikipédia n'a rien.
+
 ## Mode développeur (27/10)
 - Profil → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
 - Contient : **mode test** (« J'y suis » sans GPS), rejouer la semaine, revoir l'accueil, verrouiller.
