@@ -49,6 +49,7 @@
 - Plan : étape 2 = Île-de-France, étape 3 = France entière (même système, plus de cases).
 
 ## Fiche Wikipédia + mode course (27/10)
+- **Photo du lieu** (27/10) : Wikipédia, sinon tag OSM `image`, sinon la photo **Wikimedia Commons** la plus proche (60 m, 150 m pour un parc ; nom correspondant en priorité). Affichée sur la carte et, si tu as mis ta propre photo, au verso (fiche) « 📷 Le lieu en photo ».
 - **Image verrouillée** sur chaque quête (floue, noir et blanc, cadenas). Débloquée quand on trouve le lieu.
 - **Histoire** : tag OSM `wikipedia`/`wikidata`, sinon recherche Wikipédia autour du point (`geosearch`, 400 m) avec un nom qui correspond. Résumé + image mis en cache (`S.wiki`). Sans article : infos OSM (artiste, date, inscription).
 - **Mode course** (« 🏃 J'y vais ! ») : chrono, km, allure actuelle (≈250 derniers m) et moyenne, tracé, « Plus que X km », voix à chaque km, pause, écran gardé allumé (Wake Lock). Arrivée détectée toute seule → photo → victoire → « Retour maison » → résumé.
@@ -86,7 +87,7 @@
 - Itinéraire via **BRouter** (`brouter.de`, gratuit, sans clé) profil **hiking-mountain** (course/marche, préfère sentiers, parcs, rues calmes) ou **trekking** (vélo), 2 variantes demandées ; secours OSRM, puis ligne droite. Moteur affiché sur l'écran prêt en mode dév. BRouter fournit aussi les altitudes (D+ sans Open-Meteo).
 - Pas de GPX partagés utilisables (Strava, Komoot, AllTrails fermés).
 - **Recalcul auto** si on est à plus de 40 m du chemin pendant 15 s (max 1 fois / 30 s) + bouton **↻**. Les travaux ne sont connus d'aucune carte.
-- **Navigation** : carte zoomée (niveau 17) qui suit, **flèche** orientée (boussole GPS ou sens du déplacement), **bandeau** « Dans 120 m · tourne à gauche » (virages calculés sur le tracé, > 30°), voix à ~50 m, bouton **🗺️ vue d'ensemble / 🧭 recentrer** (déplacer la carte coupe le suivi). La carte ne tourne pas (limite HTML), c'est la flèche qui tourne.
+- **Navigation** : carte zoomée (niveau 17) qui suit, **flèche** orientée (boussole GPS ou sens du déplacement), **bandeau** « Dans 120 m · tourne à gauche » (virages calculés sur le tracé, > 30°), **voix** (27/10) : au départ « Tout droit sur 400 m, puis tourne à gauche », « Dans 150 mètres, tourne à droite », « Tourne à droite. » au virage, « Continue tout droit sur… » après ; bouton **🗺️ vue d'ensemble / 🧭 recentrer** (déplacer la carte coupe le suivi). La carte ne tourne pas (limite HTML), c'est la flèche qui tourne.
 
 ## Dénivelé (27/10, demande de Bazil : « 7 km jusqu'à Meudon, c'est beaucoup plus dur »)
 - Altitudes via **Open-Meteo** (`api.open-meteo.com/v1/elevation`, gratuit, sans clé), gardées sur les lieux (`p.ele`, `S.homeEle`).

@@ -470,7 +470,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v32';
+const VERSION = 'v33';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -1138,11 +1138,24 @@ function imgUrl(v) {
 }
 const getJSON = (u, ms = 8000) => fetch(u, { signal: AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
 const wikiBusy = {};
+// photo la plus proche du lieu sur Wikimedia Commons (celle dont le nom correspond en priorité)
+async function commonsPhoto(p) {
+  if (!p || p.lat == null) return null;
+  try {
+    const j = await getJSON(`https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${p.lat}|${p.lng}&ggsradius=${p.area ? 150 : 60}&ggsnamespace=6&ggslimit=15&prop=imageinfo&iiprop=url&iiurlwidth=800&format=json&origin=*`, 8000);
+    const pages = Object.values(j.query?.pages || {}).filter(x => x.imageinfo && /\.(jpe?g|png|webp)$/i.test(x.title));
+    if (!pages.length) return null;
+    pages.sort((a, b) => (a.index || 0) - (b.index || 0)); // du plus proche au plus loin
+    const named = p.name && pages.find(x => sameName(p.name, x.title.replace(/^File:/, '').replace(/\.[a-z]+$/i, '')));
+    const best = named || pages[0];
+    return best.imageinfo[0].thumburl || best.imageinfo[0].url;
+  } catch (e) { return null; }
+}
 function wikiFor(p) {
   if (!p) return Promise.resolve(null);
   const c = S.wiki[p.id];
   if (c && !c.none) return Promise.resolve(c);
-  if (c && c.none && Date.now() - c.t < 7 * 864e5) return Promise.resolve(null);
+  if (c && c.none && c.v === 2 && Date.now() - c.t < 7 * 864e5) return Promise.resolve(null);
   return wikiBusy[p.id] = wikiBusy[p.id] || (async () => {
     let lang = 'fr', title = null;
     try {
@@ -1165,7 +1178,9 @@ function wikiFor(p) {
         }
       }
       if (!out && imgUrl(p.img)) out = { img: imgUrl(p.img) };
-      S.wiki[p.id] = out || { none: true, t: Date.now() };
+      // pas de photo : on cherche une photo prise juste à côté sur Wikimedia Commons
+      if (!(out && out.img)) { const ph = await commonsPhoto(p); if (ph) out = Object.assign(out || {}, { img: ph }); }
+      S.wiki[p.id] = out || { none: true, v: 2, t: Date.now() };
       save();
       return out;
     } catch (e) { return null; } // réseau : on réessaiera plus tard
@@ -1393,7 +1408,7 @@ async function fillStory(box, p, c, retry) {
   if (!box.isConnected) return;
   const facts = osmFacts(p);
   let h = '<span class="pixel">HISTOIRE</span>';
-  if (w && w.img && c.photo && box.id === 'story') h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
+  if (w && w.img && (c.photo || box.id === 'vstory') && box.id === 'story') h += `<img class="wimg" src="${esc(w.img)}" alt=""><p style="font-size:12px;color:#8f86ad;margin:-4px 0 10px">📷 Le lieu en photo</p>`;
   if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
   else if (ai) h += `<p>${esc(ai.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">📚 D'après Wikipédia (${ai.src.map(t => `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, '_'))}" target="_blank" rel="noopener" style="color:#C9A6FF;margin:0;display:inline">${esc(t)}</a>`).join(', ')}), résumé par IA.</p>`;
   else h += `<p>${facts || "Pas d'histoire connue pour ce lieu : aucune source fiable à proximité. À toi de raconter la tienne !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
@@ -1674,7 +1689,9 @@ function goRun() {
   track('run_start', { sport: RUN.sport });
   RUN.ready = false; RUN.paused = false; RUN.start = Date.now(); RUN.resumedAt = Date.now();
   saveRun();
-  speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.');
+  const R0 = RUN.route, t0 = R0 && R0.real && (R0.turns || [])[0];
+  speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.'
+    + (t0 ? ` Tout droit sur ${t0.along >= 1000 ? (t0.along / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(t0.along / 50) * 50 + ' mètres'}, puis ${turnText(t0.d).t}.` : ''));
   vibrate(60);
   RUN.nav = true;
   if (lastPos) followMe([lastPos.lat, lastPos.lng], 17);
@@ -1894,8 +1911,13 @@ function drawRun() {
     if (nx && nx.along - cur < 2000) {
       const tt = turnText(nx.d), dd = Math.round((nx.along - cur) / 10) * 10;
       ar = tt.ar; big = dd <= 15 ? 'Maintenant' : `Dans ${fmtKm(dd)}`; small = tt.t;
-      const key = R.pts.length + ':' + nx.along;
-      if (dd <= 60 && dd > 15 && !(RUN.said || []).includes(key)) { (RUN.said = RUN.said || []).push(key); speak(`Dans ${dd} mètres, ${tt.t}.`); }
+      const key = R.pts.length + ':' + nx.along, said = RUN.said = RUN.said || [];
+      // 1) « Dans 150 mètres… »  2) « Tourne à gauche. » au moment de tourner
+      if (dd <= 170 && dd > 80 && !said.includes(key + 'far')) { said.push(key + 'far'); speak(`Dans ${Math.round(dd / 50) * 50} mètres, ${tt.t}.`); }
+      else if (dd <= 30 && !said.includes(key + 'now')) { said.push(key + 'now', key + 'far'); speak(tt.t.charAt(0).toUpperCase() + tt.t.slice(1) + '.'); }
+      // 3) après un virage : « Continue tout droit sur 400 mètres »
+      if (RUN.nextKey && RUN.nextKey !== key && !said.includes(key + 'cont') && dd > 250) { said.push(key + 'cont'); speak(`Continue tout droit sur ${dd >= 1000 ? (dd / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(dd / 50) * 50 + ' mètres'}, puis ${tt.t}.`); }
+      RUN.nextKey = key;
     } else if (toEnd < 150) { ar = RUN.phase === 'back' ? '🏠' : '🏁'; big = `${fmtKm(toEnd)}`; small = RUN.phase === 'back' ? 'et tu es chez toi' : 'ton lieu est tout près'; }
     else { big = 'Tout droit'; small = `sur ${fmtKm(nx ? nx.along - cur : toEnd)}`; }
     $('#rtar').textContent = ar; $('#rtd').textContent = big; $('#rtt').textContent = small;
