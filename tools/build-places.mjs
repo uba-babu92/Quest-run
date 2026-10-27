@@ -29,27 +29,27 @@ nwr["amenity"="place_of_worship"]["name"];
 );out center tags qt;`;
 }
 
+// 2 tours sur les 3 serveurs, 90 s max par essai. Renvoie null si tout échoue.
 async function overpass(q) {
-  let last;
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let round = 0; round < 2; round++) {
     for (const url of SERVERS) {
       try {
         const r = await fetch(url, {
           method: 'POST',
           body: 'data=' + encodeURIComponent(q),
           headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'User-Agent': 'QuestRun/1.0 (github.com/uba-babu92/Quest-run)' },
-          signal: AbortSignal.timeout(150000)
+          signal: AbortSignal.timeout(90000)
         });
-        if (!r.ok) throw new Error(`${url} HTTP ${r.status}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const j = await r.json();
-        if (!Array.isArray(j.elements)) throw new Error(`${url} réponse invalide`);
-        if (!j.elements.length && j.remark) throw new Error(`${url} ${j.remark}`);
+        if (!Array.isArray(j.elements)) throw new Error('réponse invalide');
+        if (!j.elements.length && j.remark) throw new Error(j.remark);
         return j.elements;
-      } catch (e) { last = e; console.log('  échec :', e.message); }
+      } catch (e) { console.log(`  ${new URL(url).host} : ${e.message}`); }
     }
-    await sleep(5000 * (attempt + 1));
+    await sleep(5000);
   }
-  throw last;
+  return null;
 }
 
 function slim(el) {
@@ -71,16 +71,27 @@ for (const a of areas) {
 }
 console.log(`${areas.length} zone(s), ${tiles.size} case(s) à télécharger`);
 
-const index = { updated: new Date().toISOString(), step: STEP, tiles: {} };
-let total = 0;
-for (const [k, [i, j]] of tiles) {
+// on garde les cases déjà faites si une case échoue cette fois-ci
+let old = { tiles: {} };
+try { old = JSON.parse(fs.readFileSync('data/places/index.json', 'utf8')); } catch (e) {}
+const index = { updated: new Date().toISOString(), step: STEP, tiles: { ...old.tiles } };
+// le centre de chaque zone d'abord
+const center = areas[0];
+const order = [...tiles].sort((A, B) => {
+  const d = ([i, j]) => Math.hypot((i + .5) * STEP - center.lat, ((j + .5) * STEP - center.lng) * Math.cos(center.lat * Math.PI / 180));
+  return d(A[1]) - d(B[1]);
+});
+let total = 0, failed = 0;
+for (const [k, [i, j]] of order) {
   const s = (i * STEP).toFixed(1), w = (j * STEP).toFixed(1), n = ((i + 1) * STEP).toFixed(1), e = ((j + 1) * STEP).toFixed(1);
   console.log(`Case ${k} (${s},${w} → ${n},${e})`);
-  const els = (await overpass(query(s, w, n, e))).map(slim).filter(Boolean).filter(x => key(x.lat, x.lon) === k);
+  const raw = await overpass(query(s, w, n, e));
+  if (!raw) { failed++; console.log('  sautée, on réessaiera au prochain passage'); continue; }
+  const els = raw.map(slim).filter(Boolean).filter(x => key(x.lat, x.lon) === k);
   fs.writeFileSync(`data/places/${k}.json`, JSON.stringify(els));
   index.tiles[k] = els.length; total += els.length;
+  fs.writeFileSync('data/places/index.json', JSON.stringify(index, null, 1));
   console.log(`  ${els.length} lieux`);
   await sleep(2000);
 }
-fs.writeFileSync('data/places/index.json', JSON.stringify(index, null, 1));
-console.log(`Terminé : ${total} lieux dans ${tiles.size} cases`);
+console.log(`Terminé : ${total} lieux, ${tiles.size - failed}/${tiles.size} cases réussies`);
