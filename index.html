@@ -459,7 +459,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v28';
+const VERSION = 'v29';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -821,8 +821,8 @@ const effortM = p => p.dist * 2 * ROAD + (questDplus(p) || 0) * 10;
 function hillBadge(dp) {
   if (dp == null) return '';
   const k = dp < 40 ? 0 : dp < 120 ? 1 : 2;
-  // petite montagne au trait, discrète
-  return `<span class="hill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M2 20h20L14.5 6l-4 6.5-2-2.5z"/><path d="M12.6 9.2l1.9 2.3 1.6-1.2"/></svg>${['Plat', 'Vallonné', 'Ça grimpe'][k]} · ${dp} m</span>`;
+  // petit texte discret avec la flèche de montée
+  return `<span class="hill">↗ ${dp} m · ${['Plat', 'Vallonné', 'Ça grimpe'][k]}</span>`;
 }
 // altitudes des lieux à bonne distance, gardées sur le téléphone
 async function loadElevations() {
