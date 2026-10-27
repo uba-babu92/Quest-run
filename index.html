@@ -240,6 +240,36 @@ h2{font-size:22px;margin:4px 16px 12px}
 .route{width:100%;height:120px;margin-top:10px}
 .v-actions{display:flex;flex-direction:column;gap:10px;align-items:center;position:relative;z-index:2}
 
+/* ---------- pièces + changement de mission ---------- */
+.chip .coin{font-size:15px}
+.v-coins{font-size:16px;font-weight:800;color:#FFD23F;margin:-2px 0 8px}
+.swaps{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.swaps button{display:flex;align-items:center;gap:12px;padding:14px;border-radius:16px;border:2px solid var(--line);background:var(--card);text-align:left}
+.swaps button:active{border-color:var(--violet)}
+.swaps .num{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-weight:800;color:#fff;background:var(--violet);flex:none}
+.swaps .rare .num{background:linear-gradient(135deg,#5A12D6,#B07BFF)}
+.swaps b{display:block}
+.swaps span{font-size:13px;color:var(--muted)}
+.btn.swap{background:var(--card);color:var(--violet);border:2px solid var(--violet-soft);box-shadow:0 4px 0 var(--violet-soft);height:46px;font-size:15px}
+/* ---------- chargement « recherche des trésors » ---------- */
+.scan{width:150px;height:150px;margin:0 auto 26px;position:relative;border-radius:50%;background:radial-gradient(circle,var(--violet-soft) 0,transparent 70%)}
+.scan::before,.scan::after{content:"";position:absolute;inset:0;border-radius:50%;border:3px solid var(--violet);opacity:0;animation:ping 2.2s infinite}
+.scan::after{animation-delay:1.1s}
+.scan .ic{position:absolute;inset:0;display:grid;place-items:center;font-size:56px;animation:bob 1.6s ease-in-out infinite}
+@keyframes ping{0%{transform:scale(.4);opacity:.9}100%{transform:scale(1.25);opacity:0}}
+@keyframes bob{50%{transform:translateY(-8px) rotate(-6deg)}}
+.steps{list-style:none;padding:0;margin:0 auto;max-width:330px;text-align:left}
+.steps li{display:flex;align-items:center;gap:12px;padding:9px 0;font-weight:600;color:var(--muted);opacity:.35;transition:.3s}
+.steps li.on{opacity:1;color:var(--text)}
+.steps li.ok{opacity:1;color:var(--text)}
+.steps li i{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-style:normal;font-size:13px;border:2px solid var(--line)}
+.steps li.on i{border-color:var(--violet);border-top-color:transparent;animation:spin2 .8s linear infinite}
+.steps li.ok i{background:var(--violet);border-color:var(--violet);color:#fff;animation:pop .3s}
+.steps li b{color:var(--violet)}
+@keyframes spin2{to{transform:rotate(360deg)}}
+.pbar{height:10px;border-radius:99px;background:var(--violet-soft);overflow:hidden;max-width:330px;margin:18px auto 0}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--violet-2));transition:width .6s}
+
 /* ---------- paramètres / pages ---------- */
 .topbar .gear{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--text)}
 .topbar .gear svg{width:22px;height:22px}
@@ -331,7 +361,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 <section id="s-quests" class="screen">
   <div class="topbar">
     <div class="logo pixel">QUEST RUN <span id="testtag" class="hidden" style="color:#E0245E;font-size:9px">· TEST</span></div>
-    <div class="chip"><span class="star">★</span><span id="pts">0</span></div>
+    <div style="display:flex;gap:6px"><div class="chip"><span class="coin">🪙</span><span id="coins">0</span></div><div class="chip"><span class="star">★</span><span id="pts">0</span></div></div>
   </div>
   <div id="map"></div>
   <div class="week"><b>Quêtes de la semaine</b><span class="muted" id="daysleft"></span></div>
@@ -403,7 +433,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v21';
+const VERSION = 'v22';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -439,6 +469,8 @@ const SPREAD = { 1: [5], 2: [1, 5], 3: [0, 2, 4], 4: [0, 2, 4, 6], 5: [0, 1, 3, 
 if (!Array.isArray(S.goal.days) || !S.goal.days.length) S.goal.days = SPREAD[Math.min(7, Math.max(1, S.goal.runs || 3))].slice();
 delete S.goal.runs;
 S.wiki = S.wiki || {}; S.runs = S.runs || [];
+if (S.coins == null) S.coins = 30; // pièces de départ
+const COIN_PLACE = 10, COIN_WEEK = 30, SWAP_COST = 10;
 
 function load() {
   try { return Object.assign(clone(DEFAULTS), JSON.parse(localStorage.getItem(KEY)) || {}); }
@@ -836,6 +868,7 @@ function renderMap() {
 /* ---------- écran quêtes ---------- */
 function renderPoints() {
   $('#pts').textContent = fmt(S.points);
+  $('#coins').textContent = fmt(S.coins || 0);
   document.querySelectorAll('.ptsmirror').forEach(e => e.textContent = fmt(S.points));
 }
 function renderQuests() {
@@ -904,7 +937,9 @@ function openQuest(i) {
       <button class="btn ghost small" id="here">J'y suis</button>
     </div>
     <div class="feedback" id="fb"></div>
+    <div class="row"><button class="btn swap" id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button></div>
     <button class="link" id="lost">Je ne trouve pas</button>`);
+  sh.querySelector('#swap').onclick = () => swapQuest(i);
   wikiFor(p).then(w => { const bg = sh.querySelector('#lbg'); if (w && w.img && bg) bg.style.backgroundImage = `url("${w.img}")`; });
   sh.querySelector('#gorun').onclick = () => { closeSheet(); startRun(i); };
   sh.querySelector('#here').onclick = () => checkIn(i, sh);
@@ -973,6 +1008,7 @@ async function award(i, blob) {
   const pts = PTS[p.rarity];
   q.status = 'done';
   S.points += pts;
+  S.coins = (S.coins || 0) + COIN_PLACE;
   const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: p.rarity, pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
   if (RUN) { card.run = RUN.id; card.sport = RUN.sport || 'run'; RUN.found = p.id; }
   const w = await Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 2500))]);
@@ -981,7 +1017,7 @@ async function award(i, blob) {
   if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
   const allDone = S.week.quests.every(x => x.status === 'done');
   let bonus = false;
-  if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.weeksCleared++; (S.clearedWeeks = S.clearedWeeks || []).push(S.week.id); bonus = true; }
+  if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.coins = (S.coins || 0) + COIN_WEEK; S.weeksCleared++; (S.clearedWeeks = S.clearedWeeks || []).push(S.week.id); bonus = true; }
   save();
   await victory(card, pts);
   if (bonus) await questClear();
@@ -1096,6 +1132,34 @@ function osmFacts(p) {
 }
 const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5" fill="rgba(123,47,247,.85)"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.6" r="1.4" fill="#fff" stroke="none"/></svg>';
 
+/* ---------- changer de mission : 1 fois gratuite par semaine, puis des pièces ---------- */
+const swapPrice = () => S.week && S.week.freeSwap ? SWAP_COST : 0;
+function swapQuest(i) {
+  const q = S.week.quests[i], p = placeById(q.pid); if (!p) return;
+  const price = swapPrice();
+  if (price > (S.coins || 0)) { toast(`Il te faut ${price} 🪙 pour changer (tu en as ${S.coins || 0})`); return; }
+  const exclude = new Set(S.week.quests.map(x => x.pid));
+  const pool = pickQuests(8, 'choix|' + q.pid + '|' + Date.now(), exclude);
+  const same = pool.filter(x => x.rarity === p.rarity), other = pool.filter(x => x.rarity !== p.rarity);
+  const opts = same.concat(other).slice(0, 3);
+  if (!opts.length) { toast('Pas d\'autre lieu disponible à cette distance'); return; }
+  const sh = sheet(`<h3>Changer de mission</h3>
+    <p class="muted">${price ? `Ça coûte <b>${price} 🪙</b> (tu en as ${S.coins || 0}).` : 'Ton changement <b>gratuit</b> de la semaine.'} Choisis ta nouvelle quête :</p>
+    <div class="swaps">${opts.map((o, k) => `<button data-k="${k}" class="${o.rarity}"><div class="num">${o.rarity === 'rare' ? '?' : '★'}</div>
+      <div style="flex:1;min-width:0"><b>${esc(shownName(o, false))}</b><span>${esc(o.label)} · ${roundTripKm(o).toFixed(1).replace('.', ',')} km A/R</span></div>
+      <span class="badge b-${o.rarity}">${o.rarity === 'rare' ? 'Rare' : 'Commune'}</span></button>`).join('')}</div>
+    <button class="link" id="keep">Garder ma mission</button>`);
+  sh.querySelector('#keep').onclick = () => { closeSheet(); openQuest(i); };
+  sh.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
+    const o = opts[+b.dataset.k];
+    if (price) S.coins -= price; else S.week.freeSwap = true;
+    S.week.quests[i] = { pid: o.id, status: 'todo', day: q.day };
+    save(); closeSheet(); renderQuests();
+    toast(price ? `Mission changée · −${price} 🪙` : 'Mission changée !');
+    wikiFor(o);
+  });
+}
+
 /* ---------- signaler un lieu ---------- */
 function report(i) {
   const q = S.week.quests[i], p = placeById(q.pid);
@@ -1187,7 +1251,7 @@ async function victory(card, pts) {
   const place = placeById(card.pid) || { id: card.pid, name: card.name, label: card.label, lat: card.lat, lng: card.lng };
   const p = overlay(`<div class="fiche" style="text-align:center">
     <div class="v-title pixel">LIEU TROUVÉ !</div>
-    <div class="v-pts pixel" id="vp">+0 ★</div>
+    <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_PLACE} 🪙</div>
     <div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
     <div class="box vstory" id="vstory" style="text-align:left"><span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On déverrouille l'histoire…</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Continuer</button></div></div>`, true);
@@ -1203,7 +1267,7 @@ async function victory(card, pts) {
 }
 async function questClear() {
   const p = overlay(`<div class="v-title gold pixel">QUEST<br>CLEAR!</div>
-    <div class="v-pts pixel" id="vp">+0 ★</div>
+    <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_WEEK} 🪙</div>
     <div class="v-sub">Toutes les quêtes de la semaine sont faites. Bonus débloqué !</div>
     <button class="btn gold" data-close>Génial</button>`);
   countUp($('#vp'), WEEK_BONUS, 1300);
@@ -1929,28 +1993,51 @@ function onboarding(step = 0) {
     };
   }
   if (step === 4) {
-    o.innerHTML = `${dots(3)}<div class="body" style="text-align:center"><div class="loader"></div>
-      <h1 id="lt">On cherche les lieux autour de toi…</h1><p id="ls">Statues, fontaines, monuments, parcs…</p><p class="muted" style="font-size:12px">${VERSION}</p></div>
+    const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
+    o.innerHTML = `${dots(3)}<div class="body" style="text-align:center">
+      <div class="scan"><div class="ic">🧭</div></div>
+      <h1 id="lt" style="font-size:24px">Recherche des trésors dans ton quartier…</h1>
+      <ul class="steps" id="steps">
+        <li><i></i><span>Analyse de ta semaine : <b>${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} de ${S.goal.km} km</b> ${sp.ic}</span></li>
+        <li><i></i><span id="st1">Recherche des lieux historiques autour de toi…</span></li>
+        <li><i></i><span id="st2">Repérage des trésors cachés…</span></li>
+        <li><i></i><span>Calcul des meilleurs parcours</span></li>
+        <li><i></i><span>Préparation de tes quêtes</span></li>
+      </ul>
+      <div class="pbar"><i id="pb"></i></div>
+      <p class="muted" style="font-size:12px;margin-top:14px">${VERSION}</p></div>
       <button class="btn hidden" id="go">Voir mes quêtes</button>`;
-    fetchPlaces(S.home, S.goal.km, k => {
-      const ls = $('#ls'); if (!ls) return;
-      ls.textContent = k === 1 ? 'Ça prend un peu de temps, on fouille ta ville…' : 'Les serveurs sont chargés, on insiste encore un peu…';
-    }).then(pl => {
+    const li = [...o.querySelectorAll('#steps li')];
+    const mark = k => { li.forEach((x, j) => { x.classList.toggle('ok', j < k); x.classList.toggle('on', j === k); if (j < k) x.querySelector('i').textContent = '✓'; }); $('#pb').style.width = (k / li.length * 100) + '%'; };
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    mark(0);
+    const job = fetchPlaces(S.home, S.goal.km).then(pl => ({ pl }), err => ({ err }));
+    (async () => {
+      await wait(1300); mark(1);
+      const [res] = await Promise.all([job, wait(1500)]);
+      if (res.err) {
+        li[1].classList.remove('on');
+        $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
+        $('#st1').innerHTML = 'Réessaie dans une minute. <small class="muted">(' + esc(res.err && res.err.message) + ')</small>';
+        $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
+        $('#go').onclick = () => onboarding(4);
+        return;
+      }
+      const pl = res.pl, r = pl.filter(p => p.rarity === 'rare').length;
+      $('#st1').innerHTML = `<b>${fmt(pl.length)} lieux</b> trouvés autour de toi`;
+      mark(2); await wait(1500);
+      $('#st2').innerHTML = `<b>${fmt(r)} trésors cachés</b> repérés`;
+      mark(3); await wait(1400);
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
       S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
-      const r = pl.filter(p => p.rarity === 'rare').length;
-      o.querySelector('.loader').style.animation = 'none';
-      $('#lt').textContent = `${pl.length} lieux trouvés !`;
-      $('#ls').innerHTML = `Dont <b style="color:var(--violet)">${r} rares</b> à dénicher. Tes ${S.week.quests.length} quêtes de la semaine sont prêtes.`;
+      mark(4); await wait(1200);
+      mark(5);
+      $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span>`;
+      o.querySelector('.scan .ic').textContent = '🗺️';
+      vibrate([40, 40, 80]);
       $('#go').classList.remove('hidden');
       $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
-    }).catch(err => {
-      o.querySelector('.loader').style.animation = 'none';
-      $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
-      $('#ls').innerHTML = 'Ils sont gratuits et parfois saturés. Réessaie dans une minute.<br><small class="muted">Détail : ' + esc(err && err.message) + '</small>';
-      $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
-      $('#go').onclick = () => onboarding(4);
-    });
+    })();
   }
 }
 
