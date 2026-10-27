@@ -22,7 +22,7 @@
 - Objectif (27/10) : **jours de course cochés L→D** + une distance par sortie (par défaut **lun/mer/ven, 7 km**).
 - **Tirage au hasard** à chaque nouvelle semaine, accueil refait ou « rejouer » (27/10 ; avant, mêmes lieux pour une même semaine et une même maison).
 - Chaque semaine (lundi), **une quête par jour coché**, affichée avec son jour ; celle du jour est mise en avant. Une quête ratée reste **rattrapable** sans perte de points. Lieu choisi à ~distance/2 pour un aller-retour.
-- Carte : tuiles **OpenStreetMap** sans clé (CARTO demande une clé depuis 2026) ; mode sombre = carte inversée en CSS.
+- Carte : tuiles **OpenStreetMap** sans clé (CARTO demande une clé depuis 2026). **Plan clair même en mode sombre** (28/10, choix de Bazil ; avant, carte inversée qui faisait « satellite »).
 - Lieux depuis **OpenStreetMap** (API Overpass, gratuite), mis en mémoire sur le téléphone.
 - **Lieu normal** (mairie, église, parc, musée, point de vue, château) : point exact. **Trésor caché** (statue, fontaine, croix, borne… `p.rarity === 'rare'`) : **zone de 100 m + indice**, bouton « chaud/froid ».
 - **Rareté des cartes = effort** (27/10, `tierOf`) : km A/R + D+ (100 m ≈ 1 km ; vélo ÷ 3). Commune < 6 km (100 ★), Rare 6-12 (250), **Épique** 12-20 (500, bleu), **Légendaire** > 20 (1 000, or). Trésor caché = +1 cran. Gardée sur la quête (`q.tier`) et la carte (`c.rarity`). Les anciennes cartes gardent leur rareté.
@@ -54,7 +54,7 @@
 
 ## Fiche Wikipédia + mode course (27/10)
 - **Photo du lieu** (27/10) : Wikipédia, sinon tag OSM `image`, sinon la photo **Wikimedia Commons** la plus proche (60 m, 150 m pour un parc ; nom correspondant en priorité). Affichée sur la carte et, si tu as mis ta propre photo, au verso (fiche) « 📷 Le lieu en photo ».
-- **Carte qui se retourne** (27/10) : dans la fiche, glisser ou toucher la carte → rotation 3D. Recto = ta photo (sinon la photo du lieu), verso = la photo du lieu (sinon les infos de la découverte). Amorce de rotation + « 👆 Glisse pour retourner la carte » à l'ouverture. La grille Collection montre le recto.
+- **Carte qui se retourne** (27/10) : dans la fiche, glisser la carte → rotation 3D **dans le sens du doigt** (28/10). **Toucher = photo du côté visible en plein écran** (`zoomImg`, toucher ou glisser vers le bas pour fermer). Recto = ta photo (sinon la photo du lieu), verso = la photo du lieu (sinon les infos de la découverte). Amorce de rotation + « 👆 Glisse pour retourner la carte » à l'ouverture. La grille Collection montre le recto.
 - **Favoris** (27/10) : bouton ♡ dans la fiche (`c.fav`), ♥ sur la carte, filtre **Toutes / ♥ Favoris** dans la Collection, favoris en premier.
 - **Image verrouillée** sur chaque quête (floue, noir et blanc, cadenas). Débloquée quand on trouve le lieu.
 - **Histoire** : tag OSM `wikipedia`/`wikidata`, sinon recherche Wikipédia autour du point (`geosearch`, 400 m) avec un nom qui correspond. Résumé + image mis en cache (`S.wiki`). Sans article : infos OSM (artiste, date, inscription).
@@ -116,7 +116,7 @@
 - **Niveau** (27/10) juste après le sport : Débutant / Intermédiaire / Confirmé → distance de départ (`KM_LVL`) : course et marche 3/5/8 km, vélo 10/15/20 km (puis progression). Curseur : 1-30 km (course, marche), 1-20 km (vélo, limite de la zone de 10 km). Dans `S.skill` et `S.quiz.niveau`. Repères : course 3-5 / 6-10 / 10-20 km, rando 3-5 / 6-12 / 15-25 km, vélo 10-20 / 25-50 / 60-100 km. Vélo au-delà de 20 km : pas prioritaire (Bazil ne roule pas).
 - **Questions adaptées au sport** (27/10, `quizFor(sport)`) : textes « courir / marcher / sortir le vélo », « balade » pour la marche (frein « Je ne trouve pas le temps » au lieu de « je lâche »).
 - **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2 niveau, 3-5 questions, 6 semaine, 7 départ, 8 **« Quest Run, c'est quoi ? »** (🎮 quête / 📚 quartier / 🏆 carte la plus rare), 9 chargement.
-- Écran de course : gros bouton violet **« 📍 J'y suis »** en bas à droite (« 🏠 Je suis rentré » au retour).
+- Écran de course : **HUD compact pendant la sortie** (28/10, `#run.compact`) : chiffres seuls, puis une ligne ⏸ / **« 📍 J'y suis »** (« 🏠 Rentré » au retour) / 🔊 ; sans titre ni barres des km (visibles au résumé). La carte prend ~75 % de l'écran. L'écran prêt garde le grand bouton Démarrer.
 
 ## Métriques d'usage (27/10)
 - Module autonome **`Metrics`** dans `index.html` (bloc « MÉTRIQUES », à retirer avec les lignes `track(...)`). Clé `localStorage` **`questrun_metrics`**, rien n'est envoyé sur internet.
