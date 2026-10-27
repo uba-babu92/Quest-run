@@ -264,7 +264,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v9';
+const VERSION = 'v10';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -929,6 +929,13 @@ function showCard(c) {
   fillPhotos($('#vin'));
 }
 
+/* ---------- mode développeur ---------- */
+const DEV_HASH = 'a38abb6706ab2615d260f298bc4db4b13b6a195fe0b74b7f45fb25452b0eba76';
+async function sha256(t) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
 /* ---------- choix des jours + distance ---------- */
 function goalPicker(el, onChange) {
   const draw = () => {
@@ -983,11 +990,14 @@ function renderProf() {
     <div class="set"><span>Recharger les lieux</span><button class="setbtn" id="reload">Recharger</button></div>
     <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div>
   </div>
-  <div class="panel"><h4>Développeur</h4>
+  ${S.dev ? `<div class="panel"><h4>Développeur</h4>
     <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span><button class="setbtn" id="test">${S.testMode ? 'Activé ✓' : 'Désactivé'}</button></div>
     <div class="set"><span>Rejouer la semaine<small class="muted" style="display:block;font-size:13px">Nouvelles quêtes, bonus remis à zéro</small></span><button class="setbtn" id="replay">Rejouer</button></div>
-  </div>
+    <div class="set"><span>Revoir l'accueil<small class="muted" style="display:block;font-size:13px">Tes cartes et tes points sont gardés</small></span><button class="setbtn" id="reonb">Revoir</button></div>
+    <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
+  </div>` : ''}
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
+  ${S.dev ? '' : `<button class="link" id="devbtn" style="margin:0 auto 10px">🔒 Mode développeur</button>`}
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
   document.querySelectorAll('#theme button').forEach(b => {
     b.classList.toggle('on', b.dataset.v === S.theme);
@@ -1000,8 +1010,18 @@ function renderProf() {
     ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
   };
   $('#home').onclick = () => onboarding(2);
-  $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderProf(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
-  $('#replay').onclick = () => { S.week = null; ensureWeek(); toast('Nouvelle semaine de test !'); tab('quests'); };
+  if ($('#devbtn')) $('#devbtn').onclick = async () => {
+    const pw = prompt('Mot de passe développeur');
+    if (!pw) return;
+    if (await sha256(pw.trim()) === DEV_HASH) { S.dev = true; save(); renderProf(); toast('Mode développeur déverrouillé'); }
+    else toast('Mot de passe incorrect');
+  };
+  if (S.dev) {
+    $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderProf(); toast('Mode développeur verrouillé'); };
+    $('#reonb').onclick = () => { S.onboarded = false; save(); onboarding(0); };
+    $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderProf(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
+    $('#replay').onclick = () => { S.week = null; ensureWeek(); toast('Nouvelle semaine de test !'); tab('quests'); };
+  }
   $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   $('#wipe').onclick = async () => {
     if (!confirm('Effacer toutes tes cartes, tes points et tes réglages ?')) return;

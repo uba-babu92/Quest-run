@@ -46,6 +46,10 @@
 - L'appli lit les cases autour du joueur ; si une case manque, elle tente Overpass en secours.
 - Plan : étape 2 = Île-de-France, étape 3 = France entière (même système, plus de cases).
 
+## Mode développeur (27/10)
+- Profil → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
+- Contient : **mode test** (« J'y suis » sans GPS), rejouer la semaine, revoir l'accueil, verrouiller.
+
 ## Fichiers
 - `index.html` : toute l'appli (HTML + CSS + JS, aucune compilation).
 - `manifest.webmanifest`, `icon*.png`, `icon.svg` : installation sur l'écran d'accueil.
