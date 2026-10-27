@@ -177,6 +177,10 @@ h2{font-size:22px;margin:4px 16px 12px}
 #onb .btn{flex:none;width:100%}
 #onb .onbhead{position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;margin-bottom:10px}
 #onb .onbback{position:absolute;left:-6px;top:50%;transform:translateY(-50%);padding:6px 8px;color:var(--muted);font-weight:600;font-size:15px;opacity:.8}
+#onb .quiz button{font-size:17px}
+#onb .reassure{text-align:center;animation:pop .4s cubic-bezier(.2,1.4,.4,1)}
+#onb .reassure .big{font-size:72px;margin-bottom:12px}
+#onb .reassure h1{color:var(--violet)}
 #onb .acts{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 #onb .dots{display:flex;gap:6px;justify-content:center}
 #onb .dots i{width:8px;height:8px;border-radius:9px;background:var(--line)}
@@ -470,7 +474,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v33';
+const VERSION = 'v34';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -2184,7 +2188,7 @@ function renderSet() {
   $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
   document.querySelectorAll('#spdef [data-sp]').forEach(b => b.onclick = () => { S.sport = b.dataset.sp; save(); renderSet(); });
-  $('#home').onclick = () => onboarding(3);
+  $('#home').onclick = () => onboarding(6);
   $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   if ($('#devbtn')) $('#devbtn').onclick = async () => {
     const pw = prompt('Mot de passe développeur');
@@ -2239,12 +2243,28 @@ document.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => tab('sho
 document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
 /* ---------- onboarding ---------- */
+// questions sur ce qui freine les coureurs, avec la réponse de Quest Run
+const QUIZ = [
+  { id: 'frein', q: "Qu'est-ce qui te freine le plus pour aller courir ?", sub: 'Sois honnête, on est là pour ça.', opts: [
+    ['motivation', '😴', 'Je manque de motivation', 'Tu auras toujours une mission.', 'Chaque sortie a un but : un lieu à trouver, une carte à gagner, des points à marquer.'],
+    ['ennui', '🔁', "Je m'ennuie, c'est toujours pareil", 'Plus jamais le même parcours.', 'Chaque sortie t\'emmène vers un nouveau lieu de ta ville, avec son histoire.'],
+    ['ou', '🗺️', 'Je ne sais pas où aller', 'On choisit pour toi.', 'Des lieux à la bonne distance, et l\'itinéraire jusqu\'à eux, prêt à suivre.'],
+    ['lache', '📉', 'Je commence fort, puis je lâche', 'On te donne des raisons de revenir.', 'Quêtes de la semaine, niveaux, trophées et un gros bonus quand tu tiens ton objectif.']] },
+  { id: 'parcours', q: 'Tu cours souvent sur le même parcours ?', sub: 'Ton tour du quartier habituel…', opts: [
+    ['meme', '🔂', 'Toujours le même', 'On va changer ça.', 'Statues cachées, fontaines, châteaux : ton quartier a plein de trésors que tu n\'as jamais vus.'],
+    ['deux', '↔️', "J'en ai 2 ou 3", 'Prépare-toi à en découvrir des dizaines.', 'Chaque semaine, de nouvelles quêtes dans des coins où tu ne vas jamais.'],
+    ['varie', '🧭', 'Je varie souvent', 'Tu vas adorer.', 'En plus de varier, tu collectionnes chaque lieu et tu découvres son histoire.']] },
+  { id: 'regularite', q: 'Tu tiens ton objectif de la semaine ?', sub: 'Le nombre de sorties que tu te fixes.', opts: [
+    ['rarement', '😅', 'Rarement', 'On fixe tes jours ensemble.', `Une quête par jour choisi, et chaque semaine complète rapporte +${WEEK_BONUS} ★.`],
+    ['moitie', '⚖️', 'Une semaine sur deux', 'On va passer à toutes les semaines.', 'Les quêtes ratées restent rattrapables, et les séries de semaines débloquent des trophées.'],
+    ['toujours', '🏆', 'Presque toujours', 'Tu es prêt pour les défis.', 'Lieux rares, dénivelé, trophées : de quoi pimenter des semaines déjà bien remplies.']] }
+];
 let onbMap = null;
 function onboarding(step = 0) {
   const o = $('#onb'); o.classList.remove('hidden');
   setTimeout(() => bindBack && bindBack(), 0);
   // en-tête : bouton retour discret (étapes 1 à 3) + points de progression
-  const dots = n => `<div class="onbhead">${step >= 1 && step <= 3 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  const dots = n => `<div class="onbhead">${step >= 1 && step <= 6 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
   const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
     o.innerHTML = `<div class="body"><div class="hero">
@@ -2269,16 +2289,34 @@ function onboarding(step = 0) {
       b.classList.add('on'); setTimeout(() => onboarding(2), 180);
     });
   }
-  if (step === 2) {
-    o.innerHTML = `${dots(1)}<div class="body"><h1>Ta semaine</h1>
+  if (step >= 2 && step <= 4) {
+    const q = QUIZ[step - 2];
+    o.innerHTML = `${dots(step - 1)}<div class="body"><h1>${q.q}</h1><p>${q.sub}</p>
+      <div class="sportpick quiz">${q.opts.map(([v, ic, t]) => `<button data-v="${v}"><span>${ic}</span><div>${t}</div></button>`).join('')}</div></div>`;
+    o.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+      const v = b.dataset.v, opt = q.opts.find(x => x[0] === v);
+      (S.quiz = S.quiz || {})[q.id] = v; save();
+      track('quiz', { id: q.id, value: v });
+      b.classList.add('on');
+      // petite phrase qui rassure, puis on passe à la suite
+      setTimeout(() => {
+        const body = o.querySelector('.body');
+        body.innerHTML = `<div class="reassure"><div class="big">${opt[1]}</div><h1>${opt[3]}</h1><p>${opt[4]}</p></div>`;
+        setTimeout(() => { if ($('#onb .reassure')) onboarding(step + 1); }, 2200);
+        body.onclick = () => onboarding(step + 1);
+      }, 200);
+    });
+  }
+  if (step === 5) {
+    o.innerHTML = `${dots(4)}<div class="body"><h1>Ta semaine</h1>
       <p>Chaque jour coché = une quête. Le lieu est choisi pour faire un aller-retour de la bonne distance.</p>
       <div id="ogoal"></div></div>
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
     goalPicker($('#ogoal'));
-    $('#go').onclick = () => { save(); onboarding(3); };
+    $('#go').onclick = () => { save(); onboarding(6); };
   }
-  if (step === 3) {
-    o.innerHTML = `${dots(2)}<div class="body"><h1>D'où tu pars ?</h1>
+  if (step === 6) {
+    o.innerHTML = `${dots(5)}<div class="body"><h1>D'où tu pars ?</h1>
       <p>Touche la carte pour placer ton point de départ, ou utilise ta position.</p>
       <div id="onbmap"></div>
       </div>
@@ -2301,19 +2339,19 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      S.home = chosen; save(); onboarding(4);
+      S.home = chosen; save(); onboarding(7);
     };
   }
-  if (step === 4) {
+  if (step === 7) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
-    o.innerHTML = `${dots(3)}<div class="body" style="text-align:center">
+    o.innerHTML = `${dots(6)}<div class="body" style="text-align:center">
       <div class="scan"><div class="ic">🧭</div></div>
       <h1 id="lt" style="font-size:24px">Recherche des trésors dans ton quartier…</h1>
       <ul class="steps" id="steps">
         <li><i></i><span>Analyse de ta semaine : <b>${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} de ${S.goal.km} km</b> ${sp.ic}</span></li>
         <li><i></i><span id="st1">Recherche des lieux historiques autour de toi…</span></li>
         <li><i></i><span id="st2">Repérage des trésors cachés…</span></li>
-        <li><i></i><span>Calcul des meilleurs parcours</span></li>
+        <li><i></i><span>${(S.quiz || {}).parcours === 'meme' ? 'Calcul de parcours loin de ton tour habituel' : 'Calcul des meilleurs parcours'}</span></li>
         <li><i></i><span>Préparation de tes quêtes</span></li>
       </ul>
       <div class="pbar"><i id="pb"></i></div>
@@ -2332,7 +2370,7 @@ function onboarding(step = 0) {
         $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
         $('#st1').innerHTML = 'Réessaie dans une minute. <small class="muted">(' + esc(res.err && res.err.message) + ')</small>';
         $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
-        $('#go').onclick = () => onboarding(4);
+        $('#go').onclick = () => onboarding(7);
         return;
       }
       const pl = res.pl, r = pl.filter(p => p.rarity === 'rare').length;
@@ -2365,7 +2403,7 @@ const Metrics = (() => {
   const KEY = 'questrun_metrics';
   // structure complète des données : rien d'autre n'est enregistré
   const empty = () => ({ consent: false, first_seen: null, last_seen: null, sessions: 0, session_durations: [], runs: 0,
-    deaths_by_level: {}, levels_completed: 0, day1_returns: 0, days_active: [] });
+    deaths_by_level: {}, levels_completed: 0, day1_returns: 0, days_active: [], onboarding_answers: {} });
   let m = empty();
   let segStart = null;   // début du morceau de session en cours (appli visible)
   let idx = -1;          // case de la session en cours dans session_durations
@@ -2411,6 +2449,7 @@ const Metrics = (() => {
       case 'session_end': flush(); break;
       case 'session_resume': if (segStart == null && idx >= 0) segStart = Date.now(); break;
       case 'run_start': m.runs++; persist(); break;
+      case 'quiz': m.onboarding_answers[data.id] = data.value; persist(); break;
       case 'death': { const k = 'niveau_' + (data.level || 1); m.deaths_by_level[k] = (m.deaths_by_level[k] || 0) + 1; persist(); break; }
       case 'level_complete': m.levels_completed = Math.max(m.levels_completed, data.level || 1); persist(); break;
       default: break; // événement inconnu : ignoré (facile à étendre ici)
@@ -2450,7 +2489,7 @@ const Metrics = (() => {
       <p class="muted">Ce jeu enregistre anonymement tes parties sur ton appareil pour améliorer le jeu. Aucune donnée personnelle n'est collectée.</p>
       <div class="row"><button class="btn" id="mok">OK</button></div></div>`;
     document.body.appendChild(b);
-    b.querySelector('#mok').onclick = () => { m.consent = true; persist(); b.remove(); startSession(); };
+    b.querySelector('#mok').onclick = () => { m.consent = true; if (S.quiz) m.onboarding_answers = Object.assign({}, S.quiz); persist(); b.remove(); startSession(); };
   }
 
   // appli en arrière-plan / au premier plan, et fermeture (iOS : pagehide)

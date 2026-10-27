@@ -107,6 +107,7 @@
 - **Profil** = niveau + titre, Ma semaine, **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
 - **Paramètres** : roue ⚙️ en haut à droite du Profil. Mode sombre, sport par défaut, voix, lieux, mode développeur, tout effacer.
 - **Accueil** : 1er écran « Tu fais plutôt… » course / vélo / marche-rando (distance proposée 7 / 20 / 5 km).
+- **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2-4 questions, 5 semaine, 6 départ, 7 chargement.
 - Écran de course : gros bouton violet **« 📍 J'y suis »** en bas à droite (« 🏠 Je suis rentré » au retour).
 
 ## Métriques d'usage (27/10)
