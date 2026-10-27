@@ -273,6 +273,20 @@ h2{font-size:22px;margin:4px 16px 12px}
 .pbar{height:10px;border-radius:99px;background:var(--violet-soft);overflow:hidden;max-width:330px;margin:18px auto 0}
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--violet-2));transition:width .6s}
 
+/* ---------- boutique ---------- */
+button.chip{cursor:pointer}
+.wallet{margin:0 16px 14px;padding:20px;border-radius:var(--radius);color:#fff;text-align:center;background:linear-gradient(135deg,#2a1150,#7B2FF7);box-shadow:var(--shadow)}
+.wallet b{display:block;font-size:40px;font-weight:900}
+.wallet span{opacity:.85;font-size:14px}
+.packs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pack{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;border-radius:16px;border:2px solid var(--line);background:var(--bg);position:relative}
+.pack .ic{font-size:30px}
+.pack b{font-size:18px}
+.pack .price{margin-top:4px;padding:6px 12px;border-radius:99px;background:var(--violet);color:#fff;font-weight:800;font-size:14px}
+.pack .tag{position:absolute;top:-10px;padding:3px 8px;border-radius:99px;background:var(--gold);color:#2a1d00;font-size:10px;font-weight:900;text-transform:uppercase}
+.earn .set span small{display:block;color:var(--muted);font-size:13px}
+.earn .set b{color:var(--gold-text);white-space:nowrap}
+
 /* ---------- paramètres / pages ---------- */
 .topbar .gear{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--text)}
 .topbar .gear svg{width:22px;height:22px}
@@ -364,7 +378,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 <section id="s-quests" class="screen">
   <div class="topbar">
     <div class="logo pixel">QUEST RUN <span id="testtag" class="hidden" style="color:#E0245E;font-size:9px">· TEST</span></div>
-    <div style="display:flex;gap:6px"><div class="chip"><span class="coin">🪙</span><span id="coins">0</span></div><div class="chip"><span class="star">★</span><span id="pts">0</span></div></div>
+    <div style="display:flex;gap:6px"><button class="chip" data-shop><span class="coin">🪙</span><span id="coins">0</span></button><div class="chip"><span class="star">★</span><span id="pts">0</span></div></div>
   </div>
   <div id="map"></div>
   <div class="week"><b>Quêtes de la semaine</b><span class="muted" id="daysleft"></span></div>
@@ -386,7 +400,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 <section id="s-prof" class="screen hidden">
   <div class="topbar">
     <div class="logo pixel">PROFIL</div>
-    <div style="display:flex;gap:8px;align-items:center"><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
+    <div style="display:flex;gap:8px;align-items:center"><button class="chip" data-shop><span class="coin">🪙</span><span class="coinsmirror">0</span></button><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
       <button class="gear" id="gear" aria-label="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
   </div>
   <div id="prof"></div>
@@ -394,6 +408,10 @@ h2{font-size:22px;margin:4px 16px 12px}
 <section id="s-set" class="screen hidden">
   <div class="topbar"><button class="backbtn" data-back>‹ Profil</button><div class="logo pixel">PARAMÈTRES</div></div>
   <div id="set"></div>
+</section>
+<section id="s-shop" class="screen hidden">
+  <div class="topbar"><button class="backbtn" data-back="shop">‹ Retour</button><div class="logo pixel">BOUTIQUE</div></div>
+  <div id="shop"></div>
 </section>
 <section id="s-tro" class="screen hidden">
   <div class="topbar"><button class="backbtn" data-back>‹ Profil</button><div class="logo pixel">TROPHÉES</div></div>
@@ -436,7 +454,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v23';
+const VERSION = 'v24';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -473,7 +491,15 @@ if (!Array.isArray(S.goal.days) || !S.goal.days.length) S.goal.days = SPREAD[Mat
 delete S.goal.runs;
 S.wiki = S.wiki || {}; S.runs = S.runs || [];
 if (S.coins == null) S.coins = 30; // pièces de départ
-const COIN_PLACE = 10, COIN_WEEK = 30, SWAP_COST = 10;
+const COIN_PLACE = 10, COIN_WEEK = 30, SWAP_COST = 10, COIN_DAY = 5;
+const PACKS = [{ id: 'p100', coins: 100, price: '0,99 €', ic: '🪙' }, { id: 'p550', coins: 550, price: '4,99 €', ic: '💰', tag: 'Populaire' }, { id: 'p1200', coins: 1200, price: '9,99 €', ic: '💎', tag: 'Meilleure offre' }];
+const today = () => new Date().toISOString().slice(0, 10);
+// +5 pièces par jour d'ouverture
+function dailyBonus() {
+  if (!S.onboarded || S.lastDaily === today()) return;
+  S.lastDaily = today(); S.coins = (S.coins || 0) + COIN_DAY; save();
+  setTimeout(() => { toast(`+${COIN_DAY} 🪙 · bonus du jour`); renderPoints(); }, 900);
+}
 
 function load() {
   try { return Object.assign(clone(DEFAULTS), JSON.parse(localStorage.getItem(KEY)) || {}); }
@@ -872,6 +898,7 @@ function renderMap() {
 function renderPoints() {
   $('#pts').textContent = fmt(S.points);
   $('#coins').textContent = fmt(S.coins || 0);
+  document.querySelectorAll('.coinsmirror').forEach(e => e.textContent = fmt(S.coins || 0));
   document.querySelectorAll('.ptsmirror').forEach(e => e.textContent = fmt(S.points));
 }
 function renderQuests() {
@@ -1837,6 +1864,7 @@ function renderProf() {
     ${tile(st.n, 'sorties')}${tile(kmTxt(st.km), 'km au total')}${tile(st.n ? hm(st.time) : '0 min', 'de sport')}
     ${tile(st.runPace || '–:––', 'allure course (/km)')}${tile(st.bikeSpeed || '–', 'vitesse vélo (km/h)')}${tile(kmTxt(st.longest), 'km, plus longue sortie')}
   </div></div>
+  <div class="panel"><button class="trorow" id="shopbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Boutique</h4><b style="font-size:18px">${fmt(S.coins || 0)} 🪙</b></div><span style="flex:1"></span><span class="setbtn">Ouvrir ›</span></button></div>
   <div class="panel"><button class="trorow" id="trobtn"><div style="flex:none"><h4 style="margin:0 0 6px">Trophées · ${got.length}/${TROPHIES.length}</h4>
     <div class="mini">${[0, 1, 2].map(i => got[i] ? `<i>${got[i][1]}</i>` : '<i class="off">🔒</i>').join('')}</div></div>
     <span style="flex:1"></span><span class="setbtn">Voir tout ›</span></button></div>
@@ -1844,11 +1872,33 @@ function renderProf() {
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION}</p>`;
   goalPicker($('#pgoal'));
   $('#trobtn').onclick = () => tab('tro');
+  $('#shopbtn').onclick = () => tab('shop');
   $('#regen').onclick = async () => {
     const f = S.placesFor;
     if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) { return; } }
     ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
   };
+}
+
+function renderShop() {
+  renderPoints();
+  const got = S.lastDaily === today();
+  $('#shop').innerHTML = `
+  <div class="wallet"><span>Ton solde</span><b>${fmt(S.coins || 0)} 🪙</b><span>Pour changer de mission (${SWAP_COST} 🪙), et bientôt des boosters de cartes</span></div>
+  <div class="panel"><h4>Acheter des pièces</h4><div class="packs">${PACKS.map(p => `<button class="pack" data-pack="${p.id}">${p.tag ? `<span class="tag">${p.tag}</span>` : ''}<span class="ic">${p.ic}</span><b>${fmt(p.coins)}</b><span class="price">${p.price}</span></button>`).join('')}</div></div>
+  <div class="panel earn"><h4>Gagner des pièces gratuitement</h4>
+    <div class="set"><span>Bonus du jour<small>${got ? 'Reçu aujourd\'hui ✓ · reviens demain' : 'Ouvre l\'appli chaque jour'}</small></span><b>+${COIN_DAY} 🪙</b></div>
+    <div class="set"><span>Trouver un lieu<small>À chaque quête réussie</small></span><b>+${COIN_PLACE} 🪙</b></div>
+    <div class="set"><span>Semaine complète<small>Toutes tes quêtes de la semaine</small></span><b>+${COIN_WEEK} 🪙</b></div>
+  </div>
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 16px 24px">1 changement de mission gratuit chaque semaine.</p>`;
+  document.querySelectorAll('[data-pack]').forEach(b => b.onclick = () => {
+    const p = PACKS.find(x => x.id === b.dataset.pack);
+    S.shopTaps = (S.shopTaps || 0) + 1; (S.shopLog = S.shopLog || []).push({ pack: p.id, t: Date.now() }); save();
+    sheet(`<div style="text-align:center"><div style="font-size:54px">${p.ic}</div><h3>Bientôt disponible !</h3>
+      <p class="muted">L'achat de pièces arrive bientôt. On te prévient dès que c'est prêt.<br>En attendant, gagne des pièces en trouvant des lieux.</p></div>
+      <div class="row"><button class="btn" id="okshop">D'accord</button></div>`).querySelector('#okshop').onclick = closeSheet;
+  });
 }
 
 function renderTro() {
@@ -1876,6 +1926,7 @@ function renderSet() {
     <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span>${sw('test', S.testMode)}</div>
     <div class="set"><span>Rejouer la semaine<small class="muted" style="display:block;font-size:13px">Nouvelles quêtes, bonus remis à zéro</small></span><button class="setbtn" id="replay">Rejouer</button></div>
     <div class="set"><span>Revoir l'accueil<small class="muted" style="display:block;font-size:13px">Tes cartes et tes points sont gardés</small></span><button class="setbtn" id="reonb">Revoir</button></div>
+    <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0}</small></span><button class="setbtn" id="give">+100 🪙</button></div>
     <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
   </div>` : ''}
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
@@ -1893,6 +1944,7 @@ function renderSet() {
     else toast('Mot de passe incorrect');
   };
   if (S.dev) {
+    $('#give').onclick = () => { S.coins = (S.coins || 0) + 100; save(); renderPoints(); toast('+100 🪙'); };
     $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderSet(); toast('Mode développeur verrouillé'); };
     $('#reonb').onclick = () => { S.onboarded = false; save(); onboarding(0); };
     $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderSet(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
@@ -1916,11 +1968,12 @@ async function loadPlaces() {
 }
 
 /* ---------- onglets ---------- */
-let current = 'quests';
+let current = 'quests', shopFrom = 'quests';
 function tab(name) {
   current = name;
-  ['quests', 'coll', 'prof', 'set', 'tro'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
-  const tb = name === 'set' || name === 'tro' ? 'prof' : name;
+  if (name === 'shop' && current !== 'shop') shopFrom = current;
+  ['quests', 'coll', 'prof', 'set', 'tro', 'shop'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
+  const tb = name === 'set' || name === 'tro' ? 'prof' : name === 'shop' ? shopFrom : name;
   document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tb));
   $('#s-' + name).scrollTop = 0;
   if (name === 'quests') { initMap(); renderQuests(); setTimeout(() => map && map.invalidateSize(), 50); }
@@ -1928,9 +1981,11 @@ function tab(name) {
   if (name === 'prof') renderProf();
   if (name === 'set') renderSet();
   if (name === 'tro') renderTro();
+  if (name === 'shop') renderShop();
 }
 $('#gear').onclick = () => tab('set');
-document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => tab('prof'));
+document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => tab(b.dataset.back === 'shop' ? shopFrom : 'prof'));
+document.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => tab('shop'));
 document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
 /* ---------- onboarding ---------- */
@@ -2058,6 +2113,7 @@ if (typeof L === 'undefined') {
   ensureWeek(); fixDays(); initProgress();
   tab('quests');
   upgradePlaces().catch(() => {});
+  dailyBonus();
   try { const r = JSON.parse(localStorage.getItem(RUN_KEY)); if (r && Date.now() - r.start < 6 * 3600e3) { RUN = r; openRun(); toast('Course reprise'); } else localStorage.removeItem(RUN_KEY); } catch (e) {}
   // précharge les images des quêtes de la semaine
   S.week && S.week.quests.forEach(q => q.status !== 'done' && wikiFor(placeById(q.pid)));

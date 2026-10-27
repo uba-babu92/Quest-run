@@ -85,7 +85,8 @@
 - **🪙 Pièces** = monnaie à dépenser, à part des ★ (les ★ = expérience/niveau, ne baissent jamais). 30 au départ, +10 par lieu, +30 par semaine complète.
 - **« 🔄 Changer de mission »** sur une quête : **gratuit 1 fois par semaine**, puis **10 🪙**. Choix parmi **3 propositions** à la même distance (même rareté en priorité).
 - Fin de l'accueil : **chargement « Recherche des trésors dans ton quartier… »** (~7 s, étapes cochées avec les vrais chiffres : lieux trouvés, trésors cachés), puis « TES 3 QUÊTES SONT PRÊTES ! ».
-- Plus tard : les pièces serviront à la boutique / boosters.
+- **Boutique** (toucher 🪙 en haut, ou Profil → Boutique) : packs 100 / 550 / 1 200 🪙 à 0,99 / 4,99 / 9,99 €, **pas de vrai paiement** : « Bientôt disponible » + compteur de tentatives (`S.shopTaps`, visible en mode dév) = test de porte pour l'étape 2-3. Vrai paiement (Stripe / achats Apple) à l'étape 3.
+- **+5 🪙 par jour** d'ouverture (`dailyBonus`). Mode dév : bouton +100 🪙.
 
 ## Profil / Paramètres / Trophées (27/10, choix de Bazil)
 - **Profil** = niveau + titre, Ma semaine, **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
