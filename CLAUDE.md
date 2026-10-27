@@ -72,6 +72,13 @@
 - Consigne : pas de date/nom/fait inventé ; sinon décrire le type de lieu et l'ambiance. L'appli affiche « ✨ Texte généré par IA ».
 - Résultat : `data/stories/<case>.json` (`{ "n123": "texte" }`). L'appli l'affiche si Wikipédia n'a rien.
 
+## Mode course façon Strava (27/10, choix de Bazil)
+- **Écran « prêt »** : carte plein écran, itinéraire à pied violet jusqu'au lieu (`routing.openstreetmap.de/routed-foot`, sans clé ; sinon ligne droite en pointillés), distance aller et aller-retour, état du GPS, gros bouton rond violet **Démarrer**.
+- **Pendant** : carte en grand (itinéraire violet, tracé réel or), encadré en bas temps / allure / distance, **temps par km** en barres, « Plus que X km » mesuré **le long du chemin**. Pause → Reprendre / Terminer.
+- **Retour** : nouvel itinéraire vers la maison qui évite si possible le chemin de l'aller (boucle).
+- Pas retenu : pause en jaune, titre + ressenti à la fin.
+- Limite HTML : GPS coupé écran verrouillé / autre appli. Passage à une vraie appli (Capacitor, Mac + compte Apple) prévu à l'étape 2-3, ou plus tôt si l'écran allumé gêne.
+
 ## Mode développeur (27/10)
 - Profil → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
 - Contient : **mode test** (« J'y suis » sans GPS), rejouer la semaine, revoir l'accueil, verrouiller.

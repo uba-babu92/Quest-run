@@ -240,25 +240,42 @@ h2{font-size:22px;margin:4px 16px 12px}
 .route{width:100%;height:120px;margin-top:10px}
 .v-actions{display:flex;flex-direction:column;gap:10px;align-items:center;position:relative;z-index:2}
 
-/* ---------- mode course (toujours sombre) ---------- */
-#run{position:fixed;inset:0;z-index:1400;background:#000;color:#fff;display:flex;flex-direction:column;padding:calc(10px + var(--safe-t)) 16px calc(16px + var(--safe-b))}
-#run .tgt{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-#run .tgt .dot{width:36px;height:36px;border-radius:11px;background:var(--violet);display:grid;place-items:center;font-weight:800;flex:none}
-#run .tgt.back .dot{background:#FFB800;color:#2a1d00}
-#run .tgt b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#run .tgt span{color:#b9b0d6;font-size:14px}
-#runmap{flex:1;min-height:180px;border-radius:18px;overflow:hidden;background:#111}
+/* ---------- mode course, façon Strava (toujours sombre) ---------- */
+#run{position:fixed;inset:0;z-index:1400;background:#000;color:#fff;display:flex;flex-direction:column}
+#runmap{position:absolute;inset:0;background:#111}
 #run .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6)}
-#run .chrono{font-size:min(19vw,84px);font-weight:900;text-align:center;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:12px 0 4px;line-height:1}
-#run .chrono.paused{color:#FFB800;animation:blink 1.2s infinite}
+#run .rtop{position:relative;z-index:500;display:flex;align-items:center;gap:10px;margin:calc(10px + var(--safe-t)) 12px 0;padding:10px 12px;border-radius:16px;background:rgba(18,16,26,.88);backdrop-filter:blur(8px)}
+#run .rtop .x{width:34px;height:34px;border-radius:50%;background:#26232f;color:#fff;font-size:16px;flex:none}
+#run .tgt{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+#run .tgt .dot{width:34px;height:34px;border-radius:11px;background:var(--violet);display:grid;place-items:center;font-weight:800;flex:none}
+#run .tgt.back .dot{background:#FFB800;color:#2a1d00}
+#run .tgt b{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#run .tgt span{color:#c9c2e0;font-size:13px}
+#run .rbottom{position:absolute;left:0;right:0;bottom:0;z-index:500;padding:0 12px calc(12px + var(--safe-b))}
+#run .rcard{background:rgba(18,16,26,.94);border-radius:20px;padding:14px 14px 12px;backdrop-filter:blur(8px)}
+#run .rcard .ttl{text-align:center;font-weight:800;font-size:14px;color:#c9c2e0;margin-bottom:8px}
+#run .stats3 b{font-size:30px;letter-spacing:-.01em}
+#run .stats3 span{color:#9a93b3}
+#run .stats3 b.paused{color:#FFB800;animation:blink 1.2s infinite}
 @keyframes blink{50%{opacity:.4}}
-#run .stats3{margin:6px 0 14px}
-#run .stats3 b{font-size:28px}
-#run .ctrl{display:flex;gap:10px}
-#run .ctrl .btn{height:60px}
-#run .btn.stop{background:#E0245E;box-shadow:0 5px 0 #8f1239}
-#run .tools{display:flex;justify-content:space-between;margin-top:10px;font-size:14px}
-#run .tools button{color:#b9b0d6;font-weight:700;padding:6px 4px}
+#run .splits{display:flex;align-items:flex-end;gap:5px;height:54px;margin-top:12px;overflow:hidden}
+#run .splits .sp{flex:1;min-width:26px;max-width:54px;display:flex;flex-direction:column;align-items:center;gap:3px}
+#run .splits .sp i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:#3a3550}
+#run .splits .sp.done i{background:linear-gradient(180deg,var(--violet-2),var(--violet))}
+#run .splits .sp.cur i{background:#5b4a86;outline:2px solid #9B5CFF}
+#run .splits .sp small{font-size:10px;color:#9a93b3;font-variant-numeric:tabular-nums;white-space:nowrap}
+#run .splits .empty{color:#6f6888;font-size:12px;margin:auto}
+#run .rbtns{display:flex;align-items:center;justify-content:center;gap:28px;margin-top:12px}
+#run .rbtns .lbl{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#c9c2e0}
+#run .round{width:78px;height:78px;border-radius:50%;display:grid;place-items:center;font-size:30px;color:#fff;background:linear-gradient(135deg,var(--violet),var(--violet-2));box-shadow:0 6px 0 #4E12B0,0 10px 30px rgba(123,47,247,.45)}
+#run .round:active{transform:translateY(4px);box-shadow:0 2px 0 #4E12B0}
+#run .round.sm{width:58px;height:58px;font-size:22px;background:#26232f;box-shadow:0 4px 0 #15131b}
+#run .round.stop{background:#E0245E;box-shadow:0 5px 0 #8f1239}
+#run .round svg{width:34px;height:34px}
+#run .tools{display:flex;justify-content:space-between;margin-top:8px;font-size:13px}
+#run .tools button{color:#9a93b3;font-weight:700;padding:6px 4px}
+#run .gps{font-size:12px;font-weight:700;color:#FFB800}
+#run .gps.ok{color:#4ADE80}
 .runlist .r{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
 .runlist .r:first-child{border-top:0}
 .runlist .r b{font-variant-numeric:tabular-nums}
@@ -305,16 +322,20 @@ h2{font-size:22px;margin:4px 16px 12px}
 
 <div id="onb" class="hidden"></div>
 <div id="run" class="hidden">
-  <div class="tgt" id="rtgt"><div class="dot">→</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div>
   <div id="runmap"></div>
-  <div class="chrono" id="rtime">0:00</div>
-  <div class="stats3">
-    <div><b id="rdist">0,00</b><span>km</span></div>
-    <div><b id="rpace">–:––</b><span>allure</span></div>
-    <div><b id="ravg">–:––</b><span>moyenne</span></div>
-  </div>
-  <div class="ctrl"><button class="btn ghost" id="rpause" style="background:#1b1a22;color:#fff;border-color:#333;box-shadow:0 5px 0 #333">Pause</button><button class="btn stop" id="rstop">Terminer</button></div>
-  <div class="tools"><button id="rvoice">🔊 Voix</button><button id="rsim" class="hidden">▶ Simuler (test)</button><button id="rhere">J'y suis</button></div>
+  <div class="rtop"><button class="x" id="rclose" aria-label="Fermer">✕</button>
+    <div class="tgt" id="rtgt"><div class="dot">★</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div></div>
+  <div class="rbottom"><div class="rcard">
+    <div class="ttl" id="rttl">Course à pied</div>
+    <div class="stats3">
+      <div><b id="rtime">0:00</b><span>temps</span></div>
+      <div><b id="rpace">–:––</b><span>allure (/km)</span></div>
+      <div><b id="rdist">0,00</b><span>distance (km)</span></div>
+    </div>
+    <div class="splits" id="rsplits"></div>
+    <div class="rbtns" id="rbtns"></div>
+    <div class="tools"><button id="rvoice">🔊 Voix</button><button id="rsim" class="hidden">▶ Simuler (test)</button><button id="rhere">J'y suis</button></div>
+  </div></div>
 </div>
 <div id="victory" class="hidden"><canvas id="confetti"></canvas><div id="vin"></div></div>
 <div id="toast"></div>
@@ -329,7 +350,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v18';
+const VERSION = 'v19';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -1160,7 +1181,7 @@ function showFiche(c) {
     <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     ${r ? `<div class="box"><span class="pixel">TA COURSE</span>
       <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>
-      ${routeSvg(r.pts)}</div>` : ''}
+      ${routeSvg(r.pts)}${splitsList(r.splits)}</div>` : ''}
     <div class="box" id="story"><span class="pixel">HISTOIRE</span><p class="muted" style="color:#b9b0d6">Chargement…</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
   </div>`, true);
@@ -1169,9 +1190,9 @@ function showFiche(c) {
   return pr;
 }
 
-/* ---------- mode course ---------- */
+/* ---------- mode course, façon Strava ---------- */
 const RUN_KEY = 'questrun.run';
-let RUN = null, runMap = null, runLine = null, runMe = null, runTgt = null, runWatch = null, runTick = null, wakeLock = null, simT = null;
+let RUN = null, runMap = null, runLine = null, routeLine = null, runMe = null, runTgt = null, runWatch = null, runTick = null, wakeLock = null, simT = null;
 const km = m => (m / 1000).toFixed(2).replace('.', ',');
 function dur(ms) { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); }
 function pace(ms, m) { if (m < 50) return '–:––'; const s = Math.round(ms / 1000 / (m / 1000)); if (s > 1800) return '–:––'; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
@@ -1186,6 +1207,69 @@ async function keepAwake() {
   try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch (e) {}
 }
 document.addEventListener('visibilitychange', () => { if (RUN && document.visibilityState === 'visible') { keepAwake(); drawRun(); } });
+const fmtKm = d => d < 1000 ? `${Math.round(d)} m` : `${(d / 1000).toFixed(1).replace('.', ',')} km`;
+
+/* --- itinéraire à pied (OpenStreetMap, sans clé) --- */
+const ROUTER = 'https://routing.openstreetmap.de/routed-foot/route/v1/driving/';
+async function routeVia(points) {
+  const coords = points.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
+  const j = await getJSON(`${ROUTER}${coords}?overview=full&geometries=geojson&alternatives=${points.length === 2 ? 'true' : 'false'}`, 12000);
+  if (j.code !== 'Ok' || !j.routes?.length) throw new Error(j.code || 'itinéraire');
+  return j.routes.map(r => ({ pts: r.geometry.coordinates.map(c => [c[1], c[0]]), dist: r.distance }));
+}
+function withCum(pts) { let c = 0; return pts.map((p, i) => { if (i) c += dist({ lat: pts[i - 1][0], lng: pts[i - 1][1] }, { lat: p[0], lng: p[1] }); return [p[0], p[1], c]; }); }
+// part d'un trajet qui passe à moins de 30 m d'un autre trajet
+function overlap(a, b) {
+  if (!b || !b.length) return 0;
+  const step = Math.max(1, Math.floor(a.length / 60)); let n = 0, hit = 0;
+  for (let i = 0; i < a.length; i += step) { n++; const p = { lat: a[i][0], lng: a[i][1] }; for (let j = 0; j < b.length; j += 2) if (dist(p, { lat: b[j][0], lng: b[j][1] }) < 30) { hit++; break; } }
+  return n ? hit / n : 0;
+}
+async function makeRoute(from, to, avoid) {
+  try {
+    let cands = await routeVia([from, to]);
+    if (avoid && avoid.length > 4) {
+      // détour par un point du côté opposé à l'aller, pour faire une boucle
+      const mid = avoid[Math.floor(avoid.length / 2)], cx = (from.lat + to.lat) / 2, cy = (from.lng + to.lng) / 2;
+      const via = { lat: cx - (mid[0] - cx) * 0.9, lng: cy - (mid[1] - cy) * 0.9 };
+      try { cands = cands.concat(await routeVia([from, via, to])); } catch (e) {}
+      const best = Math.min(...cands.map(c => c.dist));
+      cands.sort((a, b) => (overlap(a.pts, avoid) + (a.dist > best * 1.6 ? 1 : 0)) - (overlap(b.pts, avoid) + (b.dist > best * 1.6 ? 1 : 0)));
+    }
+    const r = cands[0];
+    return { pts: withCum(r.pts), dist: r.dist, real: true };
+  } catch (e) {
+    return { pts: withCum([[from.lat, from.lng], [to.lat, to.lng]]), dist: dist(from, to), real: false };
+  }
+}
+// point de l'itinéraire le plus proche (sur les segments, pas seulement les virages)
+function nearestOnRoute(pos, R = RUN && RUN.route) {
+  if (!R || !R.pts.length) return null;
+  const k = Math.cos(pos.lat * Math.PI / 180) * 111320, m = 111320;
+  let best = { i: 0, along: 0, d: 1e9 };
+  for (let i = 0; i < R.pts.length - 1; i++) {
+    const a = R.pts[i], b = R.pts[i + 1];
+    const ax = (a[1] - pos.lng) * k, ay = (a[0] - pos.lat) * m, bx = (b[1] - pos.lng) * k, by = (b[0] - pos.lat) * m;
+    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+    const t = L2 ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / L2)) : 0;
+    const d = Math.hypot(ax + dx * t, ay + dy * t);
+    if (d < best.d) best = { i, t, along: a[2] + (b[2] - a[2]) * t, d };
+  }
+  if (R.pts.length === 1) best = { i: 0, t: 0, along: 0, d: dist(pos, { lat: R.pts[0][0], lng: R.pts[0][1] }) };
+  return best;
+}
+// distance restante le long de l'itinéraire
+function leftOnRoute(pos) {
+  const R = RUN && RUN.route, n = nearestOnRoute(pos, R); if (!n) return null;
+  return Math.max(0, R.dist - n.along) + n.d;
+}
+// garde ta position dans le haut de la carte (le bas est caché par l'encadré)
+function followMe(ll) {
+  if (!runMap) return;
+  const z = runMap.getZoom(), H = runMap.getSize().y;
+  const p = runMap.project(ll, z).add([0, H * 0.2]);
+  runMap.panTo(runMap.unproject(p, z), { animate: true });
+}
 
 function runTarget() {
   if (!RUN) return null;
@@ -1194,13 +1278,37 @@ function runTarget() {
   const rare = p.rarity === 'rare';
   return { lat: rare ? p.zlat : p.lat, lng: rare ? p.zlng : p.lng, real: p, name: shownName(p, false), r: (p.r || (p.area ? 80 : 35)) };
 }
+async function planRoute() {
+  const t = runTarget(); if (!t) return;
+  const from = lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : { lat: S.home.lat, lng: S.home.lng };
+  RUN.route = null; drawRun();
+  RUN.route = await makeRoute(from, t, RUN.phase === 'back' ? RUN.goRoute : null);
+  if (RUN.phase === 'go') RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
+  saveRun(); showRoute(true); drawRun();
+}
+function showRoute(fit) {
+  if (!runMap || !RUN) return;
+  routeLine.setLatLngs(RUN.route ? RUN.route.pts.map(p => [p[0], p[1]]) : []);
+  routeLine.setStyle({ dashArray: RUN.route && !RUN.route.real ? '8 10' : null });
+  if (fit && RUN.route) runMap.fitBounds(routeLine.getBounds(), { paddingTopLeft: [30, 110], paddingBottomRight: [30, 330], maxZoom: 16 });
+}
 
 function startRun(i) {
   const q = S.week.quests[i]; if (!q) return;
-  RUN = { id: 'r' + Date.now(), qi: i, pid: q.pid, start: Date.now(), elapsed: 0, resumedAt: Date.now(), paused: false, dist: 0, pts: [], phase: 'go', lastKm: 0, found: null };
+  // écran « prêt » : le chrono ne tourne pas encore
+  RUN = { id: 'r' + Date.now(), qi: i, pid: q.pid, start: Date.now(), elapsed: 0, resumedAt: Date.now(), paused: true, ready: true, dist: 0, pts: [], phase: 'go', lastKm: 0, found: null, route: null };
+  saveRun();
+  openRun();
+  planRoute();
+}
+function goRun() {
+  if (!RUN) return;
+  RUN.ready = false; RUN.paused = false; RUN.start = Date.now(); RUN.resumedAt = Date.now();
   saveRun();
   speak("C'est parti ! Direction " + runTarget().name + '.');
-  openRun();
+  vibrate(60);
+  if (lastPos) { runMap.setView([lastPos.lat, lastPos.lng], 16); followMe([lastPos.lat, lastPos.lng]); }
+  drawRun();
 }
 function openRun() {
   $('#run').classList.remove('hidden');
@@ -1210,14 +1318,16 @@ function openRun() {
   if (!runMap) {
     runMap = L.map('runmap', { zoomControl: false, attributionControl: false });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(runMap);
-    runLine = L.polyline([], { color: '#9B5CFF', weight: 6, opacity: .95 }).addTo(runMap);
+    routeLine = L.polyline([], { color: '#9B5CFF', weight: 7, opacity: .85, lineCap: 'round' }).addTo(runMap);
+    runLine = L.polyline([], { color: '#FFD23F', weight: 5, opacity: .95 }).addTo(runMap);
     runMe = L.marker([S.home.lat, S.home.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 1000 }).addTo(runMap);
   }
   runLine.setLatLngs(RUN.pts.map(p => [p[0], p[1]]));
   setRunTarget();
   const last = RUN.pts[RUN.pts.length - 1];
-  runMap.setView(last ? [last[0], last[1]] : (lastPos ? [lastPos.lat, lastPos.lng] : [S.home.lat, S.home.lng]), 16);
-  setTimeout(() => runMap.invalidateSize(), 60);
+  runMap.setView(last ? [last[0], last[1]] : (lastPos ? [lastPos.lat, lastPos.lng] : [S.home.lat, S.home.lng]), 15);
+  showRoute(true);
+  setTimeout(() => { runMap.invalidateSize(); showRoute(RUN && RUN.ready); }, 80);
   if (navigator.geolocation && runWatch == null)
     runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   clearInterval(runTick); runTick = setInterval(drawRun, 1000);
@@ -1247,10 +1357,10 @@ function onRunPos(pos) {
         RUN.dist += d; RUN.pts.push([pos.lat, pos.lng, pos.t, RUN.dist]);
         runLine.addLatLng([pos.lat, pos.lng]);
         const k = Math.floor(RUN.dist / 1000);
-        if (k > RUN.lastKm) { RUN.lastKm = k; speak(`${k} kilomètre${k > 1 ? 's' : ''}. Allure ${pace(elapsed(), RUN.dist).replace(':', ' minutes ')}.`); }
+        if (k > RUN.lastKm) { RUN.lastKm = k; const sp = splits(); speak(`${k} kilomètre${k > 1 ? 's' : ''}. Dernier kilomètre en ${pace(sp[k - 1] || elapsed(), 1000).replace(':', ' minutes ')}.`); }
       }
     }
-    if (!S.testMode || simT) runMap.panTo([pos.lat, pos.lng], { animate: true });
+    if (!S.testMode || simT) followMe([pos.lat, pos.lng]);
     saveRun();
   }
   checkArrival(pos);
@@ -1278,31 +1388,82 @@ function runBack() {
   arriving = false;
   if (!RUN) return;
   RUN.phase = 'back'; saveRun(); setRunTarget(); drawRun();
-  speak('Direction la maison.');
+  speak('Direction la maison, par un autre chemin.');
+  planRoute();
+}
+// temps de chaque kilomètre terminé (ms)
+function splits(P = RUN && RUN.pts) {
+  const out = []; if (!P || P.length < 2) return out;
+  let k = 1, t0 = P[0][2];
+  for (let i = 1; i < P.length; i++) {
+    while (P[i][3] >= k * 1000) {
+      const a = P[i - 1], b = P[i], f = (k * 1000 - a[3]) / ((b[3] - a[3]) || 1), t = a[2] + (b[2] - a[2]) * f;
+      out.push(t - t0); t0 = t; k++;
+    }
+  }
+  return out;
+}
+function splitsHtml(sp, curMs, curM) {
+  const all = sp.map(ms => ({ ms, done: true }));
+  if (curM != null && curM > 30) all.push({ ms: curMs / (curM / 1000), done: false });
+  if (!all.length) return '<div class="empty">Tes temps par km s\'afficheront ici</div>';
+  const shown = all.slice(-7), mx = Math.max(...shown.map(x => x.ms)), mn = Math.min(...shown.map(x => x.ms));
+  return shown.map((x, i) => {
+    const h = 14 + 26 * (mx === mn ? 1 : (mx - x.ms) / (mx - mn)); // plus rapide = plus haut
+    const n = all.length - shown.length + i + 1;
+    return `<div class="sp ${x.done ? 'done' : 'cur'}"><small>${pace(x.ms, 1000)}</small><i style="height:${h.toFixed(0)}px"></i><small>${x.done ? n + ' km' : 'en cours'}</small></div>`;
+  }).join('');
 }
 function drawRun() {
   if (!RUN) return;
   const t = elapsed();
   $('#rtime').textContent = dur(t);
-  $('#rtime').classList.toggle('paused', RUN.paused);
+  $('#rtime').classList.toggle('paused', RUN.paused && !RUN.ready);
   $('#rdist').textContent = km(RUN.dist);
-  $('#ravg').textContent = pace(t, RUN.dist);
-  // allure actuelle : sur les ~250 derniers mètres
+  // allure actuelle : sur les ~250 derniers mètres (moyenne en pause)
   const P = RUN.pts, last = P[P.length - 1];
-  let cur = '–:––';
+  let cur = pace(t, RUN.dist);
   if (last && !RUN.paused && Date.now() - last[2] < 20000) {
     let j = P.length - 1; while (j > 0 && last[3] - P[j][3] < 250) j--;
     if (last[3] - P[j][3] >= 60) cur = pace(last[2] - P[j][2], last[3] - P[j][3]);
   }
   $('#rpace').textContent = cur;
+  const sp = splits();
+  const doneM = sp.length * 1000, lastT = last ? last[2] : 0;
+  let kmStart = P.length ? P[0][2] : 0; sp.forEach(x => kmStart += x);
+  $('#rsplits').innerHTML = RUN.ready ? '' : splitsHtml(sp, Math.max(0, lastT - kmStart), RUN.dist - doneM);
+  $('#rsplits').style.display = RUN.ready ? 'none' : '';
+  // distance restante, le long du chemin
   const tg = runTarget(), here = lastPos;
-  if (tg && here) { const d = dist(here, tg); $('#rleft').textContent = d < 1000 ? `Plus que ${Math.round(d)} m` : `Plus que ${(d / 1000).toFixed(1).replace('.', ',')} km`; }
-  else $('#rleft').textContent = RUN.paused ? 'En pause' : 'Recherche du GPS…';
-  $('#rpause').textContent = RUN.paused ? 'Reprendre' : 'Pause';
+  const R = RUN.route;
+  if (RUN.ready) {
+    $('#rttl').innerHTML = R ? `Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}` : 'Calcul de l\'itinéraire…';
+    $('#rleft').innerHTML = here ? `<span class="gps ${here.acc <= 30 ? 'ok' : ''}">GPS ${here.acc <= 30 ? 'prêt ✓' : 'en recherche… (±' + Math.round(here.acc) + ' m)'}</span>` : '<span class="gps">Recherche du GPS…</span>';
+  } else {
+    $('#rttl').textContent = RUN.paused ? '⏸ En pause' : (RUN.phase === 'back' ? 'Retour maison' : 'Course à pied');
+    const left = here ? (leftOnRoute(here) ?? (tg ? dist(here, tg) : null)) : null;
+    $('#rleft').textContent = left != null ? `Plus que ${fmtKm(left)}` : 'Recherche du GPS…';
+  }
+  // boutons
+  const want = RUN.ready ? 'ready' : RUN.paused ? 'paused' : 'run';
+  const box = $('#rbtns');
+  if (box.dataset.mode !== want) {
+    box.dataset.mode = want;
+    box.innerHTML = want === 'ready'
+      ? `<div class="lbl"><button class="round" id="rgo" aria-label="Démarrer"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l11-6.5z"/></svg></button>Démarrer</div>`
+      : want === 'run'
+        ? `<div class="lbl"><button class="round" id="rpause" aria-label="Pause"><svg viewBox="0 0 24 24" fill="#fff"><rect x="6.5" y="5" width="4" height="14" rx="1.2"/><rect x="13.5" y="5" width="4" height="14" rx="1.2"/></svg></button>Pause</div>`
+        : `<div class="lbl"><button class="round" id="rpause" aria-label="Reprendre"><svg viewBox="0 0 24 24" fill="#fff"><path d="M8 5.5v13l11-6.5z"/></svg></button>Reprendre</div>
+           <div class="lbl"><button class="round stop" id="rstop" aria-label="Terminer"><svg viewBox="0 0 24 24" fill="#fff"><rect x="6.5" y="6.5" width="11" height="11" rx="2"/></svg></button>Terminer</div>`;
+    const g = $('#rgo'); if (g) g.onclick = goRun;
+    const pz = $('#rpause'); if (pz) pz.onclick = togglePause;
+    const st = $('#rstop'); if (st) st.onclick = () => { if (RUN && RUN.dist < 100 && !confirm('Terminer la course ?')) return; finishRun(); };
+  }
+  $('#rhere').classList.toggle('hidden', RUN.ready);
 }
 function togglePause() {
-  if (!RUN) return;
-  if (RUN.paused) { RUN.paused = false; RUN.resumedAt = Date.now(); speak('On repart !'); const l = RUN.pts[RUN.pts.length - 1]; if (l) l[2] = Date.now(); }
+  if (!RUN || RUN.ready) return;
+  if (RUN.paused) { RUN.paused = false; RUN.resumedAt = Date.now(); speak('On repart !'); const l = RUN.pts[RUN.pts.length - 1]; if (l) l[2] = Date.now() + (RUN.simOff || 0); }
   else { RUN.elapsed = elapsed(); RUN.paused = true; stopSim(); speak('Pause.'); }
   saveRun(); drawRun();
 }
@@ -1327,16 +1488,21 @@ function routeSvg(pts) {
   const P = xs.map((x, i) => [((x - x0) * sc + ox).toFixed(1), ((ys[i] - y0) * sc + oy).toFixed(1)]);
   return `<svg class="route" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><polyline points="${P.map(p => p.join(',')).join(' ')}" fill="none" stroke="#FFD23F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${P[0][0]}" cy="${P[0][1]}" r="5" fill="#9B5CFF"/><circle cx="${P[P.length - 1][0]}" cy="${P[P.length - 1][1]}" r="5" fill="#fff"/></svg>`;
 }
+function splitsList(sp) {
+  if (!sp || !sp.length) return '';
+  return `<div class="runlist" style="margin-top:10px">${sp.map((ms, i) => `<div class="r" style="border-color:rgba(255,255,255,.1);color:#e8e3f6"><span>Km ${i + 1}</span><b>${pace(ms, 1000)} /km</b></div>`).join('')}</div>`;
+}
 async function finishRun() {
   if (!RUN) return;
+  if (RUN.ready) { closeRunScreen(); RUN = null; saveRun(); return; }
   if (!RUN.paused) { RUN.elapsed = elapsed(); RUN.paused = true; }
-  const r = { id: RUN.id, date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts) };
+  const r = { id: RUN.id, date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round) };
   closeRunScreen();
   const card = r.found ? S.collection.find(c => c.pid === r.found) : null;
   let keep = true;
   const pr = overlay(`<div class="fiche" style="text-align:center">
     <div class="v-title pixel" style="margin-bottom:18px">COURSE<br>TERMINÉE</div>
-    <div class="box"><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>${routeSvg(r.pts)}</div>
+    <div class="box"><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>${routeSvg(r.pts)}${splitsList(r.splits)}</div>
     ${card ? `<p class="v-sub">Course enregistrée sur ta carte <b style="color:#FFD23F">${esc(card.name)}</b></p>` : ''}
     <div class="v-actions"><button class="btn gold" data-close>Enregistrer</button><button class="link" id="nokeep" style="color:#b9b0d6;margin:0">Ne pas enregistrer</button></div>
   </div>`, true);
@@ -1347,24 +1513,38 @@ async function finishRun() {
   if (current === 'prof') renderProf(); else renderQuests();
 }
 function stopSim() { clearInterval(simT); simT = null; const b = $('#rsim'); if (b) b.textContent = '▶ Simuler (test)'; }
-$('#rpause').onclick = togglePause;
-$('#rstop').onclick = () => { if (RUN && RUN.dist < 100 && !confirm('Terminer la course ?')) return; finishRun(); };
+$('#rclose').onclick = () => {
+  if (!RUN) return closeRunScreen();
+  if (RUN.ready) { finishRun(); return; }
+  if (confirm('Terminer la course maintenant ?')) finishRun();
+};
 $('#rvoice').onclick = () => { S.voice = !S.voice; save(); $('#rvoice').textContent = S.voice ? '🔊 Voix' : '🔇 Voix'; if (S.voice) speak('Voix activée.'); };
 $('#rhere').onclick = () => {
   if (!RUN) return;
   if (RUN.phase === 'go') { const p = placeById(RUN.pid); const ok = S.testMode || (lastPos && p && dist(lastPos, p) <= (p.r || (p.area ? 80 : 35)) + Math.min(lastPos.acc || 0, 40)); if (ok) arrive(); else toast(lastPos && p ? `Encore ${Math.round(dist(lastPos, p))} m` : 'GPS en attente…'); }
   else finishRun();
 };
-// mode test : on avance tout seul vers l'objectif, 25 m par seconde, chrono accéléré (≈ 4:40/km)
+// mode test : on suit l'itinéraire tout seul, 25 m par seconde, chrono accéléré (≈ 4:40/km)
 $('#rsim').onclick = () => {
   if (simT) return stopSim();
+  if (RUN.ready) goRun();
   if (RUN.paused) togglePause();
   $('#rsim').textContent = '⏸ Stop simulation';
   let cur = lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : { lat: S.home.lat, lng: S.home.lng };
+  let simRoute = null, idx = 0;
   simT = setInterval(() => {
-    const tg = RUN && (RUN.phase === 'go' ? placeById(RUN.pid) : S.home); if (!tg) return stopSim();
-    const d = dist(cur, tg), step = Math.min(25, d);
-    if (d > 1) { const f = step / d; cur = { lat: cur.lat + (tg.lat - cur.lat) * f, lng: cur.lng + (tg.lng - cur.lng) * f }; }
+    if (!RUN) return stopSim();
+    const tgp = RUN.phase === 'go' ? placeById(RUN.pid) : S.home; if (!tgp) return stopSim();
+    const R = RUN.route;
+    if (R !== simRoute) { simRoute = R; const n = nearestOnRoute(cur, R); idx = n ? n.i + 1 : 0; }
+    // on avance de 25 m le long de l'itinéraire, puis jusqu'au vrai lieu
+    let left = 25, guard = 0;
+    while (left > 0.5 && guard++ < 50) {
+      const tg = R && idx < R.pts.length ? { lat: R.pts[idx][0], lng: R.pts[idx][1] } : tgp;
+      const d = dist(cur, tg);
+      if (d <= left) { cur = { lat: tg.lat, lng: tg.lng }; left -= d; if (R && idx < R.pts.length) idx++; else break; }
+      else { const f = left / d; cur = { lat: cur.lat + (tg.lat - cur.lat) * f, lng: cur.lng + (tg.lng - cur.lng) * f }; left = 0; }
+    }
     RUN.elapsed += 6000; RUN.simOff = (RUN.simOff || 0) + 6000;
     onRunPos({ lat: cur.lat, lng: cur.lng, acc: 5, t: Date.now() + RUN.simOff, sim: true });
   }, 1000);
