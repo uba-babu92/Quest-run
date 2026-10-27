@@ -325,7 +325,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v13';
+const VERSION = 'v14';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -954,6 +954,26 @@ async function storyFor(p) {
   const m = await storyTiles[k];
   return m[p.id] || null;
 }
+// Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
+const STORY_API = ''; // adresse du relais, ex. https://questrun-histoires.xxx.workers.dev
+async function aiStory(p) {
+  const w = S.wiki[p.id];
+  if (w && w.ai) return w.ai;
+  const robot = await storyFor(p);
+  if (robot) return robot;
+  const api = S.storyApi || STORY_API;
+  if (!api || !p.name) return null;
+  try {
+    const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined,
+      body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc }) });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j.text || j.text.length < 20) return null;
+    S.wiki[p.id] = Object.assign(S.wiki[p.id] || { none: true, t: Date.now() }, { ai: j.text });
+    save();
+    return j.text;
+  } catch (e) { return null; }
+}
 function osmFacts(p) {
   const f = [];
   if (p.artist) f.push(`Œuvre de <b>${esc(p.artist)}</b>.`);
@@ -1092,7 +1112,12 @@ function showFiche(c) {
   </div>`, true);
   fillPhotos($('#vin'));
   wikiFor(p).then(async w => {
-    const ai = w && w.text ? null : await storyFor(p);
+    let ai = null;
+    if (!(w && w.text)) {
+      const b0 = $('#story');
+      if (b0 && !(S.wiki[p.id] && S.wiki[p.id].ai)) b0.innerHTML = '<span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On écrit l\'histoire de ce lieu…</p>';
+      ai = await aiStory(p);
+    }
     const box = $('#story'); if (!box) return;
     const facts = osmFacts(p);
     let h = '<span class="pixel">HISTOIRE</span>';

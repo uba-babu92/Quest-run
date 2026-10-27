@@ -54,7 +54,12 @@
 - La **course est collée à la carte** : km, temps, allure, tracé au dos (fiche). Historique dans le Profil.
 - Mode test : bouton « ▶ Simuler » dans l'écran de course (25 m/s, chrono accéléré ≈ 4:40/km).
 
-## Robot des histoires (27/10)
+## Histoires à la demande (27/10, choix de Bazil)
+- **Pas de génération en masse.** Quand on ouvre la fiche d'une carte sans Wikipédia, l'appli demande 2-3 phrases à Mistral **une seule fois**, puis les garde (`S.wiki[id].ai`).
+- Passage par un **relais Cloudflare Worker** (`tools/worker.js`) qui garde la clé `MISTRAL_API_KEY` dans ses secrets et n'accepte que l'origine `https://uba-babu92.github.io`.
+- Adresse du relais : constante `STORY_API` dans `index.html`.
+
+## Robot des histoires (27/10, désactivé)
 - Pour les lieux **nommés sans Wikipédia**, `tools/build-stories.mjs` (workflow `stories.yml`, chaque lundi) demande à **Mistral** (`mistral-small-latest`, offre gratuite) 2-3 phrases, par lots de 12.
 - Clé dans le **secret GitHub `MISTRAL_API_KEY`** — jamais dans le code (dépôt public).
 - Consigne : pas de date/nom/fait inventé ; sinon décrire le type de lieu et l'ambiance. L'appli affiche « ✨ Texte généré par IA ».
