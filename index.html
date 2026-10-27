@@ -209,6 +209,10 @@ h2{font-size:22px;margin:4px 16px 12px}
 @keyframes wobble{50%{transform:scale(1.03) rotate(-1deg)}}
 @keyframes pop{from{transform:scale(.3);opacity:0}}
 #victory .btn{flex:none;width:min(80vw,320px);position:relative;z-index:2}
+.flip.small{width:min(48vw,200px);margin:6px auto 16px}
+.flip.small .card{width:100%;margin:0}
+.vstory{opacity:0;transform:translateY(12px);animation:storyIn .5s ease 1.6s forwards}
+@keyframes storyIn{to{opacity:1;transform:none}}
 .v-card .card{width:min(62vw,250px);margin:8px auto 26px}
 
 /* ---------- image verrouillée ---------- */
@@ -325,7 +329,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v16';
+const VERSION = 'v17';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -1074,12 +1078,15 @@ function overlay(html, scroll) {
   });
 }
 async function victory(card, pts) {
-  const p = overlay(`<div class="v-title pixel">LIEU TROUVÉ !</div>
+  const place = placeById(card.pid) || { id: card.pid, name: card.name, label: card.label, lat: card.lat, lng: card.lng };
+  const p = overlay(`<div class="fiche" style="text-align:center">
+    <div class="v-title pixel">LIEU TROUVÉ !</div>
     <div class="v-pts pixel" id="vp">+0 ★</div>
-    <div class="flip" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:70px;height:70px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
-    <div class="v-actions"><button class="btn gold" data-close>Continuer</button><button class="link" id="vfiche" style="color:#C9A6FF;margin:0">📖 Lire son histoire</button></div>`);
+    <div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
+    <div class="box vstory" id="vstory" style="text-align:left"><span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On déverrouille l'histoire…</p></div>
+    <div class="v-actions"><button class="btn gold" data-close>Continuer</button></div></div>`, true);
   fillPhotos($('#vin'));
-  $('#vfiche').onclick = () => { $('#victory').classList.add('hidden'); showFiche(card).then(() => $('#vin').dispatchEvent(new Event('closed'))); };
+  fillStory($('#vstory'), place, card);
   countUp($('#vp'), pts);
   vibrate([30, 40, 30]);
   setTimeout(() => {
@@ -1098,6 +1105,26 @@ async function questClear() {
   vibrate([60, 60, 60, 60, 120]);
   return p;
 }
+/* ---------- histoire d'un lieu (fiche et écran de victoire) ---------- */
+async function fillStory(box, p, c, retry) {
+  if (!box) return;
+  const w = await wikiFor(p);
+  let ai = null;
+  if (!(w && w.text)) {
+    if (!(S.wiki[p.id] && S.wiki[p.id].ai)) box.innerHTML = '<span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On écrit l\'histoire de ce lieu…</p>';
+    ai = await aiStory(p);
+  }
+  if (!box.isConnected) return;
+  const facts = osmFacts(p);
+  let h = '<span class="pixel">HISTOIRE</span>';
+  if (w && w.img && c.photo && box.id === 'story') h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
+  if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
+  else if (ai) h += `<p>${esc(ai)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">✨ Texte généré par IA, peut contenir des erreurs.</p>`;
+  else h += `<p>${facts || "Pas encore d'histoire pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
+  box.innerHTML = h;
+  const rb = box.querySelector('#aiRetry'); if (rb) rb.onclick = retry;
+}
+
 /* ---------- fiche d'une carte ---------- */
 function showFiche(c) {
   if (!c) return Promise.resolve();
@@ -1114,23 +1141,7 @@ function showFiche(c) {
     <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
   </div>`, true);
   fillPhotos($('#vin'));
-  wikiFor(p).then(async w => {
-    let ai = null;
-    if (!(w && w.text)) {
-      const b0 = $('#story');
-      if (b0 && !(S.wiki[p.id] && S.wiki[p.id].ai)) b0.innerHTML = '<span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On écrit l\'histoire de ce lieu…</p>';
-      ai = await aiStory(p);
-    }
-    const box = $('#story'); if (!box) return;
-    const facts = osmFacts(p);
-    let h = '<span class="pixel">HISTOIRE</span>';
-    if (w && w.img && c.photo) h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
-    if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
-    else if (ai) h += `<p>${esc(ai)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">✨ Texte généré par IA, peut contenir des erreurs.</p>`;
-    else h += `<p>${facts || "Pas encore d'histoire pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p><button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>` : ''}`;
-    box.innerHTML = h;
-    const rb = box.querySelector('#aiRetry'); if (rb) rb.onclick = () => { $('#vin').querySelector('[data-close]').click(); setTimeout(() => showFiche(c), 50); };
-  });
+  fillStory($('#story'), p, c, () => { $('#vin').querySelector('[data-close]').click(); setTimeout(() => showFiche(c), 50); });
   return pr;
 }
 
