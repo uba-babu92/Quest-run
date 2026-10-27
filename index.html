@@ -404,31 +404,42 @@ function classify(t) {
 
 function overpassQuery(home, radius) {
   const a = `(around:${radius},${home.lat.toFixed(5)},${home.lng.toFixed(5)})`;
-  return `[out:json][timeout:50];(
+  // requête légère : œuvres, fontaines et mémoriaux en points seulement, sans les plaques (des milliers à Paris)
+  return `[out:json][timeout:25];(
 nwr["amenity"="townhall"]["name"]${a};
-nwr["historic"~"^(monument|castle|manor|ruins|memorial|wayside_cross|boundary_stone|milestone)$"]${a};
-nwr["tourism"~"^(artwork|museum|viewpoint)$"]${a};
-nwr["amenity"="fountain"]${a};
-nwr["leisure"~"^(park|garden)$"]["name"]${a};
+nwr["historic"~"^(monument|castle|manor|ruins)$"]${a};
+node["historic"="memorial"]["memorial"!~"plaque|stolperstein|blue_plaque"]${a};
+node["historic"~"^(wayside_cross|boundary_stone|milestone)$"]${a};
+node["tourism"="artwork"]${a};
+nwr["tourism"~"^(museum|viewpoint)$"]${a};
+node["amenity"="fountain"]["drinking_water"!="yes"]${a};
+way["leisure"~"^(park|garden)$"]["name"]${a};
 nwr["amenity"="place_of_worship"]["name"]${a};
-);out center tags;`;
+);out center tags qt;`;
 }
 
-async function fetchPlaces(home, km) {
-  const radius = Math.min(10000, Math.round(km * 1000 * 0.72));
+// On interroge les 3 serveurs en même temps : le premier qui répond gagne.
+async function fetchPlaces(home, km, onSlow) {
+  const radius = Math.min(9000, Math.round(km * 620));
   const body = 'data=' + encodeURIComponent(overpassQuery(home, radius));
-  let last;
-  for (const ep of OVERPASS) {
-    try {
-      const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 60000);
-      const r = await fetch(ep, { method: 'POST', body, signal: ctrl.signal, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
-      clearTimeout(to);
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const j = await r.json();
-      return parsePlaces(j.elements || [], home);
-    } catch (e) { last = e; }
+  const ctrls = OVERPASS.map(() => new AbortController());
+  const slow = [setTimeout(() => onSlow && onSlow(1), 8000), setTimeout(() => onSlow && onSlow(2), 20000)];
+  const kill = setTimeout(() => ctrls.forEach(c => c.abort()), 45000);
+  const one = async (ep, i) => {
+    const r = await fetch(ep, { method: 'POST', body, signal: ctrls[i].signal, headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if (!j.elements || (!j.elements.length && j.remark)) throw new Error(j.remark || 'vide');
+    return j.elements;
+  };
+  try {
+    const els = await Promise.any(OVERPASS.map(one));
+    return parsePlaces(els, home);
+  } catch (e) {
+    throw new Error('serveurs');
+  } finally {
+    slow.forEach(clearTimeout); clearTimeout(kill); ctrls.forEach(c => c.abort());
   }
-  throw last || new Error('réseau');
 }
 
 function parsePlaces(els, home) {
@@ -971,7 +982,10 @@ function onboarding(step = 0) {
     o.innerHTML = `${dots(2)}<div class="body" style="text-align:center"><div class="loader"></div>
       <h1 id="lt">On cherche les lieux autour de toi…</h1><p id="ls">Statues, fontaines, monuments, parcs…</p></div>
       <button class="btn hidden" id="go">Voir mes quêtes</button>`;
-    fetchPlaces(S.home, S.goal.km).then(pl => {
+    fetchPlaces(S.home, S.goal.km, k => {
+      const ls = $('#ls'); if (!ls) return;
+      ls.textContent = k === 1 ? 'Ça prend un peu de temps, on fouille ta ville…' : 'Les serveurs sont chargés, on insiste encore un peu…';
+    }).then(pl => {
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
       S.week = null; S.onboarded = true; ensureWeek(); save();
       const r = pl.filter(p => p.rarity === 'rare').length;
@@ -982,8 +996,8 @@ function onboarding(step = 0) {
       $('#go').onclick = () => { o.classList.add('hidden'); if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
     }).catch(() => {
       o.querySelector('.loader').style.animation = 'none';
-      $('#lt').textContent = 'Connexion impossible';
-      $('#ls').textContent = 'Vérifie ton réseau et réessaie.';
+      $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
+      $('#ls').textContent = 'Ils sont gratuits et parfois saturés. Réessaie dans une minute.';
       $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
       $('#go').onclick = () => onboarding(3);
     });
