@@ -273,6 +273,11 @@ h2{font-size:22px;margin:4px 16px 12px}
 .pbar{height:10px;border-radius:99px;background:var(--violet-soft);overflow:hidden;max-width:330px;margin:18px auto 0}
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--violet-2));transition:width .6s}
 
+/* ---------- dénivelé ---------- */
+.hill{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:99px;margin-left:2px;vertical-align:1px;white-space:nowrap}
+.hill.h0{background:#DCFCE7;color:#166534}.hill.h1{background:#FFEDD5;color:#9A3412}.hill.h2{background:#FEE2E2;color:#991B1B}
+[data-theme="dark"] .hill.h0{background:#14321f;color:#86efac}[data-theme="dark"] .hill.h1{background:#3a2210;color:#fdba74}[data-theme="dark"] .hill.h2{background:#3a1414;color:#fca5a5}
+
 /* ---------- boutique ---------- */
 button.chip{cursor:pointer}
 .wallet{margin:0 16px 14px;padding:20px;border-radius:var(--radius);color:#fff;text-align:center;background:linear-gradient(135deg,#2a1150,#7B2FF7);box-shadow:var(--shadow)}
@@ -454,7 +459,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v25';
+const VERSION = 'v26';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -702,6 +707,8 @@ async function upgradePlaces() {
   if (!local || !local.els.length) return;
   if (S.placesFor && S.placesFor.localCount === local.els.length && S.placesFor.parse === PARSE_V) return;
   const fresh = parsePlaces(local.els, S.home).concat(nearBoulogne(S.home) ? curatedPlaces(S.home) : []);
+  const oldEle = new Map(S.places.filter(p => p.ele != null).map(p => [p.id, p.ele]));
+  fresh.forEach(p => { if (oldEle.has(p.id)) p.ele = oldEle.get(p.id); });
   // les quêtes déjà faites gardent leur lieu ; celles à faire sur un lieu retiré sont remplacées
   const done = new Set((S.week ? S.week.quests : []).filter(q => q.status === 'done').map(q => q.pid));
   for (const p of S.places) if (done.has(p.id) && !fresh.some(f => f.id === p.id)) fresh.push(p);
@@ -788,16 +795,56 @@ function hintFor(p) {
   return h.join(' ');
 }
 
+/* ---------- dénivelé (altitudes Open-Meteo, gratuit, sans clé) ---------- */
+// altitudes de plusieurs points (par paquets de 100)
+async function elevations(pts) {
+  const out = [];
+  for (let i = 0; i < pts.length; i += 100) {
+    const part = pts.slice(i, i + 100);
+    const j = await getJSON(`https://api.open-meteo.com/v1/elevation?latitude=${part.map(p => p.lat.toFixed(5)).join(',')}&longitude=${part.map(p => p.lng.toFixed(5)).join(',')}`, 10000);
+    if (!Array.isArray(j.elevation)) throw new Error('altitude');
+    out.push(...j.elevation);
+  }
+  return out;
+}
+// D+ et D− d'une suite d'altitudes (on ignore les petites variations < 2 m)
+function climb(alts) {
+  let up = 0, down = 0, ref = alts[0];
+  for (const a of alts) { if (a == null) continue; if (ref == null) { ref = a; continue; } const d = a - ref; if (d >= 2) { up += d; ref = a; } else if (d <= -2) { down -= d; ref = a; } }
+  return { up: Math.round(up), down: Math.round(down) };
+}
+// D+ estimé d'un aller-retour vers un lieu : la différence d'altitude avec la maison
+const questDplus = p => p && p.ele != null && S.homeEle != null ? Math.round(Math.abs(p.ele - S.homeEle) * 1.2) : null;
+// distance « effort » : 100 m de montée ≈ 1 km de plat
+const effortM = p => p.dist * 2 * ROAD + (questDplus(p) || 0) * 10;
+function hillBadge(dp) {
+  if (dp == null) return '';
+  const k = dp < 40 ? 0 : dp < 120 ? 1 : 2;
+  return `<span class="hill h${k}">${['🟢 Plat', '🟠 Vallonné', '🔴 Ça grimpe'][k]} · ↗${dp} m</span>`;
+}
+// altitudes des lieux à bonne distance, gardées sur le téléphone
+async function loadElevations() {
+  if (!S.home) return;
+  const km = S.goal.km, ideal = km * 1000 / 2 / ROAD;
+  const need = S.places.filter(p => p.ele == null && p.dist <= ideal * 1.6).slice(0, 1200);
+  if (S.homeEle == null) { const [h] = await elevations([S.home]); S.homeEle = h; }
+  if (!need.length) { save(); return; }
+  const alts = await elevations(need);
+  need.forEach((p, i) => { if (alts[i] != null) p.ele = Math.round(alts[i]); });
+  save();
+}
+
 /* ---------- génération des quêtes ---------- */
 function pickQuests(n, seed, exclude) {
-  const km = S.goal.km, ideal = km * 1000 / 2 / ROAD;
+  // on vise la distance en EFFORT (montées comprises), pas seulement en km
+  const km = S.goal.km, target = km * 1000;
   const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
   const ok = p => !exclude.has(p.id) && !found.has(p.id) && !black.has(p.id);
-  let pool = S.places.filter(p => ok(p) && Math.abs(p.dist - ideal) <= ideal * 0.28);
-  if (pool.length < n * 3) pool = S.places.filter(p => ok(p) && Math.abs(p.dist - ideal) <= ideal * 0.5);
+  let pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.28);
+  if (pool.length < n * 3) pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.5);
   if (pool.length < n) pool = S.places.filter(ok);
   const r = rng(seed);
-  const score = p => Math.abs(p.dist - ideal) / ideal + r() * 0.6;
+  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6;
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const wantRare = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
@@ -919,7 +966,7 @@ function renderQuests() {
       const when = isToday ? `<span class="today-tag">Aujourd'hui</span>` : `${DAYS[q.day] || ''}${late ? ' · rattrapable' : ''}`;
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''} ${isToday ? 'today' : ''}" data-i="${i}">
         <div class="num ${done ? '' : 'day'}">${done ? '✓' : DAYS_S[q.day] || i + 1}</div>
-        <div class="t"><b>${esc(shownName(p, done))}</b><span>${when} · ${esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        <div class="t"><b>${esc(shownName(p, done))}</b><span>${when} · ${esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
         ${done ? `<span class="badge b-done">+${PTS[p.rarity]}</span>` : `<span class="badge b-${p.rarity}">${p.rarity === 'rare' ? 'Rare' : 'Commune'}</span>`}
       </button>`;
     }).join('');
@@ -959,7 +1006,7 @@ function openQuest(i) {
   const sh = sheet(`<div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
     <span class="badge b-${p.rarity}">${rare ? 'Rare' : 'Commune'} · +${PTS[p.rarity]} ★</span>
     <h3>${esc(shownName(p, false))}</h3>
-    <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour</p>
+    <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
     ${rare ? `<div class="hint">${hintFor(p)}</div>` : `<p>Cours jusqu'au lieu, valide ton arrivée, prends ta photo et rentre.</p>`}
     <div class="row"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
     <div class="row">
@@ -1177,7 +1224,7 @@ function swapQuest(i) {
   const sh = sheet(`<h3>Changer de mission</h3>
     <p class="muted">${price ? `Ça coûte <b>${price} 🪙</b> (tu en as ${S.coins || 0}).` : 'Ton changement <b>gratuit</b> de la semaine.'} Choisis ta nouvelle quête :</p>
     <div class="swaps">${opts.map((o, k) => `<button data-k="${k}" class="${o.rarity}"><div class="num">${o.rarity === 'rare' ? '?' : '★'}</div>
-      <div style="flex:1;min-width:0"><b>${esc(shownName(o, false))}</b><span>${esc(o.label)} · ${roundTripKm(o).toFixed(1).replace('.', ',')} km A/R</span></div>
+      <div style="flex:1;min-width:0"><b>${esc(shownName(o, false))}</b><span>${esc(o.label)} · ${roundTripKm(o).toFixed(1).replace('.', ',')} km A/R ${hillBadge(questDplus(o))}</span></div>
       <span class="badge b-${o.rarity}">${o.rarity === 'rare' ? 'Rare' : 'Commune'}</span></button>`).join('')}</div>
     <button class="link" id="keep">Garder ma mission</button>`);
   sh.querySelector('#keep').onclick = () => { closeSheet(); openQuest(i); };
@@ -1338,6 +1385,7 @@ function showFiche(c) {
     <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     ${r ? `<div class="box"><span class="pixel">TA SORTIE · ${sportOf(r).ic} ${esc(sportOf(r).name.toUpperCase())}</span>
       <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div>
+      ${r.dplus != null ? `<p style="text-align:center;margin:10px 0 0;color:#e8e3f6">↗ <b>${r.dplus} m</b> de dénivelé positif</p>` : ''}
       ${routeSvg(r.pts)}${splitsList(r.splits, r.sport)}</div>` : ''}
     <div class="box" id="story"><span class="pixel">HISTOIRE</span><p class="muted" style="color:#b9b0d6">Chargement…</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
@@ -1358,7 +1406,7 @@ function tstats() {
   for (const w of weeks) { const [y, n] = w.split('-W').map(Number); const cur = y * 53 + n; streak = prev != null && cur === prev + 1 ? streak + 1 : 1; best = Math.max(best, streak); prev = cur; }
   return { cards: col.length, rares: col.filter(c => c.rarity === 'rare').length, km: runs.reduce((a, r) => a + r.dist, 0) / 1000, maxRun: Math.max(0, ...runs.map(r => r.dist)) / 1000,
     weeks: S.weeksCleared || 0, streak: best, early: runs.some(r => new Date(r.date).getHours() < 8), night: runs.some(r => new Date(r.date).getHours() >= 21),
-    all4: has('culte') && has('vert') && has('statue') && has('musee'), bike: runs.some(r => r.sport === 'bike'), walk: runs.some(r => r.sport === 'walk') };
+    all4: has('culte') && has('vert') && has('statue') && has('musee'), bike: runs.some(r => r.sport === 'bike'), walk: runs.some(r => r.sport === 'walk'), maxDplus: Math.max(0, ...runs.map(r => r.dplus || 0)), dplus: runs.reduce((a, r) => a + (r.dplus || 0), 0) };
 }
 const TROPHIES = [
   ['card1', '🃏', 'Première carte', 'Trouver ton premier lieu', t => t.cards >= 1],
@@ -1381,7 +1429,9 @@ const TROPHIES = [
   ['night', '🌙', 'Noctambule', 'Partir après 21 h', t => t.night],
   ['all4', '🧭', 'Touche-à-tout', 'Un lieu de culte, un parc, une statue et un musée', t => t.all4],
   ['bike', '🚴', 'En selle', 'Une sortie à vélo', t => t.bike],
-  ['walk', '🚶', 'Flâneur', 'Une sortie en marchant', t => t.walk]
+  ['walk', '🚶', 'Flâneur', 'Une sortie en marchant', t => t.walk],
+  ['hill100', '⛰️', 'Grimpeur', '100 m de D+ en une sortie', t => t.maxDplus >= 100],
+  ['hill1000', '🏔️', 'Montagnard', '1 000 m de D+ au total', t => t.dplus >= 1000]
 ];
 // au premier lancement de cette version : on note ce qui est déjà acquis, sans fête
 function initProgress() {
@@ -1523,6 +1573,13 @@ async function planRoute() {
   RUN.route = R;
   if (RUN.phase === 'go') RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
   saveRun(); showRoute(true); drawRun();
+  // D+ et D− de l'itinéraire (un point tous les ~100 m)
+  try {
+    const P = RUN.route.pts, step = Math.max(1, Math.floor(P.length / 90));
+    const sample = P.filter((_, i) => i % step === 0 || i === P.length - 1).map(p => ({ lat: p[0], lng: p[1] }));
+    const c = climb(await elevations(sample));
+    if (RUN && RUN.route === R) { R.up = c.up; R.down = c.down; saveRun(); drawRun(); }
+  } catch (e) {}
 }
 function showRoute(fit) {
   if (!runMap || !RUN) return;
@@ -1568,7 +1625,7 @@ function openRun() {
   showRoute(true);
   setTimeout(() => { runMap.invalidateSize(); showRoute(RUN && RUN.ready); }, 80);
   if (navigator.geolocation && runWatch == null)
-    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, alt: p.coords.altitude, altAcc: p.coords.altitudeAccuracy, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   clearInterval(runTick); runTick = setInterval(drawRun, 1000);
   drawRun();
 }
@@ -1587,6 +1644,12 @@ function onRunPos(pos) {
   lastPos = pos;
   if (!RUN) return;
   runMe.setLatLng([pos.lat, pos.lng]);
+  // D+ en direct : altitude GPS lissée, on ne compte qu'à partir de 4 m de montée
+  if (!RUN.paused && pos.alt != null && (pos.altAcc == null || pos.altAcc <= 25)) {
+    if (RUN.altRef == null) RUN.altRef = pos.alt;
+    else if (pos.alt - RUN.altRef >= 4) { RUN.dplus = (RUN.dplus || 0) + (pos.alt - RUN.altRef); RUN.altRef = pos.alt; }
+    else if (pos.alt < RUN.altRef - 4) RUN.altRef = pos.alt;
+  }
   if (!RUN.paused && pos.acc <= 40) {
     const last = RUN.pts[RUN.pts.length - 1];
     if (!last) RUN.pts.push([pos.lat, pos.lng, pos.t, 0]);
@@ -1678,10 +1741,10 @@ function drawRun() {
   const tg = runTarget(), here = lastPos;
   const R = RUN.route;
   if (RUN.ready) {
-    $('#rttl').innerHTML = R ? `${sportOf(RUN).ic} Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}` : 'Calcul de l\'itinéraire…';
+    $('#rttl').innerHTML = R ? `${sportOf(RUN).ic} Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}${R.up != null ? `<br>${hillBadge(R.up + R.down)} <span style="font-weight:600">aller ↗${R.up} m ↘${R.down} m</span>` : ''}` : 'Calcul de l\'itinéraire…';
     $('#rleft').innerHTML = here ? `<span class="gps ${here.acc <= 30 ? 'ok' : ''}">GPS ${here.acc <= 30 ? 'prêt ✓' : 'en recherche… (±' + Math.round(here.acc) + ' m)'}</span>` : '<span class="gps">Recherche du GPS…</span>';
   } else {
-    $('#rttl').textContent = RUN.paused ? '⏸ En pause' : `${sportOf(RUN).ic} ${RUN.phase === 'back' ? 'Retour maison' : sportOf(RUN).name}`;
+    $('#rttl').textContent = (RUN.paused ? '⏸ En pause' : `${sportOf(RUN).ic} ${RUN.phase === 'back' ? 'Retour maison' : sportOf(RUN).name}`) + (RUN.dplus ? ` · ↗ ${Math.round(RUN.dplus)} m` : '');
     const left = here ? (leftOnRoute(here) ?? (tg ? dist(here, tg) : null)) : null;
     $('#rleft').textContent = left != null ? `Plus que ${fmtKm(left)}` : 'Recherche du GPS…';
   }
@@ -1741,13 +1804,18 @@ async function finishRun() {
   if (!RUN) return;
   if (RUN.ready) { closeRunScreen(); RUN = null; saveRun(); return; }
   if (!RUN.paused) { RUN.elapsed = elapsed(); RUN.paused = true; }
-  const r = { id: RUN.id, sport: RUN.sport || 'run', date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round) };
+  const r = { id: RUN.id, sport: RUN.sport || 'run', date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round), dplus: Math.round(RUN.dplus || 0) };
+  try {
+    const step = Math.max(1, Math.floor(r.pts.length / 99));
+    const sample = r.pts.filter((_, i) => i % step === 0 || i === r.pts.length - 1).map(p => ({ lat: p[0], lng: p[1] }));
+    if (sample.length > 2) { const alts = await Promise.race([elevations(sample), new Promise((_, no) => setTimeout(() => no(new Error('lent')), 4000))]); r.dplus = climb(alts).up; }
+  } catch (e) {}
   closeRunScreen();
   const card = r.found ? S.collection.find(c => c.pid === r.found) : null;
   let keep = true;
   const pr = overlay(`<div class="fiche" style="text-align:center">
     <div class="v-title pixel" style="margin-bottom:18px">COURSE<br>TERMINÉE</div>
-    <div class="box"><span class="pixel">${sportOf(r).ic} ${sportOf(r).name.toUpperCase()}</span><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div>${routeSvg(r.pts)}${splitsList(r.splits, r.sport)}</div>
+    <div class="box"><span class="pixel">${sportOf(r).ic} ${sportOf(r).name.toUpperCase()}</span><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div><p style="text-align:center;margin:10px 0 0;color:#e8e3f6">↗ <b>${r.dplus || 0} m</b> de dénivelé positif</p>${routeSvg(r.pts)}${splitsList(r.splits, r.sport)}</div>
     ${card ? `<p class="v-sub">Course enregistrée sur ta carte <b style="color:#FFD23F">${esc(card.name)}</b></p>` : ''}
     <div class="v-actions"><button class="btn gold" data-close>Enregistrer</button><button class="link" id="nokeep" style="color:#b9b0d6;margin:0">Ne pas enregistrer</button></div>
   </div>`, true);
@@ -1841,7 +1909,7 @@ function statsOf() {
   const sum = (a, f) => a.reduce((x, r) => x + f(r), 0);
   const D = sum(runs, r => r.dist), T = sum(runs, r => r.time);
   const rr = by('run'), bk = by('bike'), wk = by('walk');
-  return { n: runs.length, km: D / 1000, time: T, longest: Math.max(0, ...runs.map(r => r.dist)) / 1000,
+  return { n: runs.length, km: D / 1000, time: T, dplus: sum(runs, r => r.dplus || 0), maxDplus: Math.max(0, ...runs.map(r => r.dplus || 0)), longest: Math.max(0, ...runs.map(r => r.dist)) / 1000,
     runPace: rr.length ? pace(sum(rr, r => r.time), sum(rr, r => r.dist)) : null,
     bikeSpeed: bk.length ? speed(sum(bk, r => r.time), sum(bk, r => r.dist)) : null,
     walkPace: wk.length ? pace(sum(wk, r => r.time), sum(wk, r => r.dist)) : null };
@@ -1867,12 +1935,13 @@ function renderProf() {
     ${tile(S.collection.length, 'lieux trouvés')}${tile(S.collection.filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}
     ${tile(st.n, 'sorties')}${tile(kmTxt(st.km), 'km au total')}${tile(st.n ? hm(st.time) : '0 min', 'de sport')}
     ${tile(st.runPace || '–:––', 'allure course (/km)')}${tile(st.bikeSpeed || '–', 'vitesse vélo (km/h)')}${tile(kmTxt(st.longest), 'km, plus longue sortie')}
+    ${tile(fmt(st.dplus), 'm de D+ au total')}${tile(fmt(st.maxDplus), 'm, plus gros D+')}${tile(st.km ? Math.round(st.dplus / st.km) : 0, 'm de D+ par km')}
   </div></div>
   <div class="panel"><button class="trorow" id="shopbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Boutique</h4><b style="font-size:18px">${fmt(S.coins || 0)} 🪙</b></div><span style="flex:1"></span><span class="setbtn">Ouvrir ›</span></button></div>
   <div class="panel"><button class="trorow" id="trobtn"><div style="flex:none"><h4 style="margin:0 0 6px">Trophées · ${got.length}/${TROPHIES.length}</h4>
     <div class="mini">${[0, 1, 2].map(i => got[i] ? `<i>${got[i][1]}</i>` : '<i class="off">🔒</i>').join('')}</div></div>
     <span style="flex:1"></span><span class="setbtn">Voir tout ›</span></button></div>
-  <div class="panel"><h4>Dernières sorties</h4>${S.runs.length ? `<div class="runlist">${S.runs.slice(-5).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première sortie.</p>'}</div>
+  <div class="panel"><h4>Dernières sorties</h4>${S.runs.length ? `<div class="runlist">${S.runs.slice(-5).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km${r.dplus ? ' · ↗' + r.dplus + ' m' : ''} · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première sortie.</p>'}</div>
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION}</p>`;
   goalPicker($('#pgoal'));
   $('#trobtn').onclick = () => tab('tro');
@@ -2106,6 +2175,8 @@ function onboarding(step = 0) {
       $('#st2').innerHTML = `<b>${fmt(r)} trésors cachés</b> repérés`;
       mark(3); await wait(1400);
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
+      S.homeEle = null;
+      try { await Promise.race([loadElevations(), wait(6000)]); } catch (e) {}
       S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
       mark(4); await wait(1200);
       mark(5);
@@ -2247,6 +2318,7 @@ if (typeof L === 'undefined') {
   tab('quests');
   upgradePlaces().catch(() => {});
   dailyBonus();
+  loadElevations().then(() => current === 'quests' && renderQuests()).catch(() => {});
   track('session_start'); Metrics.askConsent();
   try { const r = JSON.parse(localStorage.getItem(RUN_KEY)); if (r && Date.now() - r.start < 6 * 3600e3) { RUN = r; openRun(); toast('Course reprise'); } else localStorage.removeItem(RUN_KEY); } catch (e) {}
   // précharge les images des quêtes de la semaine

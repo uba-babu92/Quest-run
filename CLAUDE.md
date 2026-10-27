@@ -30,7 +30,7 @@
 - **Bonus +500** quand toutes les quêtes de la semaine sont faites (écran « QUEST CLEAR! »).
 - Bouton **« Je ne trouve pas »** : introuvable / disparu / inaccessible → lieu retiré, nouvelle quête, aucun point perdu.
 - Niveaux (27/10) : **12 paliers avec un titre** (Promeneur 0 → Curieux 300 → Coureur du quartier 800 → Éclaireur 1 500 → Pisteur 2 500 → Explorateur 4 000 → Aventurier 6 000 → Chasseur de trésors 8 500 → Gardien de la ville 12 000 → Légende du quartier 16 000 → Maître des cartes 21 000 → Mythe urbain 27 000). Écran arcade à chaque niveau.
-- **21 trophées** (cartes, rares, km cumulés, sortie de 10 km, semaines complètes, série, lève-tôt, noctambule, touche-à-tout, vélo, marche) avec animation, rangés dans le Profil (`TROPHIES`).
+- **23 trophées** (cartes, rares, km cumulés, sortie de 10 km, semaines complètes, série, lève-tôt, noctambule, touche-à-tout, vélo, marche) avec animation, rangés dans le Profil (`TROPHIES`).
 - **Sport** choisi sur l'écran prêt : course / marche / vélo (itinéraire piéton ou vélo, vitesse en km/h à vélo). Le sport est gardé sur la sortie et sur la carte. Mêmes points pour tous les sports (à revoir si le vélo est trop facile).
 - **Pas dans la V1** : boss, mythologie, boutique, boosters, légendaires, comptes.
 
@@ -80,6 +80,13 @@
 - **Retour** : nouvel itinéraire vers la maison qui évite si possible le chemin de l'aller (boucle).
 - Pas retenu : pause en jaune, titre + ressenti à la fin.
 - Limite HTML : GPS coupé écran verrouillé / autre appli. Passage à une vraie appli (Capacitor, Mac + compte Apple) prévu à l'étape 2-3, ou plus tôt si l'écran allumé gêne.
+
+## Dénivelé (27/10, demande de Bazil : « 7 km jusqu'à Meudon, c'est beaucoup plus dur »)
+- Altitudes via **Open-Meteo** (`api.open-meteo.com/v1/elevation`, gratuit, sans clé), gardées sur les lieux (`p.ele`, `S.homeEle`).
+- **Quêtes choisies en distance « effort »** : km A/R + **100 m de D+ ≈ 1 km**. D+ estimé d'une quête = |altitude lieu − maison| × 1,2.
+- Badge sur chaque quête : 🟢 Plat (< 40 m), 🟠 Vallonné (< 120 m), 🔴 Ça grimpe.
+- Écran prêt : D+ / D− réels de l'itinéraire. Pendant : D+ en direct (altitude GPS lissée, seuil 4 m). Fin : D+ recalculé sur la trace (altitudes), affiché dans le résumé, la fiche, les sorties et les stats.
+- Trophées ajoutés : ⛰️ Grimpeur (100 m D+ en une sortie), 🏔️ Montagnard (1 000 m D+ au total) → 23 trophées.
 
 ## Pièces + changer de mission + chargement (27/10, choix de Bazil)
 - **🪙 Pièces** = monnaie à dépenser, à part des ★ (les ★ = expérience/niveau, ne baissent jamais). 30 au départ, +10 par lieu, +30 par semaine complète.
