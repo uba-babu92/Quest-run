@@ -56,7 +56,8 @@
 
 ## Histoires à la demande (27/10, choix de Bazil)
 - **Pas de génération en masse.** Quand on ouvre la fiche d'une carte sans Wikipédia, l'appli demande 2-3 phrases à Mistral **une seule fois**, puis les garde (`S.wiki[id].ai`).
-- Passage par un **relais Cloudflare Worker** (`tools/worker.js`) qui garde la clé `MISTRAL_API_KEY` dans ses secrets et n'accepte que l'origine `https://uba-babu92.github.io`.
+- Passage par un **relais Cloudflare Worker** (`tools/worker.js`) qui utilise **Workers AI** (`@cf/mistralai/mistral-small-3.1-24b-instruct`, quota gratuit quotidien) via une liaison nommée **AI** : aucune clé à gérer. N'accepte que l'origine `https://uba-babu92.github.io`.
+- La 1re clé Mistral a été exposée dans une capture le 27/10 puis supprimée par Bazil. Plus de clé Mistral utilisée.
 - Adresse du relais : https://questrun-histoires.v5nhskv7zy.workers.dev (constante `STORY_API` dans `index.html`).
 
 ## Robot des histoires (27/10, désactivé)
