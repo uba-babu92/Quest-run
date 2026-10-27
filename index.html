@@ -325,7 +325,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v14';
+const VERSION = 'v15';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -955,7 +955,7 @@ async function storyFor(p) {
   return m[p.id] || null;
 }
 // Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
-const STORY_API = ''; // adresse du relais, ex. https://questrun-histoires.xxx.workers.dev
+const STORY_API = 'https://questrun-histoires.v5nhskv7zy.workers.dev'; // relais Cloudflare (garde la clé Mistral)
 async function aiStory(p) {
   const w = S.wiki[p.id];
   if (w && w.ai) return w.ai;
