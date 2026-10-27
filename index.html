@@ -276,7 +276,8 @@ h2{font-size:22px;margin:4px 16px 12px}
 /* ---------- dénivelé ---------- */
 .hill{display:flex;margin-top:3px;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:-2px}
 .hill svg{width:14px;height:14px;flex:none}
-#run .hill{color:#c9c2e0}
+.hill.h0{color:#16A34A}.hill.h1{color:#EA8A0C}.hill.h2{color:#DC2626}
+[data-theme="dark"] .hill.h0,#run .hill.h0{color:#4ADE80}[data-theme="dark"] .hill.h1,#run .hill.h1{color:#FBA94C}[data-theme="dark"] .hill.h2,#run .hill.h2{color:#F87171}
 
 /* ---------- boutique ---------- */
 button.chip{cursor:pointer}
@@ -459,7 +460,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v29';
+const VERSION = 'v30';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -822,7 +823,7 @@ function hillBadge(dp) {
   if (dp == null) return '';
   const k = dp < 40 ? 0 : dp < 120 ? 1 : 2;
   // petit texte discret avec la flèche de montée
-  return `<span class="hill">↗ ${dp} m · ${['Plat', 'Vallonné', 'Ça grimpe'][k]}</span>`;
+  return `<span class="hill h${k}">↗ ${dp} m · ${['Plat', 'Vallonné', 'Ça grimpe'][k]}</span>`;
 }
 // altitudes des lieux à bonne distance, gardées sur le téléphone
 async function loadElevations() {
