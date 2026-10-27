@@ -264,7 +264,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v10';
+const VERSION = 'v11';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -930,7 +930,7 @@ function showCard(c) {
 }
 
 /* ---------- mode développeur ---------- */
-const DEV_HASH = 'a38abb6706ab2615d260f298bc4db4b13b6a195fe0b74b7f45fb25452b0eba76';
+const DEV_HASH = '54008b6212bb130ceb674696c809004e1503e596cc4007e96f32143846369754';
 async function sha256(t) {
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
   return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
