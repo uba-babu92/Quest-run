@@ -175,7 +175,10 @@ h2{font-size:22px;margin:4px 16px 12px}
 /* ---------- onboarding ---------- */
 #onb{position:fixed;inset:0;z-index:1000;background:var(--bg);display:flex;flex-direction:column;padding:calc(20px + var(--safe-t)) 22px calc(22px + var(--safe-b))}
 #onb .btn{flex:none;width:100%}
-#onb .dots{display:flex;gap:6px;justify-content:center;margin-bottom:10px}
+#onb .onbhead{position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;margin-bottom:10px}
+#onb .onbback{position:absolute;left:-6px;top:50%;transform:translateY(-50%);padding:6px 8px;color:var(--muted);font-weight:600;font-size:15px;opacity:.8}
+#onb .acts{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+#onb .dots{display:flex;gap:6px;justify-content:center}
 #onb .dots i{width:8px;height:8px;border-radius:9px;background:var(--line)}
 #onb .dots i.on{background:var(--violet);width:22px}
 #onb .body{flex:1;display:flex;flex-direction:column;justify-content:center}
@@ -433,7 +436,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v22';
+const VERSION = 'v23';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -1934,7 +1937,10 @@ document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b
 let onbMap = null;
 function onboarding(step = 0) {
   const o = $('#onb'); o.classList.remove('hidden');
-  const dots = n => `<div class="dots">${[0, 1, 2, 3].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div>`;
+  setTimeout(() => bindBack && bindBack(), 0);
+  // en-tête : bouton retour discret (étapes 1 à 3) + points de progression
+  const dots = n => `<div class="onbhead">${step >= 1 && step <= 3 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
     o.innerHTML = `<div class="body"><div class="hero">
         <img src="icon.svg" width="112" height="112" alt="">
@@ -1970,8 +1976,9 @@ function onboarding(step = 0) {
     o.innerHTML = `${dots(2)}<div class="body"><h1>D'où tu pars ?</h1>
       <p>Touche la carte pour placer ton point de départ, ou utilise ta position.</p>
       <div id="onbmap"></div>
-      <button class="btn ghost" id="locate" style="flex:none">📍 Utiliser ma position</button></div>
-      <button class="btn" id="go" style="margin-top:12px">C'est mon point de départ</button>`;
+      </div>
+      <div class="acts"><button class="btn ghost" id="locate">📍 Utiliser ma position</button>
+      <button class="btn" id="go">C'est mon point de départ</button></div>`;
     if (onbMap) { onbMap.remove(); onbMap = null; }
     const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
     let chosen = S.home ? { ...S.home } : null;
