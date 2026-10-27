@@ -325,7 +325,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v15';
+const VERSION = 'v16';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -962,18 +962,21 @@ async function aiStory(p) {
   const robot = await storyFor(p);
   if (robot) return robot;
   const api = S.storyApi || STORY_API;
-  if (!api || !p.name) return null;
+  aiError = '';
+  if (!api) { aiError = 'relais non configuré'; return null; }
+  if (!p.name) { aiError = 'lieu sans nom'; return null; }
   try {
     const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined,
       body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc }) });
-    if (!r.ok) return null;
+    if (!r.ok) { aiError = `relais ${r.status} : ${(await r.text()).slice(0, 120)}`; return null; }
     const j = await r.json();
-    if (!j.text || j.text.length < 20) return null;
+    if (!j.text || j.text.length < 20) { aiError = 'réponse vide'; return null; }
     S.wiki[p.id] = Object.assign(S.wiki[p.id] || { none: true, t: Date.now() }, { ai: j.text });
     save();
     return j.text;
-  } catch (e) { return null; }
+  } catch (e) { aiError = 'relais injoignable (' + (e.name === 'TimeoutError' ? 'trop long' : e.message) + ')'; return null; }
 }
+let aiError = '';
 function osmFacts(p) {
   const f = [];
   if (p.artist) f.push(`Œuvre de <b>${esc(p.artist)}</b>.`);
@@ -1124,8 +1127,9 @@ function showFiche(c) {
     if (w && w.img && c.photo) h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
     if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
     else if (ai) h += `<p>${esc(ai)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">✨ Texte généré par IA, peut contenir des erreurs.</p>`;
-    else h += `<p>${facts || "Pas encore d'histoire pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>`;
+    else h += `<p>${facts || "Pas encore d'histoire pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p><button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>` : ''}`;
     box.innerHTML = h;
+    const rb = box.querySelector('#aiRetry'); if (rb) rb.onclick = () => { $('#vin').querySelector('[data-close]').click(); setTimeout(() => showFiche(c), 50); };
   });
   return pr;
 }
