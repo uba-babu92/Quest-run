@@ -37,7 +37,7 @@
 ## Design (validé le 26/10)
 - **Recette Duolingo** : écrans du quotidien propres et sportifs, moments de victoire **arcade** à fond.
 - **Violet électrique** `#7B2FF7` (marque, boutons, quêtes) + **or** `#FFB800` (points, victoires).
-- Fond **clair** par défaut. **Interrupteur « Mode sombre »** dans les Paramètres (plus de mode Auto, 27/10).
+- **Sombre par défaut** (27/10, choix de Bazil ; avant : clair). **Interrupteur « Mode sombre »** dans les Paramètres (plus de mode Auto).
 - Écrans de victoire toujours **noirs**, police pixel « Press Start 2P », confettis, carte qui se retourne.
 - Cartes : **argent** = commune, **violet** = rare, **or** = légendaire (plus tard).
 

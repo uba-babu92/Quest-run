@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="fr" data-theme="light">
+<html lang="fr" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Quest Run</title>
-<meta name="theme-color" content="#7B2FF7">
+<meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Quest Run">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -459,7 +459,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v26';
+const VERSION = 'v27';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -478,7 +478,7 @@ const OVERPASS = [
 const DEFAULT_CENTER = [48.8397, 2.2399]; // Boulogne-Billancourt
 
 const DEFAULTS = {
-  onboarded: false, home: null, goal: { days: [0, 2, 4], km: 7 }, theme: 'light',
+  onboarded: false, home: null, goal: { days: [0, 2, 4], km: 7 }, theme: 'dark',
   points: 0, week: null, places: [], placesFor: null,
   blacklist: [], collection: [], reports: [], weeksCleared: 0, wiki: {}, runs: [], voice: true
 };
@@ -496,6 +496,7 @@ if (!Array.isArray(S.goal.days) || !S.goal.days.length) S.goal.days = SPREAD[Mat
 delete S.goal.runs;
 S.wiki = S.wiki || {}; S.runs = S.runs || [];
 if (S.coins == null) S.coins = 30; // pièces de départ
+if (!S.darkDefault) { S.theme = 'dark'; S.darkDefault = true; } // 27/10 : l'appli passe en sombre par défaut (une seule fois)
 const COIN_PLACE = 10, COIN_WEEK = 30, SWAP_COST = 10, COIN_DAY = 5;
 const PACKS = [{ id: 'p100', coins: 100, price: '0,99 €', ic: '🪙' }, { id: 'p550', coins: 550, price: '4,99 €', ic: '💰', tag: 'Populaire' }, { id: 'p1200', coins: 1200, price: '9,99 €', ic: '💎', tag: 'Meilleure offre' }];
 const today = () => new Date().toISOString().slice(0, 10);
