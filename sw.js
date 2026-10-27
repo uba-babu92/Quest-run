@@ -1,5 +1,5 @@
 // Hors-ligne : on essaie le réseau d'abord, sinon la copie en cache.
-const CACHE = 'questrun-v5';
+const CACHE = 'questrun-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png'];
 const HOSTS = ['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 

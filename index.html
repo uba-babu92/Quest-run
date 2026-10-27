@@ -257,7 +257,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v5';
+const VERSION = 'v6';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -362,7 +362,7 @@ function shrink(file) {
 }
 
 /* ---------- lieux (OpenStreetMap) ---------- */
-const FEM = new Set(['Statue', 'Sculpture', 'Fresque', 'Mosaïque', 'Installation', 'Fontaine', 'Croix', 'Borne ancienne', 'Stèle', "Œuvre d'art", 'Mairie', 'Église', 'Chapelle', 'Synagogue', 'Mosquée']);
+const FEM = new Set(['Statue', 'Sculpture', 'Fresque', 'Mosaïque', 'Installation', 'Fontaine', 'Croix', 'Borne ancienne', 'Stèle', "Œuvre d'art", 'Mairie', 'Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Cascade']);
 function article(label) { return label === 'Ruines' ? 'Des ruines' : (FEM.has(label) ? 'Une ' : 'Un ') + label.toLowerCase(); }
 
 function classify(t) {
@@ -439,12 +439,53 @@ async function fetchLocal(home, radius) {
   } catch (e) { return null; }
 }
 
+/* Lieux de base saisis à la main pour Boulogne, en attendant le robot.
+   Positions approximatives : on valide dans un rayon de 150 m. */
+const BOULOGNE = { lat: 48.8397, lng: 2.2399 };
+const CURATED = [
+  ['c01', "Hôtel de ville de Boulogne-Billancourt", 'Mairie', 'common', 48.8357, 2.2398],
+  ['c02', 'Musée des Années 30', 'Musée', 'common', 48.8350, 2.2386],
+  ['c03', 'Jardins Albert-Kahn', 'Jardin', 'common', 48.8419, 2.2297],
+  ['c04', 'Église Notre-Dame de Boulogne', 'Église', 'common', 48.8444, 2.2376],
+  ['c05', 'Parc Edmond de Rothschild', 'Parc', 'common', 48.8462, 2.2318],
+  ['c06', 'La Seine Musicale', 'Monument', 'common', 48.8222, 2.2363],
+  ['c07', "Parc de l'Île Saint-Germain", 'Parc', 'common', 48.8265, 2.2560],
+  ['c08', 'Stade Roland-Garros', 'Monument', 'common', 48.8465, 2.2480],
+  ['c09', 'Parc des Princes', 'Monument', 'common', 48.8414, 2.2530],
+  ['c10', "Jardin des Serres d'Auteuil", 'Jardin', 'common', 48.8470, 2.2520],
+  ['c11', 'Hippodrome de Longchamp', 'Monument', 'common', 48.8580, 2.2330],
+  ['c12', 'Musée national de la céramique', 'Musée', 'common', 48.8290, 2.2240],
+  ['c13', 'Grande Cascade du Bois de Boulogne', 'Cascade', 'rare', 48.8625, 2.2430],
+  ['c14', 'Grande Cascade du parc de Saint-Cloud', 'Cascade', 'rare', 48.8380, 2.2160],
+  ['c15', 'Moulin de Longchamp', 'Moulin', 'rare', 48.8600, 2.2310]
+];
+function curatedPlaces(home) {
+  return CURATED.map(([id, name, label, rarity, lat, lng]) => {
+    const p = { id, name, label, rarity, lat, lng, area: true, r: 150, src: 'base' };
+    p.dist = Math.round(dist(home, p));
+    if (rarity === 'rare') { const r = rng(id), ang = r() * 2 * Math.PI, off = 30 + r() * 40; p.zlat = lat + off * Math.cos(ang) / 111320; p.zlng = lng + off * Math.sin(ang) / (111320 * Math.cos(lat * Math.PI / 180)); }
+    return p;
+  });
+}
+const nearBoulogne = home => dist(home, BOULOGNE) < 8000;
+
 async function fetchPlaces(home, km, onSlow) {
   const radius = Math.min(9000, Math.round(km * 620));
   const local = await fetchLocal(home, radius);
-  if (local && local.complete) return parsePlaces(local.els, home);
-  try { return await fetchOverpass(home, radius, onSlow); }
-  catch (e) { if (local && local.els.length) return parsePlaces(local.els, home); throw e; }
+  const base = nearBoulogne(home) ? curatedPlaces(home) : [];
+  if (local && local.els.length) return parsePlaces(local.els, home).concat(base);
+  if (base.length) return base;  // tout de suite, sans attendre les serveurs
+  return fetchOverpass(home, radius, onSlow);
+}
+
+// Au démarrage : si on n'a que la liste de base et que le robot a fini, on ajoute ses lieux.
+async function upgradePlaces() {
+  if (!S.home || !S.places.length || S.places.some(p => !p.src)) return;
+  const local = await fetchLocal(S.home, Math.min(9000, Math.round(S.goal.km * 620)));
+  if (!local || !local.els.length) return;
+  S.places = parsePlaces(local.els, S.home).concat(curatedPlaces(S.home));
+  save();
+  toast(`${S.places.length} lieux disponibles maintenant !`);
 }
 
 // Secours : on interroge les 3 serveurs en même temps, le premier qui répond gagne.
@@ -712,7 +753,7 @@ async function checkIn(i, sh) {
   try {
     const pos = await getPos();
     const d = dist(pos, p);
-    const allowed = (p.area ? 80 : 35) + Math.min(pos.acc, 40);
+    const allowed = (p.r || (p.area ? 80 : 35)) + Math.min(pos.acc, 40);
     if (d <= allowed) { closeSheet(); takePhoto(i); return; }
     if (p.rarity === 'rare' && d < 400) {
       fb.innerHTML = d < 70 ? '🔥 Brûlant ! C\'est tout près.' : d < 150 ? '♨️ Tu chauffes…' : '🧊 Tu refroidis, cherche dans la zone.';
@@ -1042,6 +1083,7 @@ if (typeof L === 'undefined') {
 } else {
   ensureWeek(); fixDays();
   tab('quests');
+  upgradePlaces().catch(() => {});
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
