@@ -498,7 +498,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v35';
+const VERSION = 'v36';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -915,7 +915,7 @@ function ensureWeek(force) {
   const keep = force && S.week && S.week.id === id ? S.week.quests.filter(q => q.status === 'done') : [];
   const n = Math.max(0, S.goal.days.length - keep.length);
   const exclude = new Set(keep.map(q => q.pid));
-  const fresh = pickQuests(n, id + '|' + (S.home ? S.home.lat.toFixed(3) + S.home.lng.toFixed(3) : '') + '|' + Date.now() * (force ? 1 : 0), exclude)
+  const fresh = pickQuests(n, id + '|' + (S.home ? S.home.lat.toFixed(3) + S.home.lng.toFixed(3) : '') + '|' + Date.now() + '|' + Math.random(), exclude)
     .map(p => ({ pid: p.id, status: 'todo' }));
   const used = new Set(keep.map(q => q.day));
   const free = S.goal.days.filter(d => !used.has(d));
@@ -2105,13 +2105,14 @@ async function sha256(t) {
 /* ---------- choix des jours + distance ---------- */
 function goalPicker(el, onChange) {
   const draw = () => {
-    const g = S.goal, tot = g.days.length * g.km;
-    el.innerHTML = `<div class="picklabel">Quels jours tu cours ?</div>
+    const g = S.goal, tot = g.days.length * g.km, sp = S.sport || 'run', mx = KM_MAX[sp] || 30;
+    if (g.km > mx) g.km = mx;
+    el.innerHTML = `<div class="picklabel">Quels jours tu ${VERB[sp] || 'cours'} ?</div>
       <div class="days">${DAYS_1.map((d, i) => `<button data-d="${i}" class="${g.days.includes(i) ? 'on' : ''}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>
       <div class="picklabel">Quelle distance par sortie ?</div>
       <div class="kmval"><b id="kmv">${g.km}</b> km</div>
-      <input type="range" class="slider" id="kmr" min="1" max="30" step="1" value="${g.km}">
-      <div class="slidelegend"><span>1 km</span><span>30 km</span></div>
+      <input type="range" class="slider" id="kmr" min="1" max="${mx}" step="1" value="${g.km}">
+      <div class="slidelegend"><span>1 km</span><span>${mx} km</span></div>
       <div class="goalsum">${g.days.length} sortie${g.days.length > 1 ? 's' : ''} · ${tot} km par semaine</div>`;
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
       const d = +b.dataset.d, has = g.days.includes(d);
@@ -2248,7 +2249,7 @@ function renderSet() {
   $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
   document.querySelectorAll('#spdef [data-sp]').forEach(b => b.onclick = () => { S.sport = b.dataset.sp; save(); renderSet(); });
-  $('#home').onclick = () => onboarding(6);
+  $('#home').onclick = () => onboarding(7);
   $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   if ($('#devbtn')) $('#devbtn').onclick = async () => {
     const pw = prompt('Mot de passe développeur');
@@ -2304,27 +2305,40 @@ document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b
 
 /* ---------- onboarding ---------- */
 // questions sur ce qui freine les coureurs, avec la réponse de Quest Run
-const QUIZ = [
-  { id: 'frein', q: "Qu'est-ce qui te freine le plus pour aller courir ?", sub: 'Sois honnête, on est là pour ça.', opts: [
-    ['motivation', '😴', 'Je manque de motivation', 'Tu auras toujours une mission.', 'Chaque sortie a un but : un lieu à trouver, une carte à gagner, des points à marquer.'],
-    ['ennui', '🔁', "Je m'ennuie, c'est toujours pareil", 'Plus jamais le même parcours.', 'Chaque sortie t\'emmène vers un nouveau lieu de ta ville, avec son histoire.'],
-    ['ou', '🗺️', 'Je ne sais pas où aller', 'On choisit pour toi.', 'Des lieux à la bonne distance, et l\'itinéraire jusqu\'à eux, prêt à suivre.'],
+// questions de l'accueil, adaptées au sport (27/10)
+const LEVELS_ONB = [['debutant', '🌱', 'Débutant', 'Je débute ou je reprends'], ['inter', '💪', 'Intermédiaire', 'Je sors régulièrement'], ['confirme', '🔥', 'Confirmé', "J'ai de l'expérience"]];
+const KM_LVL = { run: { debutant: 4, inter: 8, confirme: 12 }, walk: { debutant: 4, inter: 8, confirme: 15 }, bike: { debutant: 10, inter: 15, confirme: 20 } };
+const KM_MAX = { run: 30, walk: 30, bike: 20 };
+const VERB = { run: 'cours', walk: 'marches', bike: 'roules' };
+function quizFor(sp) {
+  const W = sp === 'walk', B = sp === 'bike';
+  const sortie = W ? 'balade' : 'sortie';
+  return [
+  { id: 'frein', q: W ? "Qu'est-ce qui te freine le plus pour aller marcher ?" : B ? "Qu'est-ce qui te freine le plus pour sortir le vélo ?" : "Qu'est-ce qui te freine le plus pour aller courir ?", sub: 'Sois honnête, on est là pour ça.', opts: W ? [
+    ['motivation', '😴', "J'ai la flemme de sortir", 'Tu auras toujours une bonne raison.', 'Chaque balade a un but : un lieu à trouver, une carte à gagner, une histoire à découvrir.'],
+    ['ennui', '🔁', 'Toujours la même balade', 'Plus jamais la même balade.', "Chaque semaine t'emmène vers des pépites cachées de ta ville, avec leur histoire."],
+    ['ou', '🗺️', 'Je ne connais pas les jolis coins', 'On les trouve pour toi.', "Statues, fontaines, châteaux, points de vue : à la bonne distance, avec l'itinéraire prêt à suivre."],
+    ['temps', '⏱️', 'Je ne trouve pas le temps', 'Des balades à ta mesure.', 'Tu choisis tes jours et ta distance : chaque quête tient dans le temps que tu as.']] : [
+    ['motivation', '😴', 'Je manque de motivation', 'Tu auras toujours une mission.', `Chaque ${sortie} a un but : un lieu à trouver, une carte à gagner, des points à marquer.`],
+    ['ennui', '🔁', B ? 'Toujours les mêmes routes' : "Je m'ennuie, c'est toujours pareil", 'Plus jamais le même parcours.', "Chaque sortie t'emmène vers un nouveau lieu de ta ville, avec son histoire."],
+    ['ou', '🗺️', B ? 'Je ne sais pas où rouler' : 'Je ne sais pas où aller', 'On choisit pour toi.', B ? "Des lieux à la bonne distance, et un itinéraire vélo jusqu'à eux, prêt à suivre." : "Des lieux à la bonne distance, et l'itinéraire jusqu'à eux, prêt à suivre."],
     ['lache', '📉', 'Je commence fort, puis je lâche', 'On te donne des raisons de revenir.', 'Quêtes de la semaine, niveaux, trophées et un gros bonus quand tu tiens ton objectif.']] },
-  { id: 'parcours', q: 'Tu cours souvent sur le même parcours ?', sub: 'Ton tour du quartier habituel…', opts: [
-    ['meme', '🔂', 'Toujours le même', 'On va changer ça.', 'Statues cachées, fontaines, châteaux : ton quartier a plein de trésors que tu n\'as jamais vus.'],
+  { id: 'parcours', q: W ? 'Tu fais souvent la même balade ?' : B ? 'Tu roules souvent sur le même trajet ?' : 'Tu cours souvent sur le même parcours ?', sub: W ? 'Le parc, le même tour…' : B ? 'Ta boucle habituelle…' : 'Ton tour du quartier habituel…', opts: [
+    ['meme', '🔂', W ? 'Toujours la même' : 'Toujours le même', 'On va changer ça.', W ? "Statues cachées, fontaines, châteaux : ton quartier a plein de pépites que tu n'as jamais vues." : "Statues cachées, fontaines, châteaux : ton quartier a plein de trésors que tu n'as jamais vus."],
     ['deux', '↔️', "J'en ai 2 ou 3", 'Prépare-toi à en découvrir des dizaines.', 'Chaque semaine, de nouvelles quêtes dans des coins où tu ne vas jamais.'],
     ['varie', '🧭', 'Je varie souvent', 'Tu vas adorer.', 'En plus de varier, tu collectionnes chaque lieu et tu découvres son histoire.']] },
-  { id: 'regularite', q: 'Tu tiens ton objectif de la semaine ?', sub: 'Le nombre de sorties que tu te fixes.', opts: [
+  { id: 'regularite', q: W ? 'Tu marches autant que tu le voudrais ?' : B ? 'Tu tiens ton objectif de sorties à vélo ?' : 'Tu tiens ton objectif de sorties de la semaine ?', sub: W ? 'Le nombre de balades que tu aimerais faire.' : 'Le nombre de sorties que tu te fixes.', opts: [
     ['rarement', '😅', 'Rarement', 'On fixe tes jours ensemble.', `Une quête par jour choisi, et chaque semaine complète rapporte +${WEEK_BONUS} ★.`],
     ['moitie', '⚖️', 'Une semaine sur deux', 'On va passer à toutes les semaines.', 'Les quêtes ratées restent rattrapables, et les séries de semaines débloquent des trophées.'],
-    ['toujours', '🏆', 'Presque toujours', 'Tu es prêt pour les défis.', 'Lieux rares, dénivelé, trophées : de quoi pimenter des semaines déjà bien remplies.']] }
-];
+    ['toujours', '🏆', 'Presque toujours', 'Tu es prêt pour les défis.', W ? "Lieux rares, dénivelé, trophées : de quoi pimenter tes balades." : 'Lieux rares, dénivelé, trophées : de quoi pimenter des semaines déjà bien remplies.']] }
+  ];
+}
 let onbMap = null;
 function onboarding(step = 0) {
   const o = $('#onb'); o.classList.remove('hidden');
   setTimeout(() => bindBack && bindBack(), 0);
   // en-tête : bouton retour discret (étapes 1 à 3) + points de progression
-  const dots = n => `<div class="onbhead">${step >= 1 && step <= 6 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  const dots = n => `<div class="onbhead">${step >= 1 && step <= 7 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
   const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
     o.innerHTML = `<div class="body"><div class="hero">
@@ -2336,7 +2350,6 @@ function onboarding(step = 0) {
     $('#go').onclick = () => onboarding(1);
   }
   if (step === 1) {
-    const KM0 = { run: 7, bike: 20, walk: 5 };
     o.innerHTML = `${dots(0)}<div class="body"><h1>Tu fais plutôt…</h1>
       <p>On adapte les itinéraires et la distance. Tu pourras changer à chaque sortie.</p>
       <div class="sportpick">
@@ -2345,12 +2358,23 @@ function onboarding(step = 0) {
         <button data-sp="walk"><span>🚶</span><div>Marche / Rando<small>À ton rythme</small></div></button>
       </div></div>`;
     o.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
-      S.sport = b.dataset.sp; S.goal.km = KM0[S.sport]; save();
+      S.sport = b.dataset.sp; S.goal.km = KM_LVL[S.sport].inter; save();
       b.classList.add('on'); setTimeout(() => onboarding(2), 180);
     });
   }
-  if (step >= 2 && step <= 4) {
-    const q = QUIZ[step - 2];
+  if (step === 2) {
+    const sp = S.sport || 'run';
+    o.innerHTML = `${dots(1)}<div class="body"><h1>Ton niveau ${sp === 'walk' ? 'en marche' : sp === 'bike' ? 'à vélo' : 'en course'} ?</h1>
+      <p>Pour te proposer la bonne distance. Tu pourras la changer quand tu veux.</p>
+      <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · ${KM_LVL[sp][v]} km par sortie</small></div></button>`).join('')}</div></div>`;
+    o.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
+      S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; save();
+      (S.quiz = S.quiz || {}).niveau = S.skill; track('quiz', { id: 'niveau', value: S.skill });
+      b.classList.add('on'); setTimeout(() => onboarding(3), 180);
+    });
+  }
+  if (step >= 3 && step <= 5) {
+    const q = quizFor(S.sport || 'run')[step - 3];
     o.innerHTML = `${dots(step - 1)}<div class="body"><h1>${q.q}</h1><p>${q.sub}</p>
       <div class="sportpick quiz">${q.opts.map(([v, ic, t]) => `<button data-v="${v}"><span>${ic}</span><div>${t}</div></button>`).join('')}</div></div>`;
     o.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
@@ -2367,16 +2391,16 @@ function onboarding(step = 0) {
       }, 200);
     });
   }
-  if (step === 5) {
-    o.innerHTML = `${dots(4)}<div class="body"><h1>Ta semaine</h1>
+  if (step === 6) {
+    o.innerHTML = `${dots(5)}<div class="body"><h1>Ta semaine</h1>
       <p>Chaque jour coché = une quête. Le lieu est choisi pour faire un aller-retour de la bonne distance.</p>
       <div id="ogoal"></div></div>
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
     goalPicker($('#ogoal'));
-    $('#go').onclick = () => { save(); onboarding(6); };
+    $('#go').onclick = () => { save(); onboarding(7); };
   }
-  if (step === 6) {
-    o.innerHTML = `${dots(5)}<div class="body"><h1>D'où tu pars ?</h1>
+  if (step === 7) {
+    o.innerHTML = `${dots(6)}<div class="body"><h1>D'où tu pars ?</h1>
       <p>Touche la carte pour placer ton point de départ, ou utilise ta position.</p>
       <div id="onbmap"></div>
       </div>
@@ -2399,12 +2423,12 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      S.home = chosen; save(); onboarding(7);
+      S.home = chosen; save(); onboarding(8);
     };
   }
-  if (step === 7) {
+  if (step === 8) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
-    o.innerHTML = `${dots(6)}<div class="body" style="text-align:center">
+    o.innerHTML = `${dots(7)}<div class="body" style="text-align:center">
       <div class="scan"><div class="ic">🧭</div></div>
       <h1 id="lt" style="font-size:24px">Recherche des trésors dans ton quartier…</h1>
       <ul class="steps" id="steps">
@@ -2430,7 +2454,7 @@ function onboarding(step = 0) {
         $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
         $('#st1').innerHTML = 'Réessaie dans une minute. <small class="muted">(' + esc(res.err && res.err.message) + ')</small>';
         $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
-        $('#go').onclick = () => onboarding(7);
+        $('#go').onclick = () => onboarding(8);
         return;
       }
       const pl = res.pl, r = pl.filter(p => p.rarity === 'rare').length;

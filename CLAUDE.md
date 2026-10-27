@@ -20,6 +20,7 @@
 
 ## La V1 (validée le 26/10)
 - Objectif (27/10) : **jours de course cochés L→D** + une distance par sortie (par défaut **lun/mer/ven, 7 km**).
+- **Tirage au hasard** à chaque nouvelle semaine, accueil refait ou « rejouer » (27/10 ; avant, mêmes lieux pour une même semaine et une même maison).
 - Chaque semaine (lundi), **une quête par jour coché**, affichée avec son jour ; celle du jour est mise en avant. Une quête ratée reste **rattrapable** sans perte de points. Lieu choisi à ~distance/2 pour un aller-retour.
 - Carte : tuiles **OpenStreetMap** sans clé (CARTO demande une clé depuis 2026) ; mode sombre = carte inversée en CSS.
 - Lieux depuis **OpenStreetMap** (API Overpass, gratuite), mis en mémoire sur le téléphone.
@@ -109,7 +110,9 @@
 - **Profil** = niveau + titre, Ma semaine, **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
 - **Paramètres** : roue ⚙️ en haut à droite du Profil. Mode sombre, sport par défaut, voix, lieux, mode développeur, tout effacer.
 - **Accueil** : 1er écran « Tu fais plutôt… » course / vélo / marche-rando (distance proposée 7 / 20 / 5 km).
-- **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2-4 questions, 5 semaine, 6 départ, 7 chargement.
+- **Niveau** (27/10) juste après le sport : Débutant / Intermédiaire / Confirmé → distance de départ (`KM_LVL`) : course 4/8/12 km, marche 4/8/15 km, vélo 10/15/20 km. Curseur : 1-30 km (course, marche), 1-20 km (vélo, limite de la zone de 10 km). Dans `S.skill` et `S.quiz.niveau`. Repères : course 3-5 / 6-10 / 10-20 km, rando 3-5 / 6-12 / 15-25 km, vélo 10-20 / 25-50 / 60-100 km. Vélo au-delà de 20 km : pas prioritaire (Bazil ne roule pas).
+- **Questions adaptées au sport** (27/10, `quizFor(sport)`) : textes « courir / marcher / sortir le vélo », « balade » pour la marche (frein « Je ne trouve pas le temps » au lieu de « je lâche »).
+- **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2 niveau, 3-5 questions, 6 semaine, 7 départ, 8 chargement.
 - Écran de course : gros bouton violet **« 📍 J'y suis »** en bas à droite (« 🏠 Je suis rentré » au retour).
 
 ## Métriques d'usage (27/10)
