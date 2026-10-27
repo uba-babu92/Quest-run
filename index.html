@@ -274,9 +274,9 @@ h2{font-size:22px;margin:4px 16px 12px}
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--violet-2));transition:width .6s}
 
 /* ---------- dénivelé ---------- */
-.hill{display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:99px;margin-left:2px;vertical-align:1px;white-space:nowrap}
-.hill.h0{background:#DCFCE7;color:#166534}.hill.h1{background:#FFEDD5;color:#9A3412}.hill.h2{background:#FEE2E2;color:#991B1B}
-[data-theme="dark"] .hill.h0{background:#14321f;color:#86efac}[data-theme="dark"] .hill.h1{background:#3a2210;color:#fdba74}[data-theme="dark"] .hill.h2{background:#3a1414;color:#fca5a5}
+.hill{display:flex;margin-top:3px;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:-2px}
+.hill svg{width:14px;height:14px;flex:none}
+#run .hill{color:#c9c2e0}
 
 /* ---------- boutique ---------- */
 button.chip{cursor:pointer}
@@ -459,7 +459,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v27';
+const VERSION = 'v28';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -821,7 +821,8 @@ const effortM = p => p.dist * 2 * ROAD + (questDplus(p) || 0) * 10;
 function hillBadge(dp) {
   if (dp == null) return '';
   const k = dp < 40 ? 0 : dp < 120 ? 1 : 2;
-  return `<span class="hill h${k}">${['🟢 Plat', '🟠 Vallonné', '🔴 Ça grimpe'][k]} · ↗${dp} m</span>`;
+  // petite montagne au trait, discrète
+  return `<span class="hill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"><path d="M2 20h20L14.5 6l-4 6.5-2-2.5z"/><path d="M12.6 9.2l1.9 2.3 1.6-1.2"/></svg>${['Plat', 'Vallonné', 'Ça grimpe'][k]} · ${dp} m</span>`;
 }
 // altitudes des lieux à bonne distance, gardées sur le téléphone
 async function loadElevations() {

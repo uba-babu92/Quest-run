@@ -84,7 +84,7 @@
 ## Dénivelé (27/10, demande de Bazil : « 7 km jusqu'à Meudon, c'est beaucoup plus dur »)
 - Altitudes via **Open-Meteo** (`api.open-meteo.com/v1/elevation`, gratuit, sans clé), gardées sur les lieux (`p.ele`, `S.homeEle`).
 - **Quêtes choisies en distance « effort »** : km A/R + **100 m de D+ ≈ 1 km**. D+ estimé d'une quête = |altitude lieu − maison| × 1,2.
-- Badge sur chaque quête : 🟢 Plat (< 40 m), 🟠 Vallonné (< 120 m), 🔴 Ça grimpe.
+- Sur chaque quête, petit texte discret avec une montagne au trait : Plat (< 40 m), Vallonné (< 120 m), Ça grimpe (27/10 : plus de pastilles de couleur, jugées pas soignées).
 - Écran prêt : D+ / D− réels de l'itinéraire. Pendant : D+ en direct (altitude GPS lissée, seuil 4 m). Fin : D+ recalculé sur la trace (altitudes), affiché dans le résumé, la fiche, les sorties et les stats.
 - Trophées ajoutés : ⛰️ Grimpeur (100 m D+ en une sortie), 🏔️ Montagnard (1 000 m D+ au total) → 23 trophées.
 
