@@ -277,6 +277,29 @@ h2{font-size:22px;margin:4px 16px 12px}
 .pbar{height:10px;border-radius:99px;background:var(--violet-soft);overflow:hidden;max-width:330px;margin:18px auto 0}
 .pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--violet-2));transition:width .6s}
 
+/* ---------- carte qui se retourne + favoris ---------- */
+.flipcard{width:min(58vw,230px);aspect-ratio:3/4.2;perspective:1100px;margin:0 auto 8px;touch-action:pan-y;cursor:pointer}
+.flipcard .fi{position:relative;width:100%;height:100%;transition:transform .7s cubic-bezier(.3,1.3,.5,1);transform-style:preserve-3d}
+.flipcard.on .fi{transform:rotateY(180deg)}
+.flipcard .fi.peek{animation:peek 1.4s ease .5s}
+@keyframes peek{0%,100%{transform:rotateY(0)}35%{transform:rotateY(-38deg)}60%{transform:rotateY(8deg)}}
+.flipcard .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.flipcard .face.back{transform:rotateY(180deg)}
+.flipcard .card{width:100% !important;height:100%;margin:0 !important}
+.card .back-info{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:14px;text-align:center;color:#e8e3f6}
+.card .back-info b{font-size:16px;color:#fff}
+.card .back-info span{font-size:12px;color:#b9b0d6}
+.card .back-tag{position:absolute;left:8px;top:8px;font-size:11px;font-weight:800;background:rgba(0,0,0,.6);color:#fff;padding:4px 8px;border-radius:99px}
+.fliphint{display:flex;align-items:center;justify-content:center;gap:8px;color:#b9b0d6;font-size:13px;font-weight:700;margin:2px 0 12px}
+.fliphint .hand{display:inline-block;animation:swipe 1.6s ease-in-out infinite}
+@keyframes swipe{0%,100%{transform:translateX(-8px)}50%{transform:translateX(8px)}}
+.favbtn{display:flex;align-items:center;gap:6px;margin:0 auto 14px;padding:9px 16px;border-radius:99px;border:2px solid rgba(255,255,255,.18);color:#fff;font-weight:800;font-size:14px}
+.favbtn.on{border-color:#FFD23F;color:#FFD23F}
+.card .fav{position:absolute;bottom:52px;right:8px;font-size:15px;color:#FFD23F;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.collbar{display:flex;gap:8px;margin:0 16px 12px}
+.collbar button{padding:7px 14px;border-radius:99px;border:2px solid var(--line);font-weight:800;font-size:14px;background:var(--card);color:var(--text)}
+.collbar button.on{background:var(--violet);border-color:var(--violet);color:#fff}
+
 /* ---------- dénivelé ---------- */
 .hill{display:flex;margin-top:3px;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:-2px}
 .hill svg{width:14px;height:14px;flex:none}
@@ -411,6 +434,7 @@ button.chip{cursor:pointer}
     <div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
   </div>
   <h2 id="colltitle">Ma collection</h2>
+  <div class="collbar" id="collbar"></div>
   <div class="grid" id="grid"></div>
 </section>
 
@@ -474,7 +498,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v34';
+const VERSION = 'v35';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -1311,8 +1335,20 @@ function cardHtml(c) {
   return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
     <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
     <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + sportOf(runOf(c)).ic + ' ' + km(runOf(c).dist) + ' km' : ''}</span></div>
-    <span class="badge b-${c.rarity} r">${tag}</span><span class="pts">+${c.pts}</span>
+    <span class="badge b-${c.rarity} r">${tag}</span><span class="pts">+${c.pts}</span>${c.fav ? '<span class="fav">♥</span>' : ''}
   </div></div>`;
+}
+// verso : la photo du lieu (ou, sans photo à toi, les infos de la découverte)
+function backHtml(c) {
+  const cls = c.rarity === 'rare' ? 'rare' : c.rarity === 'legend' ? 'legend' : '';
+  const r = runOf(c);
+  if (c.photo) return `<div class="card ${cls}"><div class="in"><div class="ph" data-back="${esc(c.pid)}">${ICON_PIN}</div>
+    <div class="cap"><b>${esc(c.name)}</b><span>Le lieu en photo</span></div><span class="back-tag">📷 Le lieu</span></div></div>`;
+  return `<div class="card ${cls}"><div class="in" style="background:linear-gradient(160deg,#2a1150,#120d1e)"><div class="back-info">
+    <div style="font-size:40px">🗺️</div><b>${esc(c.name)}</b><span>${esc(c.label)}</span>
+    <span>Trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+    ${r ? `<span>${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)}</span>` : ''}
+    <span style="margin-top:6px;opacity:.8">📸 Prends ta photo la prochaine fois : elle ira de l'autre côté !</span></div></div></div>`;
 }
 function fillPhotos(root) {
   root.querySelectorAll('[data-ph]').forEach(async el => {
@@ -1324,17 +1360,24 @@ function fillPhotos(root) {
     if (u) { el.style.backgroundImage = `url("${u}")`; el.innerHTML = ''; }
   });
 }
+let collFilter = 'all';
 function renderColl() {
   renderPoints();
   const n = S.collection.length, r = S.collection.filter(c => c.rarity === 'rare').length;
   $('#colltitle').innerHTML = `Ma collection <span class="muted" style="font-size:15px;font-weight:600">· ${n} lieu${n > 1 ? 'x' : ''} · ${r} rare${r > 1 ? 's' : ''}</span>`;
   if (!n) {
+    $('#collbar').innerHTML = '';
     $('#grid').innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUNE CARTE</span>Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.</div>`;
     return;
   }
-  $('#grid').innerHTML = S.collection.slice().reverse().map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('');
+  const nf = S.collection.filter(c => c.fav).length;
+  $('#collbar').innerHTML = `<button data-f="all" class="${collFilter === 'all' ? 'on' : ''}">Toutes · ${n}</button><button data-f="fav" class="${collFilter === 'fav' ? 'on' : ''}">♥ Favoris · ${nf}</button>`;
+  $('#collbar').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { collFilter = b.dataset.f; renderColl(); });
+  const list = S.collection.slice().reverse().filter(c => collFilter !== 'fav' || c.fav).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0));
+  $('#grid').innerHTML = list.length ? list.map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('')
+    : `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUN FAVORI</span>Ouvre une carte et touche ♡ pour la mettre en favori.</div>`;
   fillPhotos($('#grid'));
-  $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
+  $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)).then(() => current === 'coll' && renderColl()));
 }
 
 /* ---------- moments arcade ---------- */
@@ -1412,7 +1455,6 @@ async function fillStory(box, p, c, retry) {
   if (!box.isConnected) return;
   const facts = osmFacts(p);
   let h = '<span class="pixel">HISTOIRE</span>';
-  if (w && w.img && (c.photo || box.id === 'vstory') && box.id === 'story') h += `<img class="wimg" src="${esc(w.img)}" alt=""><p style="font-size:12px;color:#8f86ad;margin:-4px 0 10px">📷 Le lieu en photo</p>`;
   if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
   else if (ai) h += `<p>${esc(ai.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">📚 D'après Wikipédia (${ai.src.map(t => `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, '_'))}" target="_blank" rel="noopener" style="color:#C9A6FF;margin:0;display:inline">${esc(t)}</a>`).join(', ')}), résumé par IA.</p>`;
   else h += `<p>${facts || "Pas d'histoire connue pour ce lieu : aucune source fiable à proximité. À toi de raconter la tienne !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
@@ -1426,7 +1468,9 @@ function showFiche(c) {
   const p = placeById(c.pid) || { id: c.pid, name: c.name, label: c.label, lat: c.lat, lng: c.lng, rarity: c.rarity };
   const r = runOf(c);
   const pr = overlay(`<div class="fiche">
-    ${cardHtml(c)}
+    <div class="flipcard" id="fcard"><div class="fi peek"><div class="face front">${cardHtml(c)}</div><div class="face back">${backHtml(c)}</div></div></div>
+    <div class="fliphint"><span class="hand">👆</span>Glisse pour retourner la carte</div>
+    <button class="favbtn ${c.fav ? 'on' : ''}" id="favbtn">${c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris'}</button>
     <h2>${esc(c.name)}</h2>
     <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     ${r ? `<div class="box"><span class="pixel">TA SORTIE · ${sportOf(r).ic} ${esc(sportOf(r).name.toUpperCase())}</span>
@@ -1437,6 +1481,22 @@ function showFiche(c) {
     <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
   </div>`, true);
   fillPhotos($('#vin'));
+  // retourner la carte : glisser le doigt ou toucher
+  const fc = $('#fcard'); let x0 = null;
+  const flip = () => { fc.querySelector('.fi').classList.remove('peek'); fc.classList.toggle('on'); vibrate(15); };
+  fc.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  fc.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 30) { flip(); fc.dataset.swiped = '1'; } });
+  fc.addEventListener('click', () => { if (fc.dataset.swiped) { delete fc.dataset.swiped; return; } flip(); });
+  // photo du lieu au dos
+  const putBack = img => { const el = $('#vin [data-back]'); if (el && img) { el.style.backgroundImage = `url("${img}")`; el.innerHTML = ''; } };
+  putBack((S.wiki[c.pid] && S.wiki[c.pid].img) || (c.photo ? null : c.img));
+  wikiFor(p).then(w => w && putBack(w.img));
+  $('#favbtn').onclick = () => {
+    c.fav = !c.fav; save(); vibrate(20);
+    $('#favbtn').classList.toggle('on', c.fav); $('#favbtn').textContent = c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris';
+    const card = fc.querySelector('.face.front .card .in'); const h = card && card.querySelector('.fav');
+    if (c.fav && !h && card) card.insertAdjacentHTML('beforeend', '<span class="fav">♥</span>'); else if (!c.fav && h) h.remove();
+  };
   fillStory($('#story'), p, c, () => { $('#vin').querySelector('[data-close]').click(); setTimeout(() => showFiche(c), 50); });
   return pr;
 }

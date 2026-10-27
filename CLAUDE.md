@@ -50,6 +50,8 @@
 
 ## Fiche Wikipédia + mode course (27/10)
 - **Photo du lieu** (27/10) : Wikipédia, sinon tag OSM `image`, sinon la photo **Wikimedia Commons** la plus proche (60 m, 150 m pour un parc ; nom correspondant en priorité). Affichée sur la carte et, si tu as mis ta propre photo, au verso (fiche) « 📷 Le lieu en photo ».
+- **Carte qui se retourne** (27/10) : dans la fiche, glisser ou toucher la carte → rotation 3D. Recto = ta photo (sinon la photo du lieu), verso = la photo du lieu (sinon les infos de la découverte). Amorce de rotation + « 👆 Glisse pour retourner la carte » à l'ouverture. La grille Collection montre le recto.
+- **Favoris** (27/10) : bouton ♡ dans la fiche (`c.fav`), ♥ sur la carte, filtre **Toutes / ♥ Favoris** dans la Collection, favoris en premier.
 - **Image verrouillée** sur chaque quête (floue, noir et blanc, cadenas). Débloquée quand on trouve le lieu.
 - **Histoire** : tag OSM `wikipedia`/`wikidata`, sinon recherche Wikipédia autour du point (`geosearch`, 400 m) avec un nom qui correspond. Résumé + image mis en cache (`S.wiki`). Sans article : infos OSM (artiste, date, inscription).
 - **Mode course** (« 🏃 J'y vais ! ») : chrono, km, allure actuelle (≈250 derniers m) et moyenne, tracé, « Plus que X km », voix à chaque km, pause, écran gardé allumé (Wake Lock). Arrivée détectée toute seule → photo → victoire → « Retour maison » → résumé.
