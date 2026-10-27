@@ -257,7 +257,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v6';
+const VERSION = 'v7';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -478,14 +478,20 @@ async function fetchPlaces(home, km, onSlow) {
   return fetchOverpass(home, radius, onSlow);
 }
 
-// Au démarrage : si on n'a que la liste de base et que le robot a fini, on ajoute ses lieux.
+// À chaque ouverture : si le robot a ajouté des cases, on ajoute leurs lieux.
 async function upgradePlaces() {
-  if (!S.home || !S.places.length || S.places.some(p => !p.src)) return;
+  if (!S.home || !S.places.length) return;
   const local = await fetchLocal(S.home, Math.min(9000, Math.round(S.goal.km * 620)));
   if (!local || !local.els.length) return;
-  S.places = parsePlaces(local.els, S.home).concat(curatedPlaces(S.home));
+  if (S.placesFor && S.placesFor.localCount === local.els.length) return;
+  const fresh = parsePlaces(local.els, S.home).concat(nearBoulogne(S.home) ? curatedPlaces(S.home) : []);
+  const keep = new Set((S.week ? S.week.quests : []).map(q => q.pid));
+  for (const p of S.places) if (keep.has(p.id) && !fresh.some(f => f.id === p.id)) fresh.push(p);
+  const added = fresh.length - S.places.length;
+  S.places = fresh;
+  S.placesFor = Object.assign({}, S.placesFor, { localCount: local.els.length });
   save();
-  toast(`${S.places.length} lieux disponibles maintenant !`);
+  if (added > 0) toast(`+${added} nouveaux lieux autour de toi`);
 }
 
 // Secours : on interroge les 3 serveurs en même temps, le premier qui répond gagne.
