@@ -257,6 +257,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
+const VERSION = 'v4';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -436,7 +437,8 @@ async function fetchPlaces(home, km, onSlow) {
     const els = await Promise.any(OVERPASS.map(one));
     return parsePlaces(els, home);
   } catch (e) {
-    throw new Error('serveurs');
+    const why = (e.errors || [e]).map(x => x && x.name === 'AbortError' ? 'trop long' : String(x && x.message || x)).join(' / ');
+    throw new Error(why);
   } finally {
     slow.forEach(clearTimeout); clearTimeout(kill); ctrls.forEach(c => c.abort());
   }
@@ -888,7 +890,7 @@ function renderProf() {
     <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div>
   </div>
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
-  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run V1 · lieux © OpenStreetMap</p>`;
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
   document.querySelectorAll('#theme button').forEach(b => {
     b.classList.toggle('on', b.dataset.v === S.theme);
     b.onclick = () => { S.theme = b.dataset.v; save(); applyTheme(); renderProf(); };
@@ -980,7 +982,7 @@ function onboarding(step = 0) {
   }
   if (step === 3) {
     o.innerHTML = `${dots(2)}<div class="body" style="text-align:center"><div class="loader"></div>
-      <h1 id="lt">On cherche les lieux autour de toi…</h1><p id="ls">Statues, fontaines, monuments, parcs…</p></div>
+      <h1 id="lt">On cherche les lieux autour de toi…</h1><p id="ls">Statues, fontaines, monuments, parcs…</p><p class="muted" style="font-size:12px">${VERSION}</p></div>
       <button class="btn hidden" id="go">Voir mes quêtes</button>`;
     fetchPlaces(S.home, S.goal.km, k => {
       const ls = $('#ls'); if (!ls) return;
@@ -994,10 +996,10 @@ function onboarding(step = 0) {
       $('#ls').innerHTML = `Dont <b style="color:var(--violet)">${r} rares</b> à dénicher. Tes ${S.week.quests.length} quêtes de la semaine sont prêtes.`;
       $('#go').classList.remove('hidden');
       $('#go').onclick = () => { o.classList.add('hidden'); if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
-    }).catch(() => {
+    }).catch(err => {
       o.querySelector('.loader').style.animation = 'none';
       $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
-      $('#ls').textContent = 'Ils sont gratuits et parfois saturés. Réessaie dans une minute.';
+      $('#ls').innerHTML = 'Ils sont gratuits et parfois saturés. Réessaie dans une minute.<br><small class="muted">Détail : ' + esc(err && err.message) + '</small>';
       $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
       $('#go').onclick = () => onboarding(3);
     });
