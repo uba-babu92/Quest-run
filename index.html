@@ -470,7 +470,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v31';
+const VERSION = 'v32';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -847,6 +847,9 @@ async function loadElevations() {
   save();
 }
 
+// rayon dans lequel un lieu est validé (27/10 : plus besoin d'être pile dessus)
+const radiusOf = p => p.r || (p.area ? 100 : 50);
+
 /* ---------- génération des quêtes ---------- */
 function pickQuests(n, seed, exclude) {
   // on vise la distance en EFFORT (montées comprises), pas seulement en km
@@ -1060,7 +1063,7 @@ async function checkIn(i, sh) {
   try {
     const pos = await getPos();
     const d = dist(pos, p);
-    const allowed = (p.r || (p.area ? 80 : 35)) + Math.min(pos.acc, 40);
+    const allowed = radiusOf(p) + Math.min(pos.acc, 40);
     if (d <= allowed) { closeSheet(); takePhoto(i); return; }
     if (p.rarity === 'rare' && d < 400) {
       fb.innerHTML = d < 70 ? '🔥 Brûlant ! C\'est tout près.' : d < 150 ? '♨️ Tu chauffes…' : '🧊 Tu refroidis, cherche dans la zone.';
@@ -1180,16 +1183,27 @@ async function storyFor(p) {
 }
 // Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
 const STORY_API = 'https://questrun-histoires.v5nhskv7zy.workers.dev'; // relais Cloudflare (garde la clé Mistral)
-const AI_V = 2; // version des consignes : les anciens textes (non sourcés) sont ignorés
+const AI_V = 3; // version des consignes : les anciens textes sont réécrits
+// consignes pour l'IA (envoyées au relais, modifiables ici sans toucher à Cloudflare)
+const STORY_RULES = `Tu écris la fiche d'un lieu pour Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville.
+On te donne le nom et le type du lieu, puis des EXTRAITS D'ARTICLES WIKIPÉDIA sur des lieux proches.
+But : un texte PRÉCIS et VRAIMENT INTÉRESSANT, comme une anecdote qu'on a envie de raconter à un ami.
+Règles absolues :
+- Cite les faits précis présents dans les extraits : noms (rois, artistes, architectes, personnages), dates, événements, chiffres. Par exemple « En 1589, le roi Henri III y est assassiné par le moine Jacques Clément » plutôt que « un assassinat royal ».
+- Utilise UNIQUEMENT ce qui est écrit dans les extraits. Aucune connaissance extérieure. Aucune date, aucun nom, aucun chiffre qui n'y figure pas.
+- Choisis l'histoire la plus marquante. Si un extrait parle du lieu lui-même, commence par lui. Sinon, raconte l'histoire d'un lieu voisin en le disant clairement (« À deux pas d'ici, … »).
+- Pas de phrase vague du type « un lieu chargé d'histoire » ou « théâtre d'événements ».
+- Si les extraits ne permettent rien de précis et de sûr, réponds exactement : AUCUNE
+- Français, tutoiement, 3 ou 4 phrases, 550 caractères maximum. Réponds uniquement par le texte.`;
 // Extraits Wikipédia des articles proches du lieu : la seule matière que l'IA a le droit d'utiliser.
 async function nearbySources(p) {
   const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${p.lat}|${p.lng}&gsradius=600&gslimit=10&format=json&origin=*`);
   const titles = (g.query?.geosearch || []).map(x => x.title).slice(0, 5);
   if (!titles.length) return [];
-  const e = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=900&redirects=1&format=json&origin=*&titles=${encodeURIComponent(titles.join('|'))}`);
+  const e = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=1500&redirects=1&format=json&origin=*&titles=${encodeURIComponent(titles.join('|'))}`);
   const pages = Object.values(e.query?.pages || {}).filter(x => x.extract && x.extract.length > 80 && !/homonymie/i.test(x.extract));
   pages.sort((a, b) => titles.indexOf(a.title) - titles.indexOf(b.title));
-  return pages.slice(0, 3).map(x => ({ title: x.title, text: x.extract.slice(0, 900) }));
+  return pages.slice(0, 3).map(x => ({ title: x.title, text: x.extract.slice(0, 1500) }));
 }
 async function aiStory(p) {
   const w = S.wiki[p.id];
@@ -1204,7 +1218,7 @@ async function aiStory(p) {
     const sources = await nearbySources(p);
     if (!sources.length) { mark({ aiNone: true }); return null; }
     const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
-      body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc, sources }) });
+      body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc, sources, rules: STORY_RULES }) });
     if (!r.ok) { aiError = `relais ${r.status} : ${(await r.text()).slice(0, 120)}`; return null; }
     const j = await r.json();
     if (!j.text || j.text.length < 20) { mark({ aiNone: true }); return null; }
@@ -1617,7 +1631,7 @@ function runTarget() {
   if (RUN.phase === 'back') return { lat: S.home.lat, lng: S.home.lng, name: 'Retour maison', r: 80 };
   const p = placeById(RUN.pid); if (!p) return null;
   const rare = p.rarity === 'rare';
-  return { lat: rare ? p.zlat : p.lat, lng: rare ? p.zlng : p.lng, real: p, name: shownName(p, false), r: (p.r || (p.area ? 80 : 35)) };
+  return { lat: rare ? p.zlat : p.lat, lng: rare ? p.zlng : p.lng, real: p, name: shownName(p, false), r: radiusOf(p) };
 }
 async function planRoute() {
   const t = runTarget(); if (!t) return;
@@ -1714,6 +1728,7 @@ function onRunPos(pos) {
   if (!RUN.paused && pos.acc <= 40) {
     const last = RUN.pts[RUN.pts.length - 1];
     if (!last) RUN.pts.push([pos.lat, pos.lng, pos.t, 0]);
+    else if (fillGap(last, pos)) { /* trou comblé le long de l'itinéraire */ }
     else {
       const d = dist({ lat: last[0], lng: last[1] }, pos), dt = Math.max(1, (pos.t - last[2]) / 1000);
       if (d >= 5 && (pos.sim || d / dt < sportOf(RUN).maxV)) {   // ignore les sauts GPS
@@ -1741,6 +1756,28 @@ function onRunPos(pos) {
   checkArrival(pos);
   drawRun();
 }
+// Écran éteint / appli en arrière-plan : le GPS s'arrête. Au retour, si l'ancienne et la nouvelle
+// position sont sur l'itinéraire, on considère que tu as suivi le chemin entre les deux.
+function fillGap(last, pos) {
+  const R = RUN.route, dt = (pos.t - last[2]) / 1000, d = dist({ lat: last[0], lng: last[1] }, pos);
+  if (!R || !R.real || dt < 20 || d < 60 || d / dt > sportOf(RUN).maxV * 1.3) return false;
+  const a = nearestOnRoute({ lat: last[0], lng: last[1] }, R), b = nearestOnRoute(pos, R);
+  if (!a || !b || a.d > 80 || b.d > 80 || b.along <= a.along + 30) return false;
+  const span = b.along - a.along;
+  let prev = { lat: last[0], lng: last[1] }, cum = RUN.dist;
+  for (const p of R.pts) {
+    if (p[2] <= a.along || p[2] >= b.along) continue;
+    const q = { lat: p[0], lng: p[1] }; cum += dist(prev, q); prev = q;
+    RUN.pts.push([p[0], p[1], last[2] + (pos.t - last[2]) * ((p[2] - a.along) / span), cum]);
+    runLine.addLatLng([p[0], p[1]]);
+  }
+  cum += dist(prev, pos);
+  RUN.pts.push([pos.lat, pos.lng, pos.t, cum]); runLine.addLatLng([pos.lat, pos.lng]);
+  RUN.dist = cum;
+  const k = Math.floor(RUN.dist / 1000); if (k > RUN.lastKm) RUN.lastKm = k;
+  toast(`📍 ${fmtKm(span)} ajoutés le long de ton itinéraire`);
+  return true;
+}
 function reroute(auto) {
   if (!RUN) return;
   RUN.lastReroute = Date.now(); RUN.offSince = null; RUN.rerouted = true;
@@ -1753,7 +1790,7 @@ function checkArrival(pos) {
   if (!RUN || arriving || RUN.paused) return;
   if (RUN.phase === 'go') {
     const p = placeById(RUN.pid); if (!p) return;
-    if (dist(pos, p) <= (p.r || (p.area ? 80 : 35)) + Math.min(pos.acc || 0, 40)) arrive();
+    if (dist(pos, p) <= radiusOf(p) + Math.min(pos.acc || 0, 40)) arrive();
   } else if (dist(pos, S.home) <= 80 + Math.min(pos.acc || 0, 40)) {
     arriving = true; stopSim(); speak('Bienvenue à la maison. Bravo !'); vibrate([80, 60, 80]);
     setTimeout(() => { arriving = false; finishRun(); }, 600);
@@ -1943,7 +1980,7 @@ $('#rreroute').onclick = () => reroute(false);
 $('#rvoice').onclick = () => { S.voice = !S.voice; save(); $('#rvoice').textContent = S.voice ? '🔊 Voix' : '🔇 Voix'; if (S.voice) speak('Voix activée.'); };
 $('#rhere').onclick = () => {
   if (!RUN) return;
-  if (RUN.phase === 'go') { const p = placeById(RUN.pid); const ok = S.testMode || (lastPos && p && dist(lastPos, p) <= (p.r || (p.area ? 80 : 35)) + Math.min(lastPos.acc || 0, 40)); if (ok) arrive(); else toast(lastPos && p ? `Encore ${Math.round(dist(lastPos, p))} m` : 'GPS en attente…'); }
+  if (RUN.phase === 'go') { const p = placeById(RUN.pid); const ok = S.testMode || (lastPos && p && dist(lastPos, p) <= radiusOf(p) + Math.min(lastPos.acc || 0, 40)); if (ok) arrive(); else toast(lastPos && p ? `Encore ${Math.round(dist(lastPos, p))} m` : 'GPS en attente…'); }
   else finishRun();
 };
 // mode test : on suit l'itinéraire tout seul, 25 m par seconde, chrono accéléré (≈ 4:40/km)

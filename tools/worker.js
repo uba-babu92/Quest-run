@@ -42,19 +42,21 @@ export default {
     const lat = +b.lat, lng = +b.lng;
     if (!name || !isFinite(lat) || !isFinite(lng)) return new Response('Lieu incomplet', { status: 400, headers: cors });
     const sources = (Array.isArray(b.sources) ? b.sources : []).slice(0, 3)
-      .map(x => ({ title: clip(x && x.title, 120), text: clip(x && x.text, 900) })).filter(x => x.title && x.text);
+      .map(x => ({ title: clip(x && x.title, 120), text: clip(x && x.text, 1500) })).filter(x => x.title && x.text);
     if (!sources.length) return new Response(JSON.stringify({ text: '' }), { headers: { ...cors, 'Content-Type': 'application/json' } });
     const user = `Lieu : « ${name} », ${kind || 'lieu'}, près de ${town(lat, lng)}${artist ? `, artiste : ${artist}` : ''}${date ? `, date : ${date}` : ''}${insc ? `, inscription : « ${insc} »` : ''}
 
 Extraits Wikipédia :
 ${sources.map((x, i) => `[${i + 1}] ${x.title} : ${x.text}`).join('\n\n')}`;
+    // consignes envoyées par l'appli (pour les changer sans revenir ici), sinon celles par défaut
+    const rules = typeof b.rules === 'string' && b.rules.length > 50 ? b.rules.slice(0, 2500) : SYSTEM;
     if (!env.AI) return new Response('Liaison Workers AI manquante (nom : AI)', { status: 500, headers: cors });
     let out;
     try {
       out = await env.AI.run('@cf/mistralai/mistral-small-3.1-24b-instruct', {
-        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }], max_tokens: 260, temperature: 0.2 });
+        messages: [{ role: 'system', content: rules }, { role: 'user', content: user }], max_tokens: 380, temperature: 0.2 });
     } catch (e) { return new Response('IA indisponible : ' + e.message, { status: 502, headers: cors }); }
-    let text = String(out?.response || '').trim().replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 500);
+    let text = String(out?.response || '').trim().replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 700);
     if (/^AUCUNE\b/i.test(text) || text.length < 20) text = '';
     return new Response(JSON.stringify({ text }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   }

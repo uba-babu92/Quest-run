@@ -26,7 +26,7 @@
 - **Commune** (mairie, église, parc, musée, point de vue, château) : point exact, **100 pts**.
 - **Rare** (statue, fresque, fontaine, croix, borne…) : **zone de 100 m + indice**, bouton « chaud/froid », **250 pts**.
 - Plaques commémoratives et fontaines à boire exclues.
-- Validation par **GPS** (35 m, 80 m pour un parc/bâtiment). La **photo** devient l'image de la carte (facultative).
+- Validation par **GPS** : rayon **50 m** (100 m pour un parc/bâtiment) depuis le 27/10 (avant 35/80 m, Bazil devait être « pile dessus »), `radiusOf()`. La **photo** devient l'image de la carte (facultative).
 - **Bonus +500** quand toutes les quêtes de la semaine sont faites (écran « QUEST CLEAR! »).
 - Bouton **« Je ne trouve pas »** : introuvable / disparu / inaccessible → lieu retiré, nouvelle quête, aucun point perdu.
 - Niveaux (27/10) : **12 paliers avec un titre** (Promeneur 0 → Curieux 300 → Coureur du quartier 800 → Éclaireur 1 500 → Pisteur 2 500 → Explorateur 4 000 → Aventurier 6 000 → Chasseur de trésors 8 500 → Gardien de la ville 12 000 → Légende du quartier 16 000 → Maître des cartes 21 000 → Mythe urbain 27 000). Écran arcade à chaque niveau.
@@ -52,14 +52,15 @@
 - **Image verrouillée** sur chaque quête (floue, noir et blanc, cadenas). Débloquée quand on trouve le lieu.
 - **Histoire** : tag OSM `wikipedia`/`wikidata`, sinon recherche Wikipédia autour du point (`geosearch`, 400 m) avec un nom qui correspond. Résumé + image mis en cache (`S.wiki`). Sans article : infos OSM (artiste, date, inscription).
 - **Mode course** (« 🏃 J'y vais ! ») : chrono, km, allure actuelle (≈250 derniers m) et moyenne, tracé, « Plus que X km », voix à chaque km, pause, écran gardé allumé (Wake Lock). Arrivée détectée toute seule → photo → victoire → « Retour maison » → résumé.
-- **Limite iPhone** : pas de GPS écran éteint pour une page web. La course reprend au retour (sauvegardée dans `questrun.run`).
+- **Limite iPhone** : pas de GPS écran éteint pour une page web. La course reprend au retour (sauvegardée dans `questrun.run`). **Trou comblé** (27/10) : si l'ancienne et la nouvelle position sont sur l'itinéraire (< 80 m), la distance et le tracé suivent l'itinéraire entre les deux (`fillGap`).
 - La **course est collée à la carte** : km, temps, allure, tracé au dos (fiche). Historique dans le Profil.
 - Mode test : bouton « ▶ Simuler » dans l'écran de course (25 m/s, chrono accéléré ≈ 4:40/km).
 
 ## Lieux vérifiables + IA sourcée (27/10, demande de Bazil)
 - **Seulement des lieux nommés** ; graffitis et installations exclus (souvent effacés). `PARSE_V` force un nouveau tri ; les quêtes à faire sur un lieu retiré sont remplacées.
 - L'IA ne doit **jamais inventer** : l'appli envoie au relais les **extraits Wikipédia des articles proches** (geosearch 600 m, 3 max). Consigne : n'utiliser que ces extraits ; sinon raconter le quartier ; sinon répondre AUCUNE → « Pas d'histoire connue ».
-- Affichage : « 📚 D'après Wikipédia (titres cliquables), résumé par IA ». Version des consignes : `AI_V` (les anciens textes non sourcés sont ignorés).
+- Affichage : « 📚 D'après Wikipédia (titres cliquables), résumé par IA ». Version des consignes : `AI_V` (3 depuis le 27/10 : les anciens textes sont réécrits).
+- **Consignes dans l'appli** (`STORY_RULES`, envoyées au relais) : faits **précis** (noms, rois, dates, événements, chiffres) tirés des extraits, 3-4 phrases, pas de phrase vague. Extraits de 1 500 caractères. Changer les consignes = modifier `index.html`, plus besoin de recoller le code Cloudflare.
 - L'histoire s'affiche **directement sous la carte** à l'écran de victoire.
 
 ## Histoires à la demande (27/10, choix de Bazil)
