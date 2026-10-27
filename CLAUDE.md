@@ -39,6 +39,13 @@
 - Écrans de victoire toujours **noirs**, police pixel « Press Start 2P », confettis, carte qui se retourne.
 - Cartes : **argent** = commune, **violet** = rare, **or** = légendaire (plus tard).
 
+## Robot des lieux (27/10)
+- Les serveurs Overpass ne répondaient pas depuis le téléphone de Bazil → les lieux sont **préparés à l'avance**.
+- `data/areas.json` : zones à couvrir (pour l'instant **Boulogne-Billancourt, 10 km**). Seul le centre-ville y figure, jamais l'adresse de Bazil.
+- `tools/build-places.mjs` + `.github/workflows/places.yml` : le robot GitHub télécharge les lieux, les range en **cases de 0,1°** (`data/places/488_22.json`…, sommaire dans `index.json`). Il tourne à chaque modif de `areas.json` et **chaque lundi**.
+- L'appli lit les cases autour du joueur ; si une case manque, elle tente Overpass en secours.
+- Plan : étape 2 = Île-de-France, étape 3 = France entière (même système, plus de cases).
+
 ## Fichiers
 - `index.html` : toute l'appli (HTML + CSS + JS, aucune compilation).
 - `manifest.webmanifest`, `icon*.png`, `icon.svg` : installation sur l'écran d'accueil.

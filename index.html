@@ -257,7 +257,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v4';
+const VERSION = 'v5';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -419,9 +419,36 @@ nwr["amenity"="place_of_worship"]["name"]${a};
 );out center tags qt;`;
 }
 
-// On interroge les 3 serveurs en même temps : le premier qui répond gagne.
+// Lieux préparés à l'avance par le robot (data/places/), rangés en cases de 0,1°.
+const TILE_STEP = 0.1;
+const tileKey = (lat, lng) => `${Math.floor(lat / TILE_STEP + 1e-9)}_${Math.floor(lng / TILE_STEP + 1e-9)}`;
+async function fetchLocal(home, radius) {
+  let idx;
+  try { const r = await fetch('data/places/index.json', { cache: 'no-cache' }); if (!r.ok) return null; idx = await r.json(); }
+  catch (e) { return null; }
+  if (!idx || !idx.tiles || !(tileKey(home.lat, home.lng) in idx.tiles)) return null;
+  const dLat = radius / 111320, dLng = radius / (111320 * Math.cos(home.lat * Math.PI / 180));
+  const need = [];
+  for (let i = Math.floor((home.lat - dLat) / TILE_STEP); i <= Math.floor((home.lat + dLat) / TILE_STEP); i++)
+    for (let j = Math.floor((home.lng - dLng) / TILE_STEP); j <= Math.floor((home.lng + dLng) / TILE_STEP); j++) need.push(`${i}_${j}`);
+  const have = need.filter(k => k in idx.tiles);
+  try {
+    const parts = await Promise.all(have.map(k => fetch(`data/places/${k}.json`).then(r => { if (!r.ok) throw new Error(k); return r.json(); })));
+    const els = parts.flat().filter(e => dist(home, { lat: e.lat, lng: e.lon }) <= radius);
+    return { els, complete: have.length === need.length };
+  } catch (e) { return null; }
+}
+
 async function fetchPlaces(home, km, onSlow) {
   const radius = Math.min(9000, Math.round(km * 620));
+  const local = await fetchLocal(home, radius);
+  if (local && local.complete) return parsePlaces(local.els, home);
+  try { return await fetchOverpass(home, radius, onSlow); }
+  catch (e) { if (local && local.els.length) return parsePlaces(local.els, home); throw e; }
+}
+
+// Secours : on interroge les 3 serveurs en même temps, le premier qui répond gagne.
+async function fetchOverpass(home, radius, onSlow) {
   const body = 'data=' + encodeURIComponent(overpassQuery(home, radius));
   const ctrls = OVERPASS.map(() => new AbortController());
   const slow = [setTimeout(() => onSlow && onSlow(1), 8000), setTimeout(() => onSlow && onSlow(2), 20000)];
