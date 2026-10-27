@@ -3,6 +3,16 @@
 // L'appli ne télécharge que les cases autour du joueur.
 // Usage : node tools/build-places.mjs
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
+
+// Sur GitHub, on enregistre chaque case dès qu'elle est prête.
+function publish(msg) {
+  if (!process.env.GITHUB_ACTIONS) return;
+  try {
+    execSync('git add data/places', { stdio: 'inherit' });
+    execSync('git diff --cached --quiet || (git commit -q -m "' + msg + '" && git pull -q --rebase origin main && git push -q origin HEAD:main)', { stdio: 'inherit', shell: '/bin/bash' });
+  } catch (e) { console.log('  enregistrement raté, on continue'); }
+}
 
 const SERVERS = [
   'https://overpass-api.de/api/interpreter',
@@ -92,6 +102,7 @@ for (const [k, [i, j]] of order) {
   index.tiles[k] = els.length; total += els.length;
   fs.writeFileSync('data/places/index.json', JSON.stringify(index, null, 1));
   console.log(`  ${els.length} lieux`);
+  publish(`Lieux : case ${k}`);
   await sleep(2000);
 }
 console.log(`Terminé : ${total} lieux, ${tiles.size - failed}/${tiles.size} cases réussies`);
