@@ -454,7 +454,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v24';
+const VERSION = 'v25';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -1044,6 +1044,7 @@ async function award(i, blob) {
   const w = await Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 2500))]);
   if (w && w.img) card.img = w.img;
   S.collection.push(card);
+  track('level_complete', { level: levelOf(S.points).n });
   if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
   const allDone = S.week.quests.every(x => x.status === 'done');
   let bonus = false;
@@ -1198,6 +1199,7 @@ function report(i) {
     <button class="opt" data-r="disparu">🚧<span>Disparu<small>Enlevé, détruit ou en travaux</small></span></button>
     <button class="opt" data-r="inaccessible">🔒<span>Inaccessible<small>Fermé, privé ou dangereux</small></span></button>`);
   sh.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+    track('death', { level: levelOf(S.points).n, reason: 'introuvable' });
     S.reports.push({ pid: p.id, name: p.name || p.label, reason: b.dataset.r, date: Date.now() });
     S.blacklist.push(p.id);
     const exclude = new Set(S.week.quests.map(x => x.pid));
@@ -1539,6 +1541,7 @@ function startRun(i) {
 }
 function goRun() {
   if (!RUN) return;
+  track('run_start', { sport: RUN.sport });
   RUN.ready = false; RUN.paused = false; RUN.start = Date.now(); RUN.resumedAt = Date.now();
   saveRun();
   speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.');
@@ -1750,6 +1753,7 @@ async function finishRun() {
   </div>`, true);
   $('#nokeep').onclick = () => { keep = false; $('#vin').querySelector('[data-close]').click(); };
   await pr;
+  if (!r.found) track('death', { level: levelOf(S.points).n, reason: 'sortie sans lieu' });
   if (keep && r.dist >= 50) S.runs.push(r); else if (card) delete card.run;
   RUN = null; saveRun(); save();
   await celebrate();
@@ -1926,6 +1930,16 @@ function renderSet() {
     <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span>${sw('test', S.testMode)}</div>
     <div class="set"><span>Rejouer la semaine<small class="muted" style="display:block;font-size:13px">Nouvelles quêtes, bonus remis à zéro</small></span><button class="setbtn" id="replay">Rejouer</button></div>
     <div class="set"><span>Revoir l'accueil<small class="muted" style="display:block;font-size:13px">Tes cartes et tes points sont gardés</small></span><button class="setbtn" id="reonb">Revoir</button></div>
+    ${(() => { const x = Metrics.summary(); const mm = s => `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`;
+      return `<div class="set"><span>Statistiques d'usage<small class="muted" style="display:block;font-size:13px">${Metrics.consent ? 'Sur cet appareil depuis le ' + (x.first ? new Date(x.first).toLocaleDateString('fr-FR') : '–') : 'Pas encore de consentement'}</small></span><button class="setbtn" id="mexp">Exporter JSON</button></div>
+      <div class="sgrid" style="margin:4px 0 10px">
+        <div><b>${x.sessions}</b><span>sessions</span></div>
+        <div><b>${x.j1rate == null ? '–' : x.j1rate + ' %'}</b><span>retour J1 (${x.j1}/${x.j1base})</span></div>
+        <div><b>${mm(x.avg)}</b><span>durée moy. session</span></div>
+        <div><b>${x.runs}</b><span>sorties lancées</span></div>
+        <div><b>${x.days}</b><span>jours actifs</span></div>
+        <div><b>${x.worst ? x.worst[0].replace('niveau_', 'Niv. ') : '–'}</b><span>niveau le plus bloquant${x.worst ? ' (' + x.worst[1] + ' échecs)' : ''}</span></div>
+      </div>`; })()}
     <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0}</small></span><button class="setbtn" id="give">+100 🪙</button></div>
     <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
   </div>` : ''}
@@ -1944,6 +1958,7 @@ function renderSet() {
     else toast('Mot de passe incorrect');
   };
   if (S.dev) {
+    $('#mexp').onclick = () => Metrics.exportJSON();
     $('#give').onclick = () => { S.coins = (S.coins || 0) + 100; save(); renderPoints(); toast('+100 🪙'); };
     $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderSet(); toast('Mode développeur verrouillé'); };
     $('#reonb').onclick = () => { S.onboarded = false; save(); onboarding(0); };
@@ -2098,10 +2113,128 @@ function onboarding(step = 0) {
       o.querySelector('.scan .ic').textContent = '🗺️';
       vibrate([40, 40, 80]);
       $('#go').classList.remove('hidden');
-      $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
+      $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); Metrics.askConsent(); };
     })();
   }
 }
+
+/* =====================================================================
+   MÉTRIQUES — module autonome, sans dépendance, stocké sur l'appareil.
+   Pour le retirer : supprimer ce bloc ET les lignes « track(...) »
+   (ou garder juste : function track() {} ).
+   Clé : "questrun_metrics". Rien n'est envoyé sur internet.
+   ===================================================================== */
+const Metrics = (() => {
+  const KEY = 'questrun_metrics';
+  // structure complète des données : rien d'autre n'est enregistré
+  const empty = () => ({ consent: false, first_seen: null, last_seen: null, sessions: 0, session_durations: [], runs: 0,
+    deaths_by_level: {}, levels_completed: 0, day1_returns: 0, days_active: [] });
+  let m = empty();
+  let segStart = null;   // début du morceau de session en cours (appli visible)
+  let idx = -1;          // case de la session en cours dans session_durations
+
+  // lecture / écriture protégées (Safari peut bloquer le stockage en navigation privée)
+  function load() { try { const raw = localStorage.getItem(KEY); m = Object.assign(empty(), raw ? JSON.parse(raw) : {}); } catch (e) { m = empty(); } }
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) {} }
+  // jour local au format AAAA-MM-JJ
+  const dayOf = t => { const d = new Date(t); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  const yesterdayOf = t => { const d = new Date(t); d.setDate(d.getDate() - 1); return dayOf(d); };
+
+  // ajoute le temps écoulé depuis segStart à la session en cours
+  function flush() {
+    if (segStart == null || idx < 0) return;
+    const add = Math.round((Date.now() - segStart) / 1000);
+    m.session_durations[idx] = (m.session_durations[idx] || 0) + Math.max(0, add);
+    segStart = null;
+    persist();
+  }
+
+  // ouverture de l'appli : compte la session, le retour J1 et le jour actif
+  function startSession() {
+    if (!m.consent) return;
+    const now = Date.now(), today = dayOf(now);
+    if (!m.first_seen) m.first_seen = new Date(now).toISOString();
+    if (m.last_seen) {
+      const last = dayOf(m.last_seen);
+      if (last !== today && last === yesterdayOf(now)) m.day1_returns++;
+    }
+    if (!m.days_active.includes(today)) m.days_active.push(today);
+    m.last_seen = new Date(now).toISOString();
+    m.sessions++;
+    idx = m.session_durations.push(0) - 1;
+    segStart = now;
+    persist();
+  }
+
+  // fonction centrale : un nom d'événement + des données
+  function track(name, data = {}) {
+    if (!m.consent) return;
+    switch (name) {
+      case 'session_start': startSession(); break;
+      case 'session_end': flush(); break;
+      case 'session_resume': if (segStart == null && idx >= 0) segStart = Date.now(); break;
+      case 'run_start': m.runs++; persist(); break;
+      case 'death': { const k = 'niveau_' + (data.level || 1); m.deaths_by_level[k] = (m.deaths_by_level[k] || 0) + 1; persist(); break; }
+      case 'level_complete': m.levels_completed = Math.max(m.levels_completed, data.level || 1); persist(); break;
+      default: break; // événement inconnu : ignoré (facile à étendre ici)
+    }
+  }
+
+  // chiffres pour l'écran de stats (mode développeur)
+  function summary() {
+    flush(); if (idx >= 0 && document.visibilityState === 'visible') segStart = Date.now();
+    const d = m.session_durations.filter(x => x > 0);
+    const avg = d.length ? Math.round(d.reduce((a, b) => a + b, 0) / d.length) : 0;
+    // jours qui avaient un lendemain possible (tous sauf aujourd'hui)
+    const today = dayOf(Date.now()), base = m.days_active.filter(x => x !== today).length;
+    let worst = null; for (const [k, v] of Object.entries(m.deaths_by_level)) if (!worst || v > worst[1]) worst = [k, v];
+    return { sessions: m.sessions, j1: m.day1_returns, j1base: base, j1rate: base ? Math.round(m.day1_returns / base * 100) : null,
+      avg, runs: m.runs, worst, days: m.days_active.length, best: m.levels_completed, first: m.first_seen };
+  }
+
+  // téléchargement (ou partage sur iPhone) du fichier JSON
+  async function exportJSON() {
+    flush(); if (idx >= 0) segStart = Date.now();
+    const name = `questrun-metrics-${dayOf(Date.now())}.json`;
+    const blob = new Blob([JSON.stringify(m, null, 2)], { type: 'application/json' });
+    try {
+      const file = new File([blob], name, { type: 'application/json' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Quest Run — métriques' }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+
+  // message d'information, une seule fois
+  function askConsent() {
+    if (m.consent) return;
+    const b = document.createElement('div'); b.className = 'backdrop'; b.style.zIndex = 1600;
+    b.innerHTML = `<div class="sheet"><div class="grab"></div><h3>📊 Petite info</h3>
+      <p class="muted">Ce jeu enregistre anonymement tes parties sur ton appareil pour améliorer le jeu. Aucune donnée personnelle n'est collectée.</p>
+      <div class="row"><button class="btn" id="mok">OK</button></div></div>`;
+    document.body.appendChild(b);
+    b.querySelector('#mok').onclick = () => { m.consent = true; persist(); b.remove(); startSession(); };
+  }
+
+  // appli en arrière-plan / au premier plan, et fermeture (iOS : pagehide)
+  document.addEventListener('visibilitychange', () => track(document.visibilityState === 'hidden' ? 'session_end' : 'session_resume'));
+  window.addEventListener('pagehide', () => track('session_end'));
+
+  load();
+  return { track, summary, exportJSON, askConsent, get consent() { return m.consent; } };
+})();
+function track(name, data) { Metrics.track(name, data); }
+
+// appui long de 3 s sur le logo de l'écran Quêtes : export du fichier (sans afficher les stats)
+(() => {
+  const logo = document.querySelector('#s-quests .logo'); if (!logo) return;
+  logo.style.userSelect = 'none'; logo.style.webkitUserSelect = 'none'; logo.style.webkitTouchCallout = 'none';
+  let t = null;
+  const stop = () => { clearTimeout(t); t = null; };
+  logo.addEventListener('pointerdown', () => { stop(); t = setTimeout(() => { t = null; vibrate(40); Metrics.exportJSON(); }, 3000); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(e => logo.addEventListener(e, stop));
+})();
+/* ========================= fin du bloc MÉTRIQUES ========================= */
 
 /* ---------- démarrage ---------- */
 applyTheme();
@@ -2114,6 +2247,7 @@ if (typeof L === 'undefined') {
   tab('quests');
   upgradePlaces().catch(() => {});
   dailyBonus();
+  track('session_start'); Metrics.askConsent();
   try { const r = JSON.parse(localStorage.getItem(RUN_KEY)); if (r && Date.now() - r.start < 6 * 3600e3) { RUN = r; openRun(); toast('Course reprise'); } else localStorage.removeItem(RUN_KEY); } catch (e) {}
   // précharge les images des quêtes de la semaine
   S.week && S.week.quests.forEach(q => q.status !== 'done' && wikiFor(placeById(q.pid)));

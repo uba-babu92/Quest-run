@@ -94,6 +94,14 @@
 - **Accueil** : 1er écran « Tu fais plutôt… » course / vélo / marche-rando (distance proposée 7 / 20 / 5 km).
 - Écran de course : gros bouton violet **« 📍 J'y suis »** en bas à droite (« 🏠 Je suis rentré » au retour).
 
+## Métriques d'usage (27/10)
+- Module autonome **`Metrics`** dans `index.html` (bloc « MÉTRIQUES », à retirer avec les lignes `track(...)`). Clé `localStorage` **`questrun_metrics`**, rien n'est envoyé sur internet.
+- Données : first_seen, last_seen, sessions, session_durations (s, chrono coupé en arrière-plan, sauvé sur `pagehide`), runs, deaths_by_level, levels_completed, day1_returns, days_active, consent.
+- Correspondance avec le jeu : partie = **sortie** (`goRun`) ; « mort » = **sortie terminée sans lieu** (`finishRun`) ou **« Je ne trouve pas »** (`report`), rangée par **niveau du joueur** ; niveau réussi = **lieu trouvé** (`award`).
+- Retour J1 = day1_returns / jours actifs passés (hors aujourd'hui).
+- **Stats visibles seulement en mode développeur** (Paramètres). **Appui long 3 s sur le logo** de l'écran Quêtes = **export JSON** (partage iPhone ou téléchargement), sans montrer les stats aux testeurs.
+- Message d'info une fois (« Ce jeu enregistre anonymement… », bouton OK). Rien n'est compté avant OK. « Tout effacer » ne supprime pas les métriques.
+
 ## Mode développeur (27/10)
 - Paramètres → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
 - Contient : **mode test** (« J'y suis » sans GPS), rejouer la semaine, revoir l'accueil, verrouiller.
