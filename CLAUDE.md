@@ -19,8 +19,9 @@
 4. **Club de course** : sortie « chasse aux statues ».
 
 ## La V1 (validée le 26/10)
-- Objectif : sorties/semaine + km/sortie (par défaut **3 × 7 km**).
-- Chaque semaine (lundi), **une quête par sortie**. Lieu choisi à ~distance/2 pour un aller-retour.
+- Objectif (27/10) : **jours de course cochés L→D** + une distance par sortie (par défaut **lun/mer/ven, 7 km**).
+- Chaque semaine (lundi), **une quête par jour coché**, affichée avec son jour ; celle du jour est mise en avant. Une quête ratée reste **rattrapable** sans perte de points. Lieu choisi à ~distance/2 pour un aller-retour.
+- Carte : tuiles **OpenStreetMap** sans clé (CARTO demande une clé depuis 2026) ; mode sombre = carte inversée en CSS.
 - Lieux depuis **OpenStreetMap** (API Overpass, gratuite), mis en mémoire sur le téléphone.
 - **Commune** (mairie, église, parc, musée, point de vue, château) : point exact, **100 pts**.
 - **Rare** (statue, fresque, fontaine, croix, borne…) : **zone de 100 m + indice**, bouton « chaud/froid », **250 pts**.
@@ -45,5 +46,8 @@
 - Données : `localStorage` (clé `questrun.v1`), photos dans IndexedDB. Tout reste sur le téléphone.
 
 ## Mise en ligne
-GitHub Pages, branche `main`, dossier racine → https://uba-babu92.github.io/quest-run/
+GitHub Pages, branche `main`, dossier racine → https://uba-babu92.github.io/Quest-run/ (dépôt public depuis le 27/10)
 Le HTTPS est obligatoire pour le GPS et l'appareil photo.
+
+## Idées en attente
+- **Motivation façon Duolingo** (Bazil, 27/10) : à préciser avec lui (série, rappels, messages…).
