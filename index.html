@@ -90,6 +90,13 @@ h2{font-size:22px;margin:4px 16px 12px}
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .days button,.kms button{height:48px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:15px;color:var(--text)}
 .days button.on,.kms button.on{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 3px 0 #4E12B0}
+.kmval{text-align:center;font-size:18px;font-weight:700;color:var(--muted);margin:2px 0 8px}
+.kmval b{font-size:44px;color:var(--violet);font-weight:900;letter-spacing:-.02em}
+.slider{-webkit-appearance:none;appearance:none;width:100%;height:12px;border-radius:99px;outline:none;margin:6px 0;
+  background:linear-gradient(90deg,var(--violet) 0,var(--violet-2) var(--p,25%),var(--line) var(--p,25%))}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:34px;height:34px;border-radius:50%;background:#fff;border:4px solid var(--violet);box-shadow:0 3px 10px rgba(80,20,180,.35);cursor:grab}
+.slider::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:4px solid var(--violet);box-shadow:0 3px 10px rgba(80,20,180,.35)}
+.slidelegend{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600}
 .kms{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .kms button{font-size:14px}
 .goalsum{margin-top:16px;padding:12px 14px;border-radius:14px;background:var(--violet-soft);color:var(--violet);font-weight:700;text-align:center}
@@ -257,7 +264,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v8';
+const VERSION = 'v9';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -929,7 +936,9 @@ function goalPicker(el, onChange) {
     el.innerHTML = `<div class="picklabel">Quels jours tu cours ?</div>
       <div class="days">${DAYS_1.map((d, i) => `<button data-d="${i}" class="${g.days.includes(i) ? 'on' : ''}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>
       <div class="picklabel">Quelle distance par sortie ?</div>
-      <div class="kms">${KMS.map(k => `<button data-k="${k}" class="${g.km === k ? 'on' : ''}">${k} km</button>`).join('')}</div>
+      <div class="kmval"><b id="kmv">${g.km}</b> km</div>
+      <input type="range" class="slider" id="kmr" min="1" max="30" step="1" value="${g.km}">
+      <div class="slidelegend"><span>1 km</span><span>30 km</span></div>
       <div class="goalsum">${g.days.length} sortie${g.days.length > 1 ? 's' : ''} · ${tot} km par semaine</div>`;
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
       const d = +b.dataset.d, has = g.days.includes(d);
@@ -937,7 +946,16 @@ function goalPicker(el, onChange) {
       g.days = has ? g.days.filter(x => x !== d) : g.days.concat(d).sort((a, b) => a - b);
       save(); draw(); onChange && onChange();
     });
-    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { g.km = +b.dataset.k; save(); draw(); onChange && onChange(); });
+    const r = el.querySelector('#kmr');
+    const paint = () => r.style.setProperty('--p', ((r.value - 1) / 29 * 100) + '%');
+    paint();
+    r.oninput = () => {
+      g.km = +r.value; paint();
+      el.querySelector('#kmv').textContent = g.km;
+      el.querySelector('.goalsum').textContent = `${g.days.length} sortie${g.days.length > 1 ? 's' : ''} · ${g.days.length * g.km} km par semaine`;
+      try { navigator.vibrate && navigator.vibrate(5); } catch (e) {}
+    };
+    r.onchange = () => { save(); onChange && onChange(); };
   };
   draw();
 }
