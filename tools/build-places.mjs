@@ -60,6 +60,7 @@ function slim(el) {
   return { type: el.type, id: el.id, lat: +lat.toFixed(6), lon: +lon.toFixed(6), tags };
 }
 
+fs.mkdirSync('data/places', { recursive: true });
 const areas = JSON.parse(fs.readFileSync('data/areas.json', 'utf8'));
 const tiles = new Map();
 for (const a of areas) {
