@@ -20,7 +20,8 @@ const SERVERS = [
   'https://overpass.private.coffee/api/interpreter'
 ];
 const KEEP = ['name', 'name:fr', 'amenity', 'historic', 'tourism', 'leisure', 'memorial', 'artwork_type',
-  'fountain', 'drinking_water', 'access', 'garden', 'garden:type', 'religion', 'building', 'artist_name'];
+  'fountain', 'drinking_water', 'access', 'garden', 'garden:type', 'religion', 'building', 'artist_name',
+  'wikipedia', 'wikidata', 'image', 'wikimedia_commons', 'start_date', 'inscription'];
 const STEP = 0.1;
 const key = (lat, lng) => `${Math.floor(lat / STEP + 1e-9)}_${Math.floor(lng / STEP + 1e-9)}`;
 const sleep = ms => new Promise(r => setTimeout(r, ms));

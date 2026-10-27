@@ -46,6 +46,14 @@
 - L'appli lit les cases autour du joueur ; si une case manque, elle tente Overpass en secours.
 - Plan : étape 2 = Île-de-France, étape 3 = France entière (même système, plus de cases).
 
+## Fiche Wikipédia + mode course (27/10)
+- **Image verrouillée** sur chaque quête (floue, noir et blanc, cadenas). Débloquée quand on trouve le lieu.
+- **Histoire** : tag OSM `wikipedia`/`wikidata`, sinon recherche Wikipédia autour du point (`geosearch`, 400 m) avec un nom qui correspond. Résumé + image mis en cache (`S.wiki`). Sans article : infos OSM (artiste, date, inscription).
+- **Mode course** (« 🏃 J'y vais ! ») : chrono, km, allure actuelle (≈250 derniers m) et moyenne, tracé, « Plus que X km », voix à chaque km, pause, écran gardé allumé (Wake Lock). Arrivée détectée toute seule → photo → victoire → « Retour maison » → résumé.
+- **Limite iPhone** : pas de GPS écran éteint pour une page web. La course reprend au retour (sauvegardée dans `questrun.run`).
+- La **course est collée à la carte** : km, temps, allure, tracé au dos (fiche). Historique dans le Profil.
+- Mode test : bouton « ▶ Simuler » dans l'écran de course (25 m/s, chrono accéléré ≈ 4:40/km).
+
 ## Mode développeur (27/10)
 - Profil → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
 - Contient : **mode test** (« J'y suis » sans GPS), rejouer la semaine, revoir l'accueil, verrouiller.
@@ -61,4 +69,6 @@ GitHub Pages, branche `main`, dossier racine → https://uba-babu92.github.io/Qu
 Le HTTPS est obligatoire pour le GPS et l'appareil photo.
 
 ## Idées en attente
+- **Échange de cartes entre joueurs** (Bazil, 27/10) : besoin de comptes + serveur → étape 2-3. Conseil : ne pas échanger la carte d'un lieu (preuve qu'on y a couru), plutôt des cartes bonus/doublons.
+- **« Partager ma carte »** en image pour story Instagram/TikTok (pub gratuite, étape 3).
 - **Motivation façon Duolingo** (Bazil, 27/10) : à préciser avec lui (série, rappels, messages…).

@@ -104,7 +104,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 [data-theme="dark"] .leaflet-control-attribution a{color:#ccc}
 
 /* ---------- sheet / modal ---------- */
-.backdrop{position:fixed;inset:0;background:rgba(10,5,25,.45);z-index:900;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
+.backdrop{position:fixed;inset:0;background:rgba(10,5,25,.45);z-index:1450;display:flex;align-items:flex-end;justify-content:center;animation:fade .2s}
 .sheet{width:100%;max-width:560px;background:var(--card);border-radius:24px 24px 0 0;padding:10px 18px calc(22px + var(--safe-b));animation:up .25s cubic-bezier(.2,.9,.3,1.2);max-height:88vh;overflow-y:auto}
 .sheet .grab{width:40px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
 .sheet h3{margin:8px 0 4px;font-size:22px}
@@ -191,6 +191,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 @keyframes spin{to{transform:rotate(360deg) scale(.9);border-radius:50%}}
 
 /* ---------- victory (toujours sombre, arcade) ---------- */
+#victory.scroll{justify-content:flex-start;overflow-y:auto;padding-top:calc(24px + var(--safe-t))}
 #victory{position:fixed;inset:0;z-index:1500;background:radial-gradient(circle at 50% 35%,#2a1150 0%,#000 65%);color:#fff;
   display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 24px calc(24px + var(--safe-b));text-align:center;overflow:hidden}
 #confetti{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -209,6 +210,54 @@ h2{font-size:22px;margin:4px 16px 12px}
 @keyframes pop{from{transform:scale(.3);opacity:0}}
 #victory .btn{flex:none;width:min(80vw,320px);position:relative;z-index:2}
 .v-card .card{width:min(62vw,250px);margin:8px auto 26px}
+
+/* ---------- image verrouillée ---------- */
+.lockimg{position:relative;height:150px;border-radius:16px;overflow:hidden;margin:4px 0 12px;background:linear-gradient(135deg,#2a2140,#5A12D6)}
+.lockimg .bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(16px) grayscale(1) brightness(.75);transform:scale(1.1)}
+.lockimg.rare .bg{filter:blur(26px) grayscale(1) brightness(.6)}
+.lockimg .lk{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#fff;text-align:center;font-weight:700;font-size:13px;padding:0 20px}
+.lockimg .lk svg{width:40px;height:40px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}
+.btn.run{background:linear-gradient(135deg,var(--violet),var(--violet-2))}
+.btn.small{height:46px;font-size:15px}
+
+/* ---------- fiche ---------- */
+.fiche{width:100%;max-width:480px;text-align:left;position:relative;z-index:2;padding-bottom:20px}
+.fiche .card{width:min(56vw,220px);margin:0 auto 18px}
+.fiche h2{margin:0 0 4px;font-size:24px;text-align:center;color:#fff}
+.fiche .sub{text-align:center;color:#b9b0d6;font-size:14px;margin:0 0 16px}
+.fiche .box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:14px;margin-bottom:12px}
+.fiche .box .pixel{font-size:10px;color:#FFD23F;margin-bottom:10px;display:block}
+.fiche .box p{margin:0;line-height:1.55;color:#e8e3f6;font-size:15px}
+.fiche .box a{color:#C9A6FF;font-weight:700;display:inline-block;margin-top:10px}
+.fiche .wimg{width:100%;border-radius:12px;margin-bottom:10px;display:block}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.stats3 b{display:block;font-size:20px;color:#fff;font-variant-numeric:tabular-nums}
+.stats3 span{font-size:11px;color:#b9b0d6;text-transform:uppercase;letter-spacing:.05em}
+.route{width:100%;height:120px;margin-top:10px}
+.v-actions{display:flex;flex-direction:column;gap:10px;align-items:center;position:relative;z-index:2}
+
+/* ---------- mode course (toujours sombre) ---------- */
+#run{position:fixed;inset:0;z-index:1400;background:#000;color:#fff;display:flex;flex-direction:column;padding:calc(10px + var(--safe-t)) 16px calc(16px + var(--safe-b))}
+#run .tgt{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+#run .tgt .dot{width:36px;height:36px;border-radius:11px;background:var(--violet);display:grid;place-items:center;font-weight:800;flex:none}
+#run .tgt.back .dot{background:#FFB800;color:#2a1d00}
+#run .tgt b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#run .tgt span{color:#b9b0d6;font-size:14px}
+#runmap{flex:1;min-height:180px;border-radius:18px;overflow:hidden;background:#111}
+#run .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.6)}
+#run .chrono{font-size:min(19vw,84px);font-weight:900;text-align:center;letter-spacing:-.02em;font-variant-numeric:tabular-nums;margin:12px 0 4px;line-height:1}
+#run .chrono.paused{color:#FFB800;animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.4}}
+#run .stats3{margin:6px 0 14px}
+#run .stats3 b{font-size:28px}
+#run .ctrl{display:flex;gap:10px}
+#run .ctrl .btn{height:60px}
+#run .btn.stop{background:#E0245E;box-shadow:0 5px 0 #8f1239}
+#run .tools{display:flex;justify-content:space-between;margin-top:10px;font-size:14px}
+#run .tools button{color:#b9b0d6;font-weight:700;padding:6px 4px}
+.runlist .r{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.runlist .r:first-child{border-top:0}
+.runlist .r b{font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -251,6 +300,18 @@ h2{font-size:22px;margin:4px 16px 12px}
 </nav>
 
 <div id="onb" class="hidden"></div>
+<div id="run" class="hidden">
+  <div class="tgt" id="rtgt"><div class="dot">→</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div>
+  <div id="runmap"></div>
+  <div class="chrono" id="rtime">0:00</div>
+  <div class="stats3">
+    <div><b id="rdist">0,00</b><span>km</span></div>
+    <div><b id="rpace">–:––</b><span>allure</span></div>
+    <div><b id="ravg">–:––</b><span>moyenne</span></div>
+  </div>
+  <div class="ctrl"><button class="btn ghost" id="rpause" style="background:#1b1a22;color:#fff;border-color:#333;box-shadow:0 5px 0 #333">Pause</button><button class="btn stop" id="rstop">Terminer</button></div>
+  <div class="tools"><button id="rvoice">🔊 Voix</button><button id="rsim" class="hidden">▶ Simuler (test)</button><button id="rhere">J'y suis</button></div>
+</div>
 <div id="victory" class="hidden"><canvas id="confetti"></canvas><div id="vin"></div></div>
 <div id="toast"></div>
 <input type="file" id="photo" accept="image/*" capture="environment" class="hidden">
@@ -264,7 +325,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v11';
+const VERSION = 'v12';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -279,7 +340,7 @@ const DEFAULT_CENTER = [48.8397, 2.2399]; // Boulogne-Billancourt
 const DEFAULTS = {
   onboarded: false, home: null, goal: { days: [0, 2, 4], km: 7 }, theme: 'light',
   points: 0, week: null, places: [], placesFor: null,
-  blacklist: [], collection: [], reports: [], weeksCleared: 0
+  blacklist: [], collection: [], reports: [], weeksCleared: 0, wiki: {}, runs: [], voice: true
 };
 
 const $ = s => document.querySelector(s);
@@ -293,6 +354,7 @@ const todayIdx = () => (new Date().getDay() + 6) % 7; // 0 = lundi
 const SPREAD = { 1: [5], 2: [1, 5], 3: [0, 2, 4], 4: [0, 2, 4, 6], 5: [0, 1, 3, 4, 6], 6: [0, 1, 2, 3, 4, 5], 7: [0, 1, 2, 3, 4, 5, 6] };
 if (!Array.isArray(S.goal.days) || !S.goal.days.length) S.goal.days = SPREAD[Math.min(7, Math.max(1, S.goal.runs || 3))].slice();
 delete S.goal.runs;
+S.wiki = S.wiki || {}; S.runs = S.runs || [];
 
 function load() {
   try { return Object.assign(clone(DEFAULTS), JSON.parse(localStorage.getItem(KEY)) || {}); }
@@ -538,6 +600,11 @@ function parsePlaces(els, home) {
     if (seen.has(dk)) continue; seen.add(dk);
     const p = { id, name: c.name, label: c.label, rarity: c.rarity, lat, lng, area: el.type !== 'node' };
     if (t.artist_name) p.artist = t.artist_name;
+    if (t.wikipedia) p.wp = t.wikipedia;
+    if (t.wikidata) p.wd = t.wikidata;
+    if (t.image || t.wikimedia_commons) p.img = t.image || t.wikimedia_commons;
+    if (t.start_date) p.date = t.start_date;
+    if (t.inscription) p.insc = t.inscription.slice(0, 220);
     p.dist = Math.round(dist(home, p));
     if (p.rarity === 'rare') { // zone de 100 m : le vrai point est dedans, mais pas au centre
       const r = rng(id), ang = r() * 2 * Math.PI, off = 25 + r() * 45;
@@ -726,20 +793,24 @@ function openQuest(i) {
     const c = S.collection.find(c => c.pid === p.id);
     const sh = sheet(`<span class="badge b-done">Trouvé</span><h3>${esc(shownName(p, true))}</h3>
       <p class="muted">${esc(p.label)} · trouvé le ${c ? new Date(c.date).toLocaleDateString('fr-FR') : ''} · +${PTS[p.rarity]} ★</p>
-      <div class="row"><button class="btn ghost" id="seecard">Voir la carte</button></div>`);
-    sh.querySelector('#seecard').onclick = () => { closeSheet(); showCard(c); };
+      <div class="row"><button class="btn ghost" id="seecard">Voir la fiche</button></div>`);
+    sh.querySelector('#seecard').onclick = () => { closeSheet(); showFiche(c); };
     return;
   }
-  const sh = sheet(`<span class="badge b-${p.rarity}">${rare ? 'Rare' : 'Commune'} · +${PTS[p.rarity]} ★</span>
+  const sh = sheet(`<div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
+    <span class="badge b-${p.rarity}">${rare ? 'Rare' : 'Commune'} · +${PTS[p.rarity]} ★</span>
     <h3>${esc(shownName(p, false))}</h3>
     <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour</p>
     ${rare ? `<div class="hint">${hintFor(p)}</div>` : `<p>Cours jusqu'au lieu, valide ton arrivée, prends ta photo et rentre.</p>`}
+    <div class="row"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
     <div class="row">
-      <a class="btn ghost" href="${mapsLink(tlat, tlng)}" target="_blank" rel="noopener">Itinéraire</a>
-      <button class="btn" id="here">J'y suis !</button>
+      <a class="btn ghost small" href="${mapsLink(tlat, tlng)}" target="_blank" rel="noopener">Itinéraire</a>
+      <button class="btn ghost small" id="here">J'y suis</button>
     </div>
     <div class="feedback" id="fb"></div>
     <button class="link" id="lost">Je ne trouve pas</button>`);
+  wikiFor(p).then(w => { const bg = sh.querySelector('#lbg'); if (w && w.img && bg) bg.style.backgroundImage = `url("${w.img}")`; });
+  sh.querySelector('#gorun').onclick = () => { closeSheet(); startRun(i); };
   sh.querySelector('#here').onclick = () => checkIn(i, sh);
   sh.querySelector('#lost').onclick = () => report(i);
 }
@@ -807,6 +878,9 @@ async function award(i, blob) {
   q.status = 'done';
   S.points += pts;
   const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: p.rarity, pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
+  if (RUN) { card.run = RUN.id; RUN.found = p.id; }
+  const w = await Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 2500))]);
+  if (w && w.img) card.img = w.img;
   S.collection.push(card);
   if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
   const allDone = S.week.quests.every(x => x.status === 'done');
@@ -816,7 +890,69 @@ async function award(i, blob) {
   await victory(card, pts);
   if (bonus) await questClear();
   renderQuests();
+  if (RUN) runBack();
 }
+
+/* ---------- Wikipédia : image + histoire du lieu ---------- */
+const STOP = new Set('le la les l de du des d et a au aux en sur sous un une parc jardin jardins square eglise chapelle musee statue fontaine monument mairie hotel ville place rue avenue allee sculpture fresque buste memorial'.split(' '));
+const words = t => (t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().split(/[^a-z0-9]+/).filter(w => w.length > 1 && !STOP.has(w));
+function sameName(name, title) {
+  const a = words(name), b = new Set(words(title));
+  if (!a.length) return false;
+  const hit = a.filter(w => b.has(w)).length;
+  return hit / a.length >= 0.6 && a.some(w => b.has(w) && w.length >= 4);
+}
+function imgUrl(v) {
+  if (!v) return null;
+  if (/^https?:\/\//.test(v) && /\.(jpe?g|png|webp)(\?|$)/i.test(v)) return v;
+  const f = v.replace(/^(File|Fichier):/i, '');
+  if (/^(File|Fichier):/i.test(v) || /\.(jpe?g|png|webp)$/i.test(v)) return 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(f) + '?width=800';
+  return null;
+}
+const getJSON = (u, ms = 8000) => fetch(u, { signal: AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined }).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+const wikiBusy = {};
+function wikiFor(p) {
+  if (!p) return Promise.resolve(null);
+  const c = S.wiki[p.id];
+  if (c && !c.none) return Promise.resolve(c);
+  if (c && c.none && Date.now() - c.t < 7 * 864e5) return Promise.resolve(null);
+  return wikiBusy[p.id] = wikiBusy[p.id] || (async () => {
+    let lang = 'fr', title = null;
+    try {
+      if (p.wp) { const m = p.wp.match(/^([a-z-]{2,12}):(.+)$/); if (m) { lang = m[1]; title = m[2]; } else title = p.wp; }
+      if (p.wd && (!title || lang !== 'fr')) {
+        const j = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${encodeURIComponent(p.wd)}&props=sitelinks&sitefilter=frwiki&format=json&origin=*`);
+        const t = j.entities?.[p.wd]?.sitelinks?.frwiki?.title; if (t) { lang = 'fr'; title = t; }
+      }
+      if (!title && p.name) {
+        const j = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${p.lat}|${p.lng}&gsradius=400&gslimit=20&format=json&origin=*`);
+        const hit = (j.query?.geosearch || []).find(g => sameName(p.name, g.title));
+        if (hit) title = hit.title;
+      }
+      let out = null;
+      if (title) {
+        const j = await getJSON(`https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title.replace(/ /g, '_'))}`);
+        if (j.extract && j.type !== 'disambiguation') {
+          let x = j.extract; if (x.length > 700) { x = x.slice(0, 700); x = x.slice(0, Math.max(x.lastIndexOf('. ') + 1, 400)) + (x.endsWith('.') ? '' : '…'); }
+          out = { title: j.title, text: x, img: j.originalimage?.source || j.thumbnail?.source || imgUrl(p.img), url: j.content_urls?.mobile?.page || j.content_urls?.desktop?.page };
+        }
+      }
+      if (!out && imgUrl(p.img)) out = { img: imgUrl(p.img) };
+      S.wiki[p.id] = out || { none: true, t: Date.now() };
+      save();
+      return out;
+    } catch (e) { return null; } // réseau : on réessaiera plus tard
+    finally { delete wikiBusy[p.id]; }
+  })();
+}
+function osmFacts(p) {
+  const f = [];
+  if (p.artist) f.push(`Œuvre de <b>${esc(p.artist)}</b>.`);
+  if (p.date) f.push(`Date : <b>${esc(p.date)}</b>.`);
+  if (p.insc) f.push(`Inscription : « ${esc(p.insc)} »`);
+  return f.join(' ');
+}
+const LOCK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5" fill="rgba(123,47,247,.85)"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.6" r="1.4" fill="#fff" stroke="none"/></svg>';
 
 /* ---------- signaler un lieu ---------- */
 function report(i) {
@@ -843,15 +979,17 @@ function cardHtml(c) {
   const tag = c.rarity === 'rare' ? 'Rare' : c.rarity === 'legend' ? 'Légendaire' : 'Commune';
   return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
     <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
-    <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</span></div>
+    <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + km(runOf(c).dist) + ' km' : ''}</span></div>
     <span class="badge b-${c.rarity} r">${tag}</span><span class="pts">+${c.pts}</span>
   </div></div>`;
 }
 function fillPhotos(root) {
   root.querySelectorAll('[data-ph]').forEach(async el => {
     const c = S.collection.find(x => x.pid === el.dataset.ph);
-    if (!c || !c.photo) return;
-    const u = await photoUrl(c.pid);
+    if (!c) return;
+    let u = c.photo ? await photoUrl(c.pid) : null;
+    if (!u && !c.img) { const w = S.wiki[c.pid]; if (w && w.img) c.img = w.img; }
+    if (!u) u = c.img;
     if (u) { el.style.backgroundImage = `url("${u}")`; el.innerHTML = ''; }
   });
 }
@@ -865,7 +1003,7 @@ function renderColl() {
   }
   $('#grid').innerHTML = S.collection.slice().reverse().map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('');
   fillPhotos($('#grid'));
-  $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showCard(S.collection.find(c => c.pid === el.dataset.pid)));
+  $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
 }
 
 /* ---------- moments arcade ---------- */
@@ -895,16 +1033,21 @@ function countUp(el, to, ms = 900) {
   (function f(t) { const k = Math.min(1, (t - t0) / ms); el.textContent = '+' + fmt(Math.round(to * (1 - Math.pow(1 - k, 3)))) + ' ★'; if (k < 1) requestAnimationFrame(f); })(t0);
 }
 function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
-function overlay(html) {
-  const v = $('#victory'); $('#vin').innerHTML = html; v.classList.remove('hidden');
-  return new Promise(res => { $('#vin').querySelector('[data-close]').onclick = () => { v.classList.add('hidden'); confettiRun++; res(); }; });
+function overlay(html, scroll) {
+  const v = $('#victory'); $('#vin').innerHTML = html; v.classList.remove('hidden'); v.classList.toggle('scroll', !!scroll); v.scrollTop = 0;
+  return new Promise(res => {
+    const done = () => { v.classList.add('hidden'); confettiRun++; res(); };
+    $('#vin').querySelector('[data-close]').onclick = done;
+    $('#vin').addEventListener('closed', res, { once: true });
+  });
 }
 async function victory(card, pts) {
   const p = overlay(`<div class="v-title pixel">LIEU TROUVÉ !</div>
     <div class="v-pts pixel" id="vp">+0 ★</div>
-    <div class="flip" id="flip"><div class="fi"><div class="face back pixel">?</div><div class="face front">${cardHtml(card)}</div></div></div>
-    <button class="btn gold" data-close>Continuer</button>`);
+    <div class="flip" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:70px;height:70px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
+    <div class="v-actions"><button class="btn gold" data-close>Continuer</button><button class="link" id="vfiche" style="color:#C9A6FF;margin:0">📖 Lire son histoire</button></div>`);
   fillPhotos($('#vin'));
+  $('#vfiche').onclick = () => { $('#victory').classList.add('hidden'); showFiche(card).then(() => $('#vin').dispatchEvent(new Event('closed'))); };
   countUp($('#vp'), pts);
   vibrate([30, 40, 30]);
   setTimeout(() => {
@@ -923,11 +1066,234 @@ async function questClear() {
   vibrate([60, 60, 60, 60, 120]);
   return p;
 }
-function showCard(c) {
-  if (!c) return;
-  overlay(`<div class="v-card">${cardHtml(c)}</div><button class="btn ghost" data-close style="background:transparent;color:#fff;border-color:#444;box-shadow:0 5px 0 #333">Fermer</button>`);
+/* ---------- fiche d'une carte ---------- */
+function showFiche(c) {
+  if (!c) return Promise.resolve();
+  const p = placeById(c.pid) || { id: c.pid, name: c.name, label: c.label, lat: c.lat, lng: c.lng, rarity: c.rarity };
+  const r = runOf(c);
+  const pr = overlay(`<div class="fiche">
+    ${cardHtml(c)}
+    <h2>${esc(c.name)}</h2>
+    <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    ${r ? `<div class="box"><span class="pixel">TA COURSE</span>
+      <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>
+      ${routeSvg(r.pts)}</div>` : ''}
+    <div class="box" id="story"><span class="pixel">HISTOIRE</span><p class="muted" style="color:#b9b0d6">Chargement…</p></div>
+    <div class="v-actions"><button class="btn gold" data-close>Fermer</button></div>
+  </div>`, true);
   fillPhotos($('#vin'));
+  wikiFor(p).then(w => {
+    const box = $('#story'); if (!box) return;
+    const facts = osmFacts(p);
+    let h = '<span class="pixel">HISTOIRE</span>';
+    if (w && w.img && c.photo) h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
+    if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
+    else h += `<p>${facts || "Pas encore d'article Wikipédia pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>`;
+    box.innerHTML = h;
+  });
+  return pr;
 }
+
+/* ---------- mode course ---------- */
+const RUN_KEY = 'questrun.run';
+let RUN = null, runMap = null, runLine = null, runMe = null, runTgt = null, runWatch = null, runTick = null, wakeLock = null, simT = null;
+const km = m => (m / 1000).toFixed(2).replace('.', ',');
+function dur(ms) { const s = Math.floor(ms / 1000), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0'); }
+function pace(ms, m) { if (m < 50) return '–:––'; const s = Math.round(ms / 1000 / (m / 1000)); if (s > 1800) return '–:––'; return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+const runOf = c => c && c.run ? S.runs.find(r => r.id === c.run) : null;
+const elapsed = () => RUN ? RUN.elapsed + (RUN.paused ? 0 : Date.now() - RUN.resumedAt) : 0;
+function saveRun() { try { RUN ? localStorage.setItem(RUN_KEY, JSON.stringify(RUN)) : localStorage.removeItem(RUN_KEY); } catch (e) {} }
+function speak(t) {
+  if (!S.voice || !('speechSynthesis' in window)) return;
+  try { const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1.05; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
+}
+async function keepAwake() {
+  try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => { if (RUN && document.visibilityState === 'visible') { keepAwake(); drawRun(); } });
+
+function runTarget() {
+  if (!RUN) return null;
+  if (RUN.phase === 'back') return { lat: S.home.lat, lng: S.home.lng, name: 'Retour maison', r: 80 };
+  const p = placeById(RUN.pid); if (!p) return null;
+  const rare = p.rarity === 'rare';
+  return { lat: rare ? p.zlat : p.lat, lng: rare ? p.zlng : p.lng, real: p, name: shownName(p, false), r: (p.r || (p.area ? 80 : 35)) };
+}
+
+function startRun(i) {
+  const q = S.week.quests[i]; if (!q) return;
+  RUN = { id: 'r' + Date.now(), qi: i, pid: q.pid, start: Date.now(), elapsed: 0, resumedAt: Date.now(), paused: false, dist: 0, pts: [], phase: 'go', lastKm: 0, found: null };
+  saveRun();
+  speak("C'est parti ! Direction " + runTarget().name + '.');
+  openRun();
+}
+function openRun() {
+  $('#run').classList.remove('hidden');
+  $('#rsim').classList.toggle('hidden', !S.testMode);
+  $('#rvoice').textContent = S.voice ? '🔊 Voix' : '🔇 Voix';
+  keepAwake();
+  if (!runMap) {
+    runMap = L.map('runmap', { zoomControl: false, attributionControl: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(runMap);
+    runLine = L.polyline([], { color: '#9B5CFF', weight: 6, opacity: .95 }).addTo(runMap);
+    runMe = L.marker([S.home.lat, S.home.lng], { icon: L.divIcon({ className: '', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }), zIndexOffset: 1000 }).addTo(runMap);
+  }
+  runLine.setLatLngs(RUN.pts.map(p => [p[0], p[1]]));
+  setRunTarget();
+  const last = RUN.pts[RUN.pts.length - 1];
+  runMap.setView(last ? [last[0], last[1]] : (lastPos ? [lastPos.lat, lastPos.lng] : [S.home.lat, S.home.lng]), 16);
+  setTimeout(() => runMap.invalidateSize(), 60);
+  if (navigator.geolocation && runWatch == null)
+    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+  clearInterval(runTick); runTick = setInterval(drawRun, 1000);
+  drawRun();
+}
+function setRunTarget() {
+  const t = runTarget(); if (!t) return;
+  if (runTgt) runMap.removeLayer(runTgt);
+  runTgt = RUN.phase === 'back'
+    ? L.marker([t.lat, t.lng], { icon: L.divIcon({ className: '', html: '<div class="pin home">⌂</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) })
+    : (t.real.rarity === 'rare' ? L.circle([t.lat, t.lng], { radius: 100, color: '#9B5CFF', weight: 2, dashArray: '6 6', fillOpacity: .15 }) : L.marker([t.lat, t.lng], { icon: pinIcon('', '★') }));
+  runTgt.addTo(runMap);
+  $('#rtgt').classList.toggle('back', RUN.phase === 'back');
+  $('#rtgt .dot').textContent = RUN.phase === 'back' ? '⌂' : (t.real.rarity === 'rare' ? '?' : '★');
+  $('#rname').textContent = RUN.phase === 'back' ? 'Retour maison' : t.name;
+}
+function onRunPos(pos) {
+  lastPos = pos;
+  if (!RUN) return;
+  runMe.setLatLng([pos.lat, pos.lng]);
+  if (!RUN.paused && pos.acc <= 40) {
+    const last = RUN.pts[RUN.pts.length - 1];
+    if (!last) RUN.pts.push([pos.lat, pos.lng, pos.t, 0]);
+    else {
+      const d = dist({ lat: last[0], lng: last[1] }, pos), dt = Math.max(1, (pos.t - last[2]) / 1000);
+      if (d >= 5 && (pos.sim || d / dt < 9)) {   // ignore les sauts GPS (plus de 32 km/h)
+        RUN.dist += d; RUN.pts.push([pos.lat, pos.lng, pos.t, RUN.dist]);
+        runLine.addLatLng([pos.lat, pos.lng]);
+        const k = Math.floor(RUN.dist / 1000);
+        if (k > RUN.lastKm) { RUN.lastKm = k; speak(`${k} kilomètre${k > 1 ? 's' : ''}. Allure ${pace(elapsed(), RUN.dist).replace(':', ' minutes ')}.`); }
+      }
+    }
+    if (!S.testMode || simT) runMap.panTo([pos.lat, pos.lng], { animate: true });
+    saveRun();
+  }
+  checkArrival(pos);
+  drawRun();
+}
+let arriving = false;
+function checkArrival(pos) {
+  if (!RUN || arriving || RUN.paused) return;
+  if (RUN.phase === 'go') {
+    const p = placeById(RUN.pid); if (!p) return;
+    if (dist(pos, p) <= (p.r || (p.area ? 80 : 35)) + Math.min(pos.acc || 0, 40)) arrive();
+  } else if (dist(pos, S.home) <= 80 + Math.min(pos.acc || 0, 40)) {
+    arriving = true; stopSim(); speak('Bienvenue à la maison. Bravo !'); vibrate([80, 60, 80]);
+    setTimeout(() => { arriving = false; finishRun(); }, 600);
+  }
+}
+function arrive() {
+  arriving = true; stopSim();
+  vibrate([60, 40, 60, 40, 120]); speak('Lieu trouvé !');
+  const i = S.week.quests.findIndex(q => q.pid === RUN.pid);
+  if (i < 0 || S.week.quests[i].status === 'done') { arriving = false; runBack(); return; }
+  takePhoto(i);
+}
+function runBack() {
+  arriving = false;
+  if (!RUN) return;
+  RUN.phase = 'back'; saveRun(); setRunTarget(); drawRun();
+  speak('Direction la maison.');
+}
+function drawRun() {
+  if (!RUN) return;
+  const t = elapsed();
+  $('#rtime').textContent = dur(t);
+  $('#rtime').classList.toggle('paused', RUN.paused);
+  $('#rdist').textContent = km(RUN.dist);
+  $('#ravg').textContent = pace(t, RUN.dist);
+  // allure actuelle : sur les ~250 derniers mètres
+  const P = RUN.pts, last = P[P.length - 1];
+  let cur = '–:––';
+  if (last && !RUN.paused && Date.now() - last[2] < 20000) {
+    let j = P.length - 1; while (j > 0 && last[3] - P[j][3] < 250) j--;
+    if (last[3] - P[j][3] >= 60) cur = pace(last[2] - P[j][2], last[3] - P[j][3]);
+  }
+  $('#rpace').textContent = cur;
+  const tg = runTarget(), here = lastPos;
+  if (tg && here) { const d = dist(here, tg); $('#rleft').textContent = d < 1000 ? `Plus que ${Math.round(d)} m` : `Plus que ${(d / 1000).toFixed(1).replace('.', ',')} km`; }
+  else $('#rleft').textContent = RUN.paused ? 'En pause' : 'Recherche du GPS…';
+  $('#rpause').textContent = RUN.paused ? 'Reprendre' : 'Pause';
+}
+function togglePause() {
+  if (!RUN) return;
+  if (RUN.paused) { RUN.paused = false; RUN.resumedAt = Date.now(); speak('On repart !'); const l = RUN.pts[RUN.pts.length - 1]; if (l) l[2] = Date.now(); }
+  else { RUN.elapsed = elapsed(); RUN.paused = true; stopSim(); speak('Pause.'); }
+  saveRun(); drawRun();
+}
+function closeRunScreen() {
+  if (runWatch != null) { navigator.geolocation.clearWatch(runWatch); runWatch = null; }
+  clearInterval(runTick); stopSim();
+  try { wakeLock && wakeLock.release(); } catch (e) {}
+  $('#run').classList.add('hidden');
+}
+function simplify(pts) {
+  const out = []; let lastD = -1e9;
+  pts.forEach((p, i) => { if (p[3] - lastD >= 20 || i === pts.length - 1) { out.push([+p[0].toFixed(5), +p[1].toFixed(5)]); lastD = p[3]; } });
+  return out;
+}
+function routeSvg(pts) {
+  if (!pts || pts.length < 2) return '';
+  const k = Math.cos(pts[0][0] * Math.PI / 180);
+  const xs = pts.map(p => p[1] * k), ys = pts.map(p => -p[0]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const W = 300, H = 120, pad = 10, sc = Math.min((W - 2 * pad) / ((x1 - x0) || 1e-9), (H - 2 * pad) / ((y1 - y0) || 1e-9));
+  const ox = (W - (x1 - x0) * sc) / 2, oy = (H - (y1 - y0) * sc) / 2;
+  const P = xs.map((x, i) => [((x - x0) * sc + ox).toFixed(1), ((ys[i] - y0) * sc + oy).toFixed(1)]);
+  return `<svg class="route" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><polyline points="${P.map(p => p.join(',')).join(' ')}" fill="none" stroke="#FFD23F" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${P[0][0]}" cy="${P[0][1]}" r="5" fill="#9B5CFF"/><circle cx="${P[P.length - 1][0]}" cy="${P[P.length - 1][1]}" r="5" fill="#fff"/></svg>`;
+}
+async function finishRun() {
+  if (!RUN) return;
+  if (!RUN.paused) { RUN.elapsed = elapsed(); RUN.paused = true; }
+  const r = { id: RUN.id, date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts) };
+  closeRunScreen();
+  const card = r.found ? S.collection.find(c => c.pid === r.found) : null;
+  let keep = true;
+  const pr = overlay(`<div class="fiche" style="text-align:center">
+    <div class="v-title pixel" style="margin-bottom:18px">COURSE<br>TERMINÉE</div>
+    <div class="box"><div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${pace(r.time, r.dist)}</b><span>allure</span></div></div>${routeSvg(r.pts)}</div>
+    ${card ? `<p class="v-sub">Course enregistrée sur ta carte <b style="color:#FFD23F">${esc(card.name)}</b></p>` : ''}
+    <div class="v-actions"><button class="btn gold" data-close>Enregistrer</button><button class="link" id="nokeep" style="color:#b9b0d6;margin:0">Ne pas enregistrer</button></div>
+  </div>`, true);
+  $('#nokeep').onclick = () => { keep = false; $('#vin').querySelector('[data-close]').click(); };
+  await pr;
+  if (keep && r.dist >= 50) S.runs.push(r); else if (card) delete card.run;
+  RUN = null; saveRun(); save();
+  if (current === 'prof') renderProf(); else renderQuests();
+}
+function stopSim() { clearInterval(simT); simT = null; const b = $('#rsim'); if (b) b.textContent = '▶ Simuler (test)'; }
+$('#rpause').onclick = togglePause;
+$('#rstop').onclick = () => { if (RUN && RUN.dist < 100 && !confirm('Terminer la course ?')) return; finishRun(); };
+$('#rvoice').onclick = () => { S.voice = !S.voice; save(); $('#rvoice').textContent = S.voice ? '🔊 Voix' : '🔇 Voix'; if (S.voice) speak('Voix activée.'); };
+$('#rhere').onclick = () => {
+  if (!RUN) return;
+  if (RUN.phase === 'go') { const p = placeById(RUN.pid); const ok = S.testMode || (lastPos && p && dist(lastPos, p) <= (p.r || (p.area ? 80 : 35)) + Math.min(lastPos.acc || 0, 40)); if (ok) arrive(); else toast(lastPos && p ? `Encore ${Math.round(dist(lastPos, p))} m` : 'GPS en attente…'); }
+  else finishRun();
+};
+// mode test : on avance tout seul vers l'objectif, 25 m par seconde, chrono accéléré (≈ 4:40/km)
+$('#rsim').onclick = () => {
+  if (simT) return stopSim();
+  if (RUN.paused) togglePause();
+  $('#rsim').textContent = '⏸ Stop simulation';
+  let cur = lastPos ? { lat: lastPos.lat, lng: lastPos.lng } : { lat: S.home.lat, lng: S.home.lng };
+  simT = setInterval(() => {
+    const tg = RUN && (RUN.phase === 'go' ? placeById(RUN.pid) : S.home); if (!tg) return stopSim();
+    const d = dist(cur, tg), step = Math.min(25, d);
+    if (d > 1) { const f = step / d; cur = { lat: cur.lat + (tg.lat - cur.lat) * f, lng: cur.lng + (tg.lng - cur.lng) * f }; }
+    RUN.elapsed += 6000; RUN.simOff = (RUN.simOff || 0) + 6000;
+    onRunPos({ lat: cur.lat, lng: cur.lng, acc: 5, t: Date.now() + RUN.simOff, sim: true });
+  }, 1000);
+};
 
 /* ---------- mode développeur ---------- */
 const DEV_HASH = '54008b6212bb130ceb674696c809004e1503e596cc4007e96f32143846369754';
@@ -984,6 +1350,10 @@ function renderProf() {
     <button data-v="light">Clair</button><button data-v="dark">Sombre</button><button data-v="auto">Auto</button></div></div>
   <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
     <div class="set" style="margin-top:12px"><span class="muted" style="font-size:14px">Les quêtes déjà faites sont gardées.</span><button class="setbtn" id="regen">Appliquer</button></div>
+  </div>
+  <div class="panel"><h4>Mes courses</h4>${S.runs.length ? `
+    <div class="stats" style="margin-bottom:8px"><div><b>${S.runs.length}</b><span>courses</span></div><div><b>${(S.runs.reduce((a, r) => a + r.dist, 0) / 1000).toFixed(1).replace('.', ',')}</b><span>km au total</span></div><div><b>${pace(S.runs.reduce((a, r) => a + r.time, 0), S.runs.reduce((a, r) => a + r.dist, 0))}</b><span>allure moy.</span></div></div>
+    <div class="runlist">${S.runs.slice(-6).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${km(r.dist)} km · ${dur(r.time)} · ${pace(r.time, r.dist)}/km</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première course.</p>'}
   </div>
   <div class="panel"><h4>Lieux</h4>
     <div class="set"><span>Point de départ</span><button class="setbtn" id="home">Changer</button></div>
@@ -1115,7 +1485,7 @@ function onboarding(step = 0) {
       $('#lt').textContent = `${pl.length} lieux trouvés !`;
       $('#ls').innerHTML = `Dont <b style="color:var(--violet)">${r} rares</b> à dénicher. Tes ${S.week.quests.length} quêtes de la semaine sont prêtes.`;
       $('#go').classList.remove('hidden');
-      $('#go').onclick = () => { o.classList.add('hidden'); if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
+      $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); };
     }).catch(err => {
       o.querySelector('.loader').style.animation = 'none';
       $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
@@ -1136,6 +1506,9 @@ if (typeof L === 'undefined') {
   ensureWeek(); fixDays();
   tab('quests');
   upgradePlaces().catch(() => {});
+  try { const r = JSON.parse(localStorage.getItem(RUN_KEY)); if (r && Date.now() - r.start < 6 * 3600e3) { RUN = r; openRun(); toast('Course reprise'); } else localStorage.removeItem(RUN_KEY); } catch (e) {}
+  // précharge les images des quêtes de la semaine
+  S.week && S.week.quests.forEach(q => q.status !== 'done' && wikiFor(placeById(q.pid)));
 }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
