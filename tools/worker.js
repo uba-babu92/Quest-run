@@ -1,5 +1,5 @@
-// Relais Quest Run → Mistral (à coller dans un Cloudflare Worker).
-// La clé Mistral est dans les secrets du Worker (MISTRAL_API_KEY), jamais ici.
+// Relais Quest Run → Mistral, via l'IA de Cloudflare (Workers AI). Aucune clé à gérer.
+// Il faut une liaison « Workers AI » nommée AI (Settings → Bindings).
 // N'accepte que les demandes venant de l'appli.
 const ALLOWED = ['https://uba-babu92.github.io'];
 
@@ -40,15 +40,13 @@ export default {
     const lat = +b.lat, lng = +b.lng;
     if (!name || !isFinite(lat) || !isFinite(lng)) return new Response('Lieu incomplet', { status: 400, headers: cors });
     const user = `« ${name} », ${kind || 'lieu'}, près de ${town(lat, lng)}${artist ? `, artiste : ${artist}` : ''}${date ? `, date connue : ${date}` : ''}${insc ? `, inscription : « ${insc} »` : ''}`;
-    const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.MISTRAL_API_KEY}` },
-      body: JSON.stringify({ model: 'mistral-small-latest', temperature: 0.3, max_tokens: 220,
-        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }] })
-    });
-    if (!r.ok) return new Response('Mistral : ' + r.status, { status: 502, headers: cors });
-    const j = await r.json();
-    const text = (j.choices?.[0]?.message?.content || '').trim().replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 450);
+    if (!env.AI) return new Response('Liaison Workers AI manquante (nom : AI)', { status: 500, headers: cors });
+    let out;
+    try {
+      out = await env.AI.run('@cf/mistralai/mistral-small-3.1-24b-instruct', {
+        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }], max_tokens: 220, temperature: 0.3 });
+    } catch (e) { return new Response('IA indisponible : ' + e.message, { status: 502, headers: cors }); }
+    const text = String(out?.response || '').trim().replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 450);
     return new Response(JSON.stringify({ text }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 };
