@@ -24,8 +24,11 @@
 - Chaque semaine (lundi), **une quête par jour coché**, affichée avec son jour ; celle du jour est mise en avant. Une quête ratée reste **rattrapable** sans perte de points. Lieu choisi à ~distance/2 pour un aller-retour.
 - Carte : tuiles **OpenStreetMap** sans clé (CARTO demande une clé depuis 2026) ; mode sombre = carte inversée en CSS.
 - Lieux depuis **OpenStreetMap** (API Overpass, gratuite), mis en mémoire sur le téléphone.
-- **Commune** (mairie, église, parc, musée, point de vue, château) : point exact, **100 pts**.
-- **Rare** (statue, fresque, fontaine, croix, borne…) : **zone de 100 m + indice**, bouton « chaud/froid », **250 pts**.
+- **Lieu normal** (mairie, église, parc, musée, point de vue, château) : point exact. **Trésor caché** (statue, fontaine, croix, borne… `p.rarity === 'rare'`) : **zone de 100 m + indice**, bouton « chaud/froid ».
+- **Rareté des cartes = effort** (27/10, `tierOf`) : km A/R + D+ (100 m ≈ 1 km ; vélo ÷ 3). Commune < 6 km (100 ★), Rare 6-12 (250), **Épique** 12-20 (500, bleu), **Légendaire** > 20 (1 000, or). Trésor caché = +1 cran. Gardée sur la quête (`q.tier`) et la carte (`c.rarity`). Les anciennes cartes gardent leur rareté.
+- **Progression** (27/10, `adapt`, `S.prog`) : départ selon le niveau (course/marche 3 / 5 / 8 km, plafond 8 / 12 / 20-25 km). +10 % toutes les 3 sorties réussies (sortie facile = allure < moyenne −3 % et peu de pauses → compte double ; sortie dure = allure +15 % ou > 25 % de pause → ne compte pas), max une hausse tous les 4 jours. **Abandon** (sortie ≥ 300 m terminée sans le lieu) → −15 % (−25 % au 2e de suite) + bouton « 🎯 Une plus proche · gratuit » sur la quête. 2 semaines sans sortie → −10 % (`comeback`). Message « On ajuste ta prochaine quête pour que tu la plies 💪 ».
+- **Semaine variée** (`weekFactors`) : courte → normale → longue (×0,8 → ×1,25), la longue en fin de semaine. Haut de liste : « Nouvelles dans X j » (pas de compte à rebours par mission, choix de Bazil : pas de pression « Uber Eats »).
+- **Apparition légendaire** (27/10, `maybeLegend`) : le week-end, après 6 sorties réussies, 1 par semaine max, **48 h**, distance = plus longue sortie +10 % (entre ×1,25 et ×1,6 la distance du moment). Écran « APPARITION LÉGENDAIRE ! », quête dorée en haut « ⏳ encore X h », hors bonus de semaine, pas de changement de mission. Ratée : « Elle reviendra ✨ », rien de perdu.
 - Plaques commémoratives et fontaines à boire exclues.
 - Validation par **GPS** : rayon **50 m** (100 m pour un parc/bâtiment) depuis le 27/10 (avant 35/80 m, Bazil devait être « pile dessus »), `radiusOf()`. La **photo** devient l'image de la carte (facultative).
 - **Bonus +500** quand toutes les quêtes de la semaine sont faites (écran « QUEST CLEAR! »).
@@ -33,7 +36,7 @@
 - Niveaux (27/10) : **12 paliers avec un titre** (Promeneur 0 → Curieux 300 → Coureur du quartier 800 → Éclaireur 1 500 → Pisteur 2 500 → Explorateur 4 000 → Aventurier 6 000 → Chasseur de trésors 8 500 → Gardien de la ville 12 000 → Légende du quartier 16 000 → Maître des cartes 21 000 → Mythe urbain 27 000). Écran arcade à chaque niveau.
 - **23 trophées** (cartes, rares, km cumulés, sortie de 10 km, semaines complètes, série, lève-tôt, noctambule, touche-à-tout, vélo, marche) avec animation, rangés dans le Profil (`TROPHIES`).
 - **Sport** choisi sur l'écran prêt : course / marche / vélo (itinéraire piéton ou vélo, vitesse en km/h à vélo). Le sport est gardé sur la sortie et sur la carte. Mêmes points pour tous les sports (à revoir si le vélo est trop facile).
-- **Pas dans la V1** : boss, mythologie, boutique, boosters, légendaires, comptes.
+- **Pas dans la V1** : boss, mythologie, boosters, comptes, classement entre amis (étape 2).
 
 ## Design (validé le 26/10)
 - **Recette Duolingo** : écrans du quotidien propres et sportifs, moments de victoire **arcade** à fond.
@@ -110,9 +113,9 @@
 - **Profil** = niveau + titre, Ma semaine, **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
 - **Paramètres** : roue ⚙️ en haut à droite du Profil. Mode sombre, sport par défaut, voix, lieux, mode développeur, tout effacer.
 - **Accueil** : 1er écran « Tu fais plutôt… » course / vélo / marche-rando (distance proposée 7 / 20 / 5 km).
-- **Niveau** (27/10) juste après le sport : Débutant / Intermédiaire / Confirmé → distance de départ (`KM_LVL`) : course 4/8/12 km, marche 4/8/15 km, vélo 10/15/20 km. Curseur : 1-30 km (course, marche), 1-20 km (vélo, limite de la zone de 10 km). Dans `S.skill` et `S.quiz.niveau`. Repères : course 3-5 / 6-10 / 10-20 km, rando 3-5 / 6-12 / 15-25 km, vélo 10-20 / 25-50 / 60-100 km. Vélo au-delà de 20 km : pas prioritaire (Bazil ne roule pas).
+- **Niveau** (27/10) juste après le sport : Débutant / Intermédiaire / Confirmé → distance de départ (`KM_LVL`) : course et marche 3/5/8 km, vélo 10/15/20 km (puis progression). Curseur : 1-30 km (course, marche), 1-20 km (vélo, limite de la zone de 10 km). Dans `S.skill` et `S.quiz.niveau`. Repères : course 3-5 / 6-10 / 10-20 km, rando 3-5 / 6-12 / 15-25 km, vélo 10-20 / 25-50 / 60-100 km. Vélo au-delà de 20 km : pas prioritaire (Bazil ne roule pas).
 - **Questions adaptées au sport** (27/10, `quizFor(sport)`) : textes « courir / marcher / sortir le vélo », « balade » pour la marche (frein « Je ne trouve pas le temps » au lieu de « je lâche »).
-- **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2 niveau, 3-5 questions, 6 semaine, 7 départ, 8 chargement.
+- **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2 niveau, 3-5 questions, 6 semaine, 7 départ, 8 **« Quest Run, c'est quoi ? »** (🎮 quête / 📚 quartier / 🏆 carte la plus rare), 9 chargement.
 - Écran de course : gros bouton violet **« 📍 J'y suis »** en bas à droite (« 🏠 Je suis rentré » au retour).
 
 ## Métriques d'usage (27/10)

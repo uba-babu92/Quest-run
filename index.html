@@ -52,7 +52,9 @@ h2{font-size:22px;margin:4px 16px 12px}
 
 /* ---------- map + quests ---------- */
 #map{height:44vh;min-height:260px;margin:0 16px;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:var(--line)}
-.week{margin:16px 16px 6px;display:flex;align-items:baseline;justify-content:space-between}
+.week{margin:16px 16px 6px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.week b{white-space:nowrap}
+#daysleft{font-size:13px;white-space:nowrap}
 .week b{font-size:18px}
 .bonusbar{margin:0 16px 12px;padding:12px 14px;border-radius:14px;background:var(--violet-soft);display:flex;align-items:center;gap:12px}
 .bonusbar .bar{flex:1;height:10px;border-radius:99px;background:rgba(123,47,247,.18);overflow:hidden}
@@ -70,6 +72,8 @@ h2{font-size:22px;margin:4px 16px 12px}
 .b-common{background:#ECEEF2;color:#5B6270}
 .b-rare{background:var(--violet-soft);color:var(--violet)}
 .b-legend{background:#FFF1C7;color:#8A5B00}
+.b-epic{background:#DCEBFF;color:#1559C9}
+[data-theme="dark"] .b-epic{background:#0f2747;color:#7FB4FF}
 [data-theme="dark"] .b-common{background:#24262c;color:#c4c9d3}
 [data-theme="dark"] .b-legend{background:#3a2c00;color:#FFC933}
 .b-done{background:var(--gold);color:#2a1d00}
@@ -77,6 +81,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .pin{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px;
   background:var(--violet);border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.3)}
 .pin.rare{background:linear-gradient(135deg,#5A12D6,#B07BFF)}
+.pin.legend{background:linear-gradient(135deg,#FFE27A,#D38E00);color:#2a1d00}
 .pin.done{background:var(--gold);color:#2a1d00}
 .pin.home{background:#16131F;width:28px;height:28px;font-size:13px}
 .me{width:18px;height:18px;border-radius:50%;background:#2F80ED;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,128,237,.25)}
@@ -86,6 +91,16 @@ h2{font-size:22px;margin:4px 16px 12px}
 .quest .num.day{font-size:12px;letter-spacing:.02em}
 .pin.day{font-size:11px}
 .today-tag{color:var(--violet);font-weight:800}
+.quest.legendq{border:1.5px solid #FFB800;background:linear-gradient(120deg,rgba(255,184,0,.16),var(--card) 60%)}
+.quest.legendq .num{background:linear-gradient(135deg,#FFE27A,#D38E00);color:#2a1d00}
+.legtime{color:#D9A000;font-weight:800}
+.explain{display:flex;flex-direction:column;gap:10px}
+.explain>div{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.explain .ic{font-size:30px;line-height:1}
+.explain b{display:block;font-size:16px;margin-bottom:3px}
+#onb .explain p{margin:0;font-size:14px;color:var(--muted);line-height:1.35}
+#onb .body.scrolly{overflow-y:auto;min-height:0;justify-content:flex-start}
+.easybtn{background:var(--violet-soft)!important;color:var(--violet)!important}
 .picklabel{font-weight:800;font-size:15px;margin:18px 0 10px}
 .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .days button,.kms button{height:48px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:800;font-size:15px;color:var(--text)}
@@ -136,6 +151,7 @@ h2{font-size:22px;margin:4px 16px 12px}
   background:linear-gradient(145deg,#D9DDE4,#9AA1AE,#E9ECF1);box-shadow:var(--shadow)}
 .card.rare{background:linear-gradient(145deg,#B07BFF,#5A12D6,#C9A6FF)}
 .card.legend{background:linear-gradient(145deg,#FFE27A,#D38E00,#FFF3B0)}
+.card.epic{background:linear-gradient(145deg,#8EC5FF,#1559C9,#BFE0FF)}
 .card .in{position:relative;height:100%;border-radius:12px;overflow:hidden;background:#1a1525;display:flex;flex-direction:column}
 .card .ph{flex:1;background-size:cover;background-position:center;display:grid;place-items:center;color:rgba(255,255,255,.85);font-size:34px;
   background-color:#2a2140;background-image:radial-gradient(circle at 30% 20%,rgba(155,92,255,.5),transparent 60%)}
@@ -145,7 +161,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card .cap span{font-size:11px;color:#6E6982}
 .card .r{position:absolute;top:8px;left:8px}
 .card .pts{position:absolute;top:8px;right:8px;font-size:11px;font-weight:800;background:rgba(0,0,0,.6);color:var(--gold);padding:4px 7px;border-radius:99px}
-.card.rare .in::after,.card.legend .in::after{content:"";position:absolute;inset:0;pointer-events:none;
+.card.rare .in::after,.card.epic .in::after,.card.legend .in::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 45%,transparent 60%);background-size:250% 100%;animation:shine 3.2s infinite}
 @keyframes shine{0%{background-position:130% 0}60%,100%{background-position:-60% 0}}
 .empty{margin:30px 24px;text-align:center;color:var(--muted);line-height:1.5}
@@ -498,8 +514,20 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v36';
-const PTS = { common: 100, rare: 250 };
+const VERSION = 'v37';
+const PTS = { common: 100, rare: 250, epic: 500, legend: 1000 };
+// rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
+const TIERS = ['common', 'rare', 'epic', 'legend'];
+const TIER_NAME = { common: 'Commune', rare: 'Rare', epic: 'Épique', legend: 'Légendaire' };
+function tierOf(p, sport) {
+  if (!p) return 'common';
+  const k = effortM(p) / 1000 / ((sport || S.sport) === 'bike' ? 3 : 1);
+  let t = k < 6 ? 0 : k < 12 ? 1 : k < 20 ? 2 : 3;
+  if (p.rarity === 'rare') t = Math.min(3, t + 1);
+  return TIERS[t];
+}
+const qTier = q => q.tier || tierOf(placeById(q.pid));
+const tierBadge = (t, extra = '') => `<span class="badge b-${t}">${TIER_NAME[t] || 'Commune'}${extra}</span>`;
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
   [6000, 'Aventurier'], [8500, 'Chasseur de trésors'], [12000, 'Gardien de la ville'], [16000, 'Légende du quartier'], [21000, 'Maître des cartes'], [27000, 'Mythe urbain']];
@@ -731,7 +759,7 @@ function curatedPlaces(home) {
 const nearBoulogne = home => dist(home, BOULOGNE) < 8000;
 
 async function fetchPlaces(home, km, onSlow) {
-  const radius = Math.min(9000, Math.round(km * 620));
+  const radius = Math.min(9000, Math.round(Math.max(km, 6) * 900));
   const local = await fetchLocal(home, radius);
   const base = nearBoulogne(home) ? curatedPlaces(home) : [];
   if (local && local.els.length) return parsePlaces(local.els, home).concat(base);
@@ -743,7 +771,7 @@ async function fetchPlaces(home, km, onSlow) {
 const PARSE_V = 2; // à changer quand le tri des lieux change : force un nouveau tri
 async function upgradePlaces() {
   if (!S.home || !S.places.length) return;
-  const local = await fetchLocal(S.home, Math.min(9000, Math.round(S.goal.km * 620)));
+  const local = await fetchLocal(S.home, Math.min(9000, Math.round(Math.max(S.goal.km, 6) * 900)));
   if (!local || !local.els.length) return;
   if (S.placesFor && S.placesFor.localCount === local.els.length && S.placesFor.parse === PARSE_V) return;
   const fresh = parsePlaces(local.els, S.home).concat(nearBoulogne(S.home) ? curatedPlaces(S.home) : []);
@@ -759,7 +787,7 @@ async function upgradePlaces() {
   if (S.week) S.week.quests.forEach((q, i) => {
     if (q.status === 'done' || placeById(q.pid)) return;
     const [np] = pickQuests(1, 'tri|' + q.pid, new Set(S.week.quests.map(x => x.pid)));
-    if (np) { S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day }; swapped++; }
+    if (np) { S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: q.km, tier: tierOf(np) }; swapped++; }
   });
   save();
   if (swapped) { toast(`${swapped} quête${swapped > 1 ? 's' : ''} remplacée${swapped > 1 ? 's' : ''} par des lieux plus sûrs`); if (current === 'quests') renderQuests(); }
@@ -879,9 +907,9 @@ async function loadElevations() {
 const radiusOf = p => p.r || (p.area ? 100 : 50);
 
 /* ---------- génération des quêtes ---------- */
-function pickQuests(n, seed, exclude) {
+function pickQuests(n, seed, exclude, o = {}) {
   // on vise la distance en EFFORT (montées comprises), pas seulement en km
-  const km = S.goal.km, target = km * 1000;
+  const km = o.km || S.goal.km, target = km * 1000, others = o.others || [];
   const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
   const ok = p => !exclude.has(p.id) && !found.has(p.id) && !black.has(p.id);
   let pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.28);
@@ -891,10 +919,10 @@ function pickQuests(n, seed, exclude) {
   const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6;
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
-  const wantRare = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
+  const wantRare = o.hidden === true ? n : o.hidden === false ? 0 : n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
   const picked = [], minGap = Math.min(70, 300 / (n + 1));
   const home = S.home;
-  const farEnough = p => picked.every(q => { const d = Math.abs(bearing(home, p) - bearing(home, q)); return Math.min(d, 360 - d) >= minGap; });
+  const farEnough = p => picked.concat(others).every(q => { const d = Math.abs(bearing(home, p) - bearing(home, q)); return Math.min(d, 360 - d) >= minGap; });
   const take = (list, k) => {
     for (const strict of [true, false]) for (const p of list) {
       if (k <= 0) return k;
@@ -915,15 +943,107 @@ function ensureWeek(force) {
   const keep = force && S.week && S.week.id === id ? S.week.quests.filter(q => q.status === 'done') : [];
   const n = Math.max(0, S.goal.days.length - keep.length);
   const exclude = new Set(keep.map(q => q.pid));
-  const fresh = pickQuests(n, id + '|' + (S.home ? S.home.lat.toFixed(3) + S.home.lng.toFixed(3) : '') + '|' + Date.now() + '|' + Math.random(), exclude)
-    .map(p => ({ pid: p.id, status: 'todo' }));
+  const seed = id + '|' + Date.now() + '|' + Math.random(), r = rng(seed);
+  const fac = weekFactors(n), nh = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
+  const hid = new Set(); while (hid.size < nh) hid.add(Math.floor(r() * n));
+  const fresh = [], others = [];
+  fac.forEach((f, k) => {
+    const qkm = Math.round(S.goal.km * f * 2) / 2;
+    const [p] = pickQuests(1, seed + k, exclude, { km: qkm, others, hidden: hid.has(k) });
+    if (!p) return;
+    exclude.add(p.id); others.push(p);
+    fresh.push({ pid: p.id, status: 'todo', km: qkm, tier: tierOf(p) });
+  });
   const used = new Set(keep.map(q => q.day));
   const free = S.goal.days.filter(d => !used.has(d));
   fresh.forEach((q, i) => q.day = free[i] ?? S.goal.days[i % S.goal.days.length]);
-  const quests = keep.concat(fresh).sort((a, b) => (a.day ?? 9) - (b.day ?? 9));
+  // l'apparition légendaire encore valable survit au changement de semaine
+  const leg = S.week ? S.week.quests.filter(q => q.legend && q.status === 'todo' && q.until > Date.now() && !keep.includes(q)) : [];
+  const quests = keep.concat(fresh).sort((a, b) => (a.day ?? 9) - (b.day ?? 9)).concat(leg);
   S.week = { id, quests, bonus: keep.length > 0 && S.week ? S.week.bonus : false };
   save();
 }
+// semaine variée comme un plan d'entraînement : courte → normale → longue
+function weekFactors(n) {
+  if (n <= 0) return [];
+  if (n === 1) return [1];
+  if (n === 2) return [0.85, 1.2];
+  return Array.from({ length: n }, (_, i) => 0.8 + 0.45 * i / (n - 1));
+}
+
+/* ---------- progression + difficulté qui s'adapte (27/10) ---------- */
+// départ selon le niveau (KM_LVL), +10 % toutes les 3 sorties réussies (une sortie facile compte double),
+// −15 % après un abandon (−25 % au 2e de suite), −10 % après 2 semaines sans sortie
+const KM_CAP = { run: { debutant: 8, inter: 12, confirme: 20 }, walk: { debutant: 8, inter: 12, confirme: 25 }, bike: { debutant: 20, inter: 20, confirme: 20 } };
+const prog = () => (S.prog = S.prog || { credits: 0, fails: 0, okRuns: 0 });
+function adapt(r, quest) {
+  const P = prog(), sp = r.sport || 'run';
+  const cap = (KM_CAP[sp] || KM_CAP.run)[S.skill || 'inter'] || 12;
+  if (r.found) {
+    P.okRuns++; P.fails = 0; P.lastOk = Date.now();
+    const prev = (S.runs || []).filter(x => x.found && (x.sport || 'run') === sp && x.dist > 500 && x.id !== r.id).slice(-5);
+    const pause = (r.pauseMs || 0) / ((r.time || 1) + (r.pauseMs || 0));
+    let c = 1;
+    if (prev.length && r.dist > 500) {
+      const avg = prev.reduce((a, x) => a + x.time / x.dist, 0) / prev.length, pace = r.time / r.dist;
+      if (pace > avg * 1.15 || pause > 0.25) c = 0;          // ça a été dur : on ne monte pas
+      else if (pace < avg * 0.97 && pause < 0.1) c = 2;     // facile : compte double
+    } else if (pause > 0.25) c = 0;
+    P.credits = (P.credits || 0) + c;
+    if (P.credits >= 3 && S.goal.km < cap && Date.now() - (P.lastUp || 0) > 4 * 864e5) {
+      P.credits -= 3; P.lastUp = Date.now();
+      S.goal.km = Math.min(cap, Math.max(S.goal.km + 0.5, Math.round(S.goal.km * 1.1 * 2) / 2));
+      return { up: S.goal.km };
+    }
+    return null;
+  }
+  if (!r.pid || r.dist < 300) return null;              // pas vraiment parti : on ne compte rien
+  P.fails = (P.fails || 0) + 1; P.credits = 0;
+  const f = P.fails >= 2 ? 0.75 : 0.85;
+  S.goal.km = Math.max(2, Math.round(S.goal.km * f * 2) / 2);
+  if (quest) quest.easy = true;
+  return { down: S.goal.km };
+}
+// 2 semaines sans sortie réussie : on reprend en douceur
+function comeback() {
+  const P = prog();
+  if (!P.lastOk || Date.now() - P.lastOk < 14 * 864e5 || Date.now() - (P.lastDrop || 0) < 14 * 864e5) return;
+  P.lastDrop = Date.now();
+  const nk = Math.max(2, Math.round(S.goal.km * 0.9 * 2) / 2);
+  if (nk < S.goal.km) { S.goal.km = nk; save(); toast(`Reprise en douceur : ${String(nk).replace('.', ',')} km par sortie`); }
+}
+
+/* ---------- apparition légendaire : 48 h, le week-end, après 6 sorties réussies ---------- */
+const LEG_MS = 48 * 3600e3;
+function legendQuest() { return S.week && S.week.quests.find(q => q.legend && q.status === 'todo'); }
+function expireLegend() {
+  if (!S.week) return false;
+  const i = S.week.quests.findIndex(q => q.legend && q.status === 'todo' && q.until <= Date.now());
+  if (i < 0) return false;
+  S.week.quests.splice(i, 1); save();
+  toast("L'apparition légendaire est repartie… Elle reviendra ✨");
+  return true;
+}
+async function maybeLegend() {
+  if (!S.week || !S.home) return;
+  const P = prog(), d = new Date().getDay();
+  if ((d !== 6 && d !== 0) || (P.okRuns || 0) < 6 || S.legendWeek === S.week.id || legendQuest()) return;
+  const best = Math.max(0, ...(S.runs || []).filter(r => r.found).map(r => r.dist)) / 1000;
+  const km = Math.max(S.goal.km * 1.25, Math.min(best * 1.1, S.goal.km * 1.6));
+  const [p] = pickQuests(1, 'legend|' + Date.now(), new Set(S.week.quests.map(q => q.pid)), { km: Math.round(km * 2) / 2 });
+  if (!p) return;
+  S.legendWeek = S.week.id;
+  S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), legend: true, until: Date.now() + LEG_MS, tier: 'legend', km: Math.round(km * 2) / 2 });
+  save();
+  wikiFor(p);
+  await overlay(`<div class="v-title gold pixel">APPARITION<br>LÉGENDAIRE !</div>
+    <div style="font-size:64px;margin:10px 0">✨</div>
+    <div class="v-sub">Un lieu légendaire est apparu à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Tu as <b style="color:#FFD23F">48 h</b> pour aller le chercher : une carte <b style="color:#FFD23F">Légendaire</b> et ${PTS.legend} ★.<br><br><span style="opacity:.75">Pas le temps ? Pas grave, elle reviendra.</span></div>
+    <button class="btn gold" data-close>Voir la quête</button>`);
+  if (current === 'quests') renderQuests();
+}
+const hoursLeft = q => Math.max(1, Math.ceil((q.until - Date.now()) / 3600e3));
+
 // anciennes données sans jour : on attribue les jours dans l'ordre
 function fixDays() {
   if (!S.week) return;
@@ -975,10 +1095,10 @@ function renderMap() {
     const done = q.status === 'done';
     if (p.rarity === 'rare' && !done) {
       L.circle([p.zlat, p.zlng], { radius: 100, color: '#7B2FF7', weight: 2, dashArray: '6 6', fillColor: '#9B5CFF', fillOpacity: .15 }).addTo(layer).on('click', () => openQuest(i));
-      L.marker([p.zlat, p.zlng], { icon: pinIcon('rare day', DAYS_S[q.day] || '?') }).addTo(layer).on('click', () => openQuest(i));
+      L.marker([p.zlat, p.zlng], { icon: pinIcon(q.legend ? 'legend day' : 'rare day', q.legend ? '✨' : DAYS_S[q.day] || '?') }).addTo(layer).on('click', () => openQuest(i));
       pts.push([p.zlat, p.zlng]);
     } else {
-      L.marker([p.lat, p.lng], { icon: pinIcon((p.rarity === 'rare' ? 'rare ' : '') + (done ? 'done' : 'day'), done ? '✓' : DAYS_S[q.day] || i + 1) }).addTo(layer).on('click', () => openQuest(i));
+      L.marker([p.lat, p.lng], { icon: pinIcon((q.legend && !done ? 'legend ' : p.rarity === 'rare' ? 'rare ' : '') + (done ? 'done' : 'day'), done ? '✓' : q.legend ? '✨' : DAYS_S[q.day] || i + 1) }).addTo(layer).on('click', () => openQuest(i));
       pts.push([p.lat, p.lng]);
     }
   });
@@ -995,23 +1115,30 @@ function renderPoints() {
 function renderQuests() {
   renderPoints();
   $('#testtag').classList.toggle('hidden', !S.testMode);
-  const qs = S.week.quests, done = qs.filter(q => q.status === 'done').length;
+  expireLegend();
+  const qs = S.week.quests, norm = qs.filter(q => !q.legend), done = norm.filter(q => q.status === 'done').length;
   const dl = daysLeft();
-  $('#daysleft').textContent = dl === 1 ? 'Dernier jour' : `${dl} jours restants`;
-  $('#bonusfill').style.width = (qs.length ? done / qs.length * 100 : 0) + '%';
-  $('#bonustxt').textContent = S.week.bonus ? 'Bonus gagné ✓' : `${done}/${qs.length} · bonus +${WEEK_BONUS} ★`;
+  $('#daysleft').textContent = dl === 1 ? 'Nouvelles quêtes demain' : `Nouvelles dans ${dl} j`;
+  $('#bonusfill').style.width = (norm.length ? done / norm.length * 100 : 0) + '%';
+  $('#bonustxt').textContent = S.week.bonus ? 'Bonus gagné ✓' : `${done}/${norm.length} · bonus +${WEEK_BONUS} ★`;
   if (!qs.length) {
     $('#qlist').innerHTML = `<div class="empty">Aucun lieu trouvé à la bonne distance.<br>Essaie une autre distance dans le Profil.</div>`;
   } else {
-    $('#qlist').innerHTML = qs.map((q, i) => {
-      const p = placeById(q.pid); if (!p) return '';
-      const done = q.status === 'done', td = todayIdx();
+    const top = q => q.legend && q.status === 'todo' ? 1 : 0;
+    const order = qs.map((q, i) => i).sort((a, b) => top(qs[b]) - top(qs[a]) || a - b);
+    $('#qlist').innerHTML = order.map(i => {
+      const q = qs[i], p = placeById(q.pid); if (!p) return '';
+      const done = q.status === 'done', td = todayIdx(), t = qTier(q);
+      if (q.legend && !done) return `<button class="quest legendq" data-i="${i}">
+        <div class="num">✨</div>
+        <div class="t"><b>${esc(shownName(p, false))}</b><span><span class="legtime">⏳ encore ${hoursLeft(q)} h</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        ${tierBadge('legend')}</button>`;
       const isToday = !done && q.day === td, late = !done && q.day < td;
       const when = isToday ? `<span class="today-tag">Aujourd'hui</span>` : `${DAYS[q.day] || ''}${late ? ' · rattrapable' : ''}`;
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''} ${isToday ? 'today' : ''}" data-i="${i}">
         <div class="num ${done ? '' : 'day'}">${done ? '✓' : DAYS_S[q.day] || i + 1}</div>
         <div class="t"><b>${esc(shownName(p, done))}</b><span>${when} · ${esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
-        ${done ? `<span class="badge b-done">+${PTS[p.rarity]}</span>` : `<span class="badge b-${p.rarity}">${p.rarity === 'rare' ? 'Rare' : 'Commune'}</span>`}
+        ${done ? `<span class="badge b-done">+${PTS[t]}</span>` : tierBadge(t)}
       </button>`;
     }).join('');
     $('#qlist').querySelectorAll('.quest').forEach(b => b.onclick = () => openQuest(+b.dataset.i));
@@ -1042,13 +1169,13 @@ function openQuest(i) {
   if (done) {
     const c = S.collection.find(c => c.pid === p.id);
     const sh = sheet(`<span class="badge b-done">Trouvé</span><h3>${esc(shownName(p, true))}</h3>
-      <p class="muted">${esc(p.label)} · trouvé le ${c ? new Date(c.date).toLocaleDateString('fr-FR') : ''} · +${PTS[p.rarity]} ★</p>
+      <p class="muted">${esc(p.label)} · trouvé le ${c ? new Date(c.date).toLocaleDateString('fr-FR') : ''} · +${c ? c.pts : PTS[qTier(q)]} ★</p>
       <div class="row"><button class="btn ghost" id="seecard">Voir la fiche</button></div>`);
     sh.querySelector('#seecard').onclick = () => { closeSheet(); showFiche(c); };
     return;
   }
   const sh = sheet(`<div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
-    <span class="badge b-${p.rarity}">${rare ? 'Rare' : 'Commune'} · +${PTS[p.rarity]} ★</span>
+    ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
     <h3>${esc(shownName(p, false))}</h3>
     <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
     ${rare ? `<div class="hint">${hintFor(p)}</div>` : `<p>Cours jusqu'au lieu, valide ton arrivée, prends ta photo et rentre.</p>`}
@@ -1058,9 +1185,11 @@ function openQuest(i) {
       <button class="btn ghost small" id="here">J'y suis</button>
     </div>
     <div class="feedback" id="fb"></div>
-    <div class="row"><button class="btn swap" id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button></div>
+    ${q.easy ? `<div class="row"><button class="btn swap easybtn" id="easy">🎯 Une plus proche · gratuit</button></div>` : ''}
+    ${q.legend ? '' : `<div class="row"><button class="btn swap" id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button></div>`}
     <button class="link" id="lost">Je ne trouve pas</button>`);
-  sh.querySelector('#swap').onclick = () => swapQuest(i);
+  if (sh.querySelector('#swap')) sh.querySelector('#swap').onclick = () => swapQuest(i);
+  if (sh.querySelector('#easy')) sh.querySelector('#easy').onclick = () => easierQuest(i);
   wikiFor(p).then(w => { const bg = sh.querySelector('#lbg'); if (w && w.img && bg) bg.style.backgroundImage = `url("${w.img}")`; });
   sh.querySelector('#gorun').onclick = () => { closeSheet(); startRun(i); };
   sh.querySelector('#here').onclick = () => checkIn(i, sh);
@@ -1126,18 +1255,19 @@ function takePhoto(i) {
 async function award(i, blob) {
   const q = S.week.quests[i], p = placeById(q.pid);
   if (q.status === 'done') return;
-  const pts = PTS[p.rarity];
+  const tier = qTier(q), pts = PTS[tier];
   q.status = 'done';
   S.points += pts;
   S.coins = (S.coins || 0) + COIN_PLACE;
-  const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: p.rarity, pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
+  const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: tier, hidden: p.rarity === 'rare', pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
+  if (q.legend) card.event = true;
   if (RUN) { card.run = RUN.id; card.sport = RUN.sport || 'run'; RUN.found = p.id; }
   const w = await Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 2500))]);
   if (w && w.img) card.img = w.img;
   S.collection.push(card);
   track('level_complete', { level: levelOf(S.points).n });
   if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
-  const allDone = S.week.quests.every(x => x.status === 'done');
+  const allDone = S.week.quests.filter(x => !x.legend).every(x => x.status === 'done');
   let bonus = false;
   if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.coins = (S.coins || 0) + COIN_WEEK; S.weeksCleared++; (S.clearedWeeks = S.clearedWeeks || []).push(S.week.id); bonus = true; }
   save();
@@ -1287,7 +1417,7 @@ function swapQuest(i) {
   const price = swapPrice();
   if (price > (S.coins || 0)) { toast(`Il te faut ${price} 🪙 pour changer (tu en as ${S.coins || 0})`); return; }
   const exclude = new Set(S.week.quests.map(x => x.pid));
-  const pool = pickQuests(8, 'choix|' + q.pid + '|' + Date.now(), exclude);
+  const pool = pickQuests(8, 'choix|' + q.pid + '|' + Date.now(), exclude, { km: q.km });
   const same = pool.filter(x => x.rarity === p.rarity), other = pool.filter(x => x.rarity !== p.rarity);
   const opts = same.concat(other).slice(0, 3);
   if (!opts.length) { toast('Pas d\'autre lieu disponible à cette distance'); return; }
@@ -1295,17 +1425,27 @@ function swapQuest(i) {
     <p class="muted">${price ? `Ça coûte <b>${price} 🪙</b> (tu en as ${S.coins || 0}).` : 'Ton changement <b>gratuit</b> de la semaine.'} Choisis ta nouvelle quête :</p>
     <div class="swaps">${opts.map((o, k) => `<button data-k="${k}" class="${o.rarity}"><div class="num">${o.rarity === 'rare' ? '?' : '★'}</div>
       <div style="flex:1;min-width:0"><b>${esc(shownName(o, false))}</b><span>${esc(o.label)} · ${roundTripKm(o).toFixed(1).replace('.', ',')} km A/R ${hillBadge(questDplus(o))}</span></div>
-      <span class="badge b-${o.rarity}">${o.rarity === 'rare' ? 'Rare' : 'Commune'}</span></button>`).join('')}</div>
+      ${tierBadge(tierOf(o))}</button>`).join('')}</div>
     <button class="link" id="keep">Garder ma mission</button>`);
   sh.querySelector('#keep').onclick = () => { closeSheet(); openQuest(i); };
   sh.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
     const o = opts[+b.dataset.k];
     if (price) S.coins -= price; else S.week.freeSwap = true;
-    S.week.quests[i] = { pid: o.id, status: 'todo', day: q.day };
+    S.week.quests[i] = { pid: o.id, status: 'todo', day: q.day, km: q.km, tier: tierOf(o) };
     save(); closeSheet(); renderQuests();
     toast(price ? `Mission changée · −${price} 🪙` : 'Mission changée !');
     wikiFor(o);
   });
+}
+
+// après un abandon : une quête plus proche, gratuite, à la nouvelle distance
+function easierQuest(i) {
+  const q = S.week.quests[i];
+  const [np] = pickQuests(1, 'easy|' + q.pid + '|' + Date.now(), new Set(S.week.quests.map(x => x.pid)), { km: S.goal.km });
+  if (!np) { toast('Pas d\'autre lieu plus proche pour l\'instant'); return; }
+  S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: S.goal.km, tier: tierOf(np) };
+  save(); closeSheet(); renderQuests(); wikiFor(np);
+  toast(`Nouvelle quête à ${roundTripKm(np).toFixed(1).replace('.', ',')} km 💪`);
 }
 
 /* ---------- signaler un lieu ---------- */
@@ -1320,8 +1460,8 @@ function report(i) {
     S.reports.push({ pid: p.id, name: p.name || p.label, reason: b.dataset.r, date: Date.now() });
     S.blacklist.push(p.id);
     const exclude = new Set(S.week.quests.map(x => x.pid));
-    const [np] = pickQuests(1, 'swap|' + p.id + '|' + Date.now(), exclude).filter(x => x.rarity === p.rarity).concat(pickQuests(1, 'swap2|' + p.id, exclude));
-    if (np) S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day }; else S.week.quests.splice(i, 1);
+    const [np] = q.legend ? [] : pickQuests(1, 'swap|' + p.id + '|' + Date.now(), exclude, { km: q.km }).filter(x => x.rarity === p.rarity).concat(pickQuests(1, 'swap2|' + p.id, exclude, { km: q.km }));
+    if (np) S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: q.km, tier: tierOf(np) }; else S.week.quests.splice(i, 1);
     save(); closeSheet(); renderQuests();
     toast(np ? 'Merci ! Nouvelle quête ajoutée.' : 'Merci ! Plus de lieux dispo à cette distance.');
   });
@@ -1330,8 +1470,8 @@ function report(i) {
 /* ---------- cartes ---------- */
 const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>';
 function cardHtml(c) {
-  const cls = c.rarity === 'rare' ? 'rare' : c.rarity === 'legend' ? 'legend' : '';
-  const tag = c.rarity === 'rare' ? 'Rare' : c.rarity === 'legend' ? 'Légendaire' : 'Commune';
+  const cls = c.rarity === 'common' ? '' : c.rarity;
+  const tag = TIER_NAME[c.rarity] || 'Commune';
   return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
     <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
     <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + sportOf(runOf(c)).ic + ' ' + km(runOf(c).dist) + ' km' : ''}</span></div>
@@ -1340,7 +1480,7 @@ function cardHtml(c) {
 }
 // verso : la photo du lieu (ou, sans photo à toi, les infos de la découverte)
 function backHtml(c) {
-  const cls = c.rarity === 'rare' ? 'rare' : c.rarity === 'legend' ? 'legend' : '';
+  const cls = c.rarity === 'common' ? '' : c.rarity;
   const r = runOf(c);
   if (c.photo) return `<div class="card ${cls}"><div class="in"><div class="ph" data-back="${esc(c.pid)}">${ICON_PIN}</div>
     <div class="cap"><b>${esc(c.name)}</b><span>Le lieu en photo</span></div><span class="back-tag">📷 Le lieu</span></div></div>`;
@@ -1363,7 +1503,7 @@ function fillPhotos(root) {
 let collFilter = 'all';
 function renderColl() {
   renderPoints();
-  const n = S.collection.length, r = S.collection.filter(c => c.rarity === 'rare').length;
+  const n = S.collection.length, r = S.collection.filter(c => c.rarity !== 'common').length;
   $('#colltitle').innerHTML = `Ma collection <span class="muted" style="font-size:15px;font-weight:600">· ${n} lieu${n > 1 ? 'x' : ''} · ${r} rare${r > 1 ? 's' : ''}</span>`;
   if (!n) {
     $('#collbar').innerHTML = '';
@@ -1419,6 +1559,7 @@ async function victory(card, pts) {
   const place = placeById(card.pid) || { id: card.pid, name: card.name, label: card.label, lat: card.lat, lng: card.lng };
   const p = overlay(`<div class="fiche" style="text-align:center">
     <div class="v-title pixel">LIEU TROUVÉ !</div>
+    ${card.rarity !== 'common' ? `<div class="pixel" style="font-size:12px;margin-top:8px;color:${{ rare: '#B07BFF', epic: '#8EC5FF', legend: '#FFD23F' }[card.rarity]}">CARTE ${(TIER_NAME[card.rarity] || '').toUpperCase()} !</div>` : ''}
     <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_PLACE} 🪙</div>
     <div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
     <div class="box vstory" id="vstory" style="text-align:left"><span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On déverrouille l'histoire…</p></div>
@@ -1429,7 +1570,7 @@ async function victory(card, pts) {
   vibrate([30, 40, 30]);
   setTimeout(() => {
     $('#flip').classList.add('on'); vibrate(60);
-    confetti(card.rarity === 'rare' ? ['#7B2FF7', '#B07BFF', '#FFD23F', '#fff'] : ['#FFD23F', '#FFB800', '#fff', '#C0C6D0']);
+    confetti({ rare: ['#7B2FF7', '#B07BFF', '#FFD23F', '#fff'], epic: ['#1559C9', '#8EC5FF', '#FFD23F', '#fff'], legend: ['#FFD23F', '#FFB800', '#FFF3B0', '#fff'] }[card.rarity] || ['#FFD23F', '#FFB800', '#fff', '#C0C6D0']);
   }, 900);
   return p;
 }
@@ -1510,7 +1651,7 @@ function tstats() {
   const weeks = (S.clearedWeeks || []).slice().sort();
   let streak = 0, best = 0, prev = null;
   for (const w of weeks) { const [y, n] = w.split('-W').map(Number); const cur = y * 53 + n; streak = prev != null && cur === prev + 1 ? streak + 1 : 1; best = Math.max(best, streak); prev = cur; }
-  return { cards: col.length, rares: col.filter(c => c.rarity === 'rare').length, km: runs.reduce((a, r) => a + r.dist, 0) / 1000, maxRun: Math.max(0, ...runs.map(r => r.dist)) / 1000,
+  return { cards: col.length, rares: col.filter(c => c.rarity !== 'common').length, km: runs.reduce((a, r) => a + r.dist, 0) / 1000, maxRun: Math.max(0, ...runs.map(r => r.dist)) / 1000,
     weeks: S.weeksCleared || 0, streak: best, early: runs.some(r => new Date(r.date).getHours() < 8), night: runs.some(r => new Date(r.date).getHours() >= 21),
     all4: has('culte') && has('vert') && has('statue') && has('musee'), bike: runs.some(r => r.sport === 'bike'), walk: runs.some(r => r.sport === 'walk'), maxDplus: Math.max(0, ...runs.map(r => r.dplus || 0)), dplus: runs.reduce((a, r) => a + (r.dplus || 0), 0) };
 }
@@ -1994,8 +2135,8 @@ function drawRun() {
 }
 function togglePause() {
   if (!RUN || RUN.ready) return;
-  if (RUN.paused) { RUN.paused = false; RUN.resumedAt = Date.now(); speak('On repart !'); const l = RUN.pts[RUN.pts.length - 1]; if (l) l[2] = Date.now() + (RUN.simOff || 0); }
-  else { RUN.elapsed = elapsed(); RUN.paused = true; stopSim(); speak('Pause.'); }
+  if (RUN.paused) { RUN.paused = false; RUN.resumedAt = Date.now(); if (RUN.pausedAt) RUN.pauseMs = (RUN.pauseMs || 0) + Date.now() - RUN.pausedAt; RUN.pausedAt = 0; speak('On repart !'); const l = RUN.pts[RUN.pts.length - 1]; if (l) l[2] = Date.now() + (RUN.simOff || 0); }
+  else { RUN.elapsed = elapsed(); RUN.paused = true; RUN.pausedAt = Date.now(); stopSim(); speak('Pause.'); }
   saveRun(); drawRun();
 }
 function closeRunScreen() {
@@ -2027,7 +2168,8 @@ async function finishRun() {
   if (!RUN) return;
   if (RUN.ready) { closeRunScreen(); RUN = null; saveRun(); return; }
   if (!RUN.paused) { RUN.elapsed = elapsed(); RUN.paused = true; }
-  const r = { id: RUN.id, sport: RUN.sport || 'run', date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round), dplus: Math.round(RUN.dplus || 0) };
+  const r = { id: RUN.id, sport: RUN.sport || 'run', date: RUN.start, dist: Math.round(RUN.dist), time: RUN.elapsed, pid: RUN.pid, found: RUN.found, pts: simplify(RUN.pts), splits: splits().map(Math.round), dplus: Math.round(RUN.dplus || 0), pauseMs: RUN.pauseMs || 0 };
+  const quest = S.week && S.week.quests.find(q => q.pid === RUN.pid && q.status === 'todo');
   try {
     const step = Math.max(1, Math.floor(r.pts.length / 99));
     const sample = r.pts.filter((_, i) => i % step === 0 || i === r.pts.length - 1).map(p => ({ lat: p[0], lng: p[1] }));
@@ -2045,9 +2187,13 @@ async function finishRun() {
   $('#nokeep').onclick = () => { keep = false; $('#vin').querySelector('[data-close]').click(); };
   await pr;
   if (!r.found) track('death', { level: levelOf(S.points).n, reason: 'sortie sans lieu' });
+  const ad = keep ? adapt(r, quest) : null;
   if (keep && r.dist >= 50) S.runs.push(r); else if (card) delete card.run;
   RUN = null; saveRun(); save();
   await celebrate();
+  if (ad && ad.up) { vibrate([40, 40, 80]); toast(`💪 Tu progresses ! Tes prochaines quêtes : ${String(ad.up).replace('.', ',')} km`); }
+  if (ad && ad.down) toast('On ajuste ta prochaine quête pour que tu la plies 💪');
+  maybeLegend();
   if (current === 'prof') renderProf(); else renderQuests();
 }
 function stopSim() { clearInterval(simT); simT = null; const b = $('#rsim'); if (b) b.textContent = '▶ Simuler (test)'; }
@@ -2111,7 +2257,7 @@ function goalPicker(el, onChange) {
       <div class="days">${DAYS_1.map((d, i) => `<button data-d="${i}" class="${g.days.includes(i) ? 'on' : ''}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>
       <div class="picklabel">Quelle distance par sortie ?</div>
       <div class="kmval"><b id="kmv">${g.km}</b> km</div>
-      <input type="range" class="slider" id="kmr" min="1" max="${mx}" step="1" value="${g.km}">
+      <input type="range" class="slider" id="kmr" min="1" max="${mx}" step="0.5" value="${g.km}">
       <div class="slidelegend"><span>1 km</span><span>${mx} km</span></div>
       <div class="goalsum">${g.days.length} sortie${g.days.length > 1 ? 's' : ''} · ${tot} km par semaine</div>`;
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
@@ -2121,7 +2267,7 @@ function goalPicker(el, onChange) {
       save(); draw(); onChange && onChange();
     });
     const r = el.querySelector('#kmr');
-    const paint = () => r.style.setProperty('--p', ((r.value - 1) / 29 * 100) + '%');
+    const paint = () => r.style.setProperty('--p', ((r.value - 1) / (r.max - 1) * 100) + '%');
     paint();
     r.oninput = () => {
       g.km = +r.value; paint();
@@ -2307,7 +2453,7 @@ document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b
 // questions sur ce qui freine les coureurs, avec la réponse de Quest Run
 // questions de l'accueil, adaptées au sport (27/10)
 const LEVELS_ONB = [['debutant', '🌱', 'Débutant', 'Je débute ou je reprends'], ['inter', '💪', 'Intermédiaire', 'Je sors régulièrement'], ['confirme', '🔥', 'Confirmé', "J'ai de l'expérience"]];
-const KM_LVL = { run: { debutant: 4, inter: 8, confirme: 12 }, walk: { debutant: 4, inter: 8, confirme: 15 }, bike: { debutant: 10, inter: 15, confirme: 20 } };
+const KM_LVL = { run: { debutant: 3, inter: 5, confirme: 8 }, walk: { debutant: 3, inter: 5, confirme: 8 }, bike: { debutant: 10, inter: 15, confirme: 20 } };
 const KM_MAX = { run: 30, walk: 30, bike: 20 };
 const VERB = { run: 'cours', walk: 'marches', bike: 'roules' };
 function quizFor(sp) {
@@ -2338,7 +2484,7 @@ function onboarding(step = 0) {
   const o = $('#onb'); o.classList.remove('hidden');
   setTimeout(() => bindBack && bindBack(), 0);
   // en-tête : bouton retour discret (étapes 1 à 3) + points de progression
-  const dots = n => `<div class="onbhead">${step >= 1 && step <= 7 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6, 7].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  const dots = n => `<div class="onbhead">${step >= 1 && step <= 8 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
   const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
     o.innerHTML = `<div class="body"><div class="hero">
@@ -2365,10 +2511,10 @@ function onboarding(step = 0) {
   if (step === 2) {
     const sp = S.sport || 'run';
     o.innerHTML = `${dots(1)}<div class="body"><h1>Ton niveau ${sp === 'walk' ? 'en marche' : sp === 'bike' ? 'à vélo' : 'en course'} ?</h1>
-      <p>Pour te proposer la bonne distance. Tu pourras la changer quand tu veux.</p>
-      <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · ${KM_LVL[sp][v]} km par sortie</small></div></button>`).join('')}</div></div>`;
+      <p>On commence à ton niveau, puis la distance monte avec toi, sortie après sortie.</p>
+      <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · on commence à ${KM_LVL[sp][v]} km</small></div></button>`).join('')}</div></div>`;
     o.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
-      S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; save();
+      S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; S.prog = { credits: 0, fails: 0, okRuns: 0 }; save();
       (S.quiz = S.quiz || {}).niveau = S.skill; track('quiz', { id: 'niveau', value: S.skill });
       b.classList.add('on'); setTimeout(() => onboarding(3), 180);
     });
@@ -2423,12 +2569,24 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      S.home = chosen; save(); onboarding(8);
+      S.home = chosen; save(); onboarding(S.onboarded ? 9 : 8);
     };
   }
   if (step === 8) {
+    const sp = S.sport || 'run', go = sp === 'walk' ? 'balade' : 'sortie';
+    o.innerHTML = `${dots(7)}<div class="body scrolly"><h1>Quest Run, c'est quoi ?</h1>
+      <p>${sp === 'walk' ? 'Tes balades' : sp === 'bike' ? 'Tes sorties vélo' : 'Tes footings'} deviennent un jeu.</p>
+      <div class="explain">
+        <div><span class="ic">🎮</span><div><b>Chaque ${go} devient une quête</b><p>Un vrai lieu à trouver, des cartes à gagner, des niveaux et des trophées.</p></div></div>
+        <div><span class="ic">📚</span><div><b>Découvre ton quartier</b><p>Statues cachées, châteaux, fontaines : chaque lieu trouvé te raconte son histoire.</p></div></div>
+        <div><span class="ic">🏆</span><div><b>Qui aura la carte la plus rare ?</b><p>Plus tu vas loin, plus la carte est rare. Compare ta collection et tes ${go}s les plus folles avec tes potes.</p></div></div>
+      </div></div>
+      <button class="btn" id="go" style="margin-top:16px">C'est parti !</button>`;
+    $('#go').onclick = () => onboarding(9);
+  }
+  if (step === 9) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
-    o.innerHTML = `${dots(7)}<div class="body" style="text-align:center">
+    o.innerHTML = `${dots(8)}<div class="body" style="text-align:center">
       <div class="scan"><div class="ic">🧭</div></div>
       <h1 id="lt" style="font-size:24px">Recherche des trésors dans ton quartier…</h1>
       <ul class="steps" id="steps">
@@ -2454,7 +2612,7 @@ function onboarding(step = 0) {
         $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
         $('#st1').innerHTML = 'Réessaie dans une minute. <small class="muted">(' + esc(res.err && res.err.message) + ')</small>';
         $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
-        $('#go').onclick = () => onboarding(8);
+        $('#go').onclick = () => onboarding(9);
         return;
       }
       const pl = res.pl, r = pl.filter(p => p.rarity === 'rare').length;
@@ -2603,8 +2761,9 @@ if (typeof L === 'undefined') {
 } else if (!S.onboarded || !S.home) {
   onboarding(0);
 } else {
-  ensureWeek(); fixDays(); initProgress();
+  ensureWeek(); fixDays(); initProgress(); comeback();
   tab('quests');
+  setTimeout(() => maybeLegend(), 1500);
   upgradePlaces().catch(() => {});
   dailyBonus();
   loadElevations().then(() => current === 'quests' && renderQuests()).catch(() => {});
