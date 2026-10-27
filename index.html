@@ -209,7 +209,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 <!-- ============ ÉCRAN QUÊTES ============ -->
 <section id="s-quests" class="screen">
   <div class="topbar">
-    <div class="logo pixel">QUEST RUN</div>
+    <div class="logo pixel">QUEST RUN <span id="testtag" class="hidden" style="color:#E0245E;font-size:9px">· TEST</span></div>
     <div class="chip"><span class="star">★</span><span id="pts">0</span></div>
   </div>
   <div id="map"></div>
@@ -257,7 +257,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v7';
+const VERSION = 'v8';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -670,6 +670,7 @@ function renderPoints() {
 }
 function renderQuests() {
   renderPoints();
+  $('#testtag').classList.toggle('hidden', !S.testMode);
   const qs = S.week.quests, done = qs.filter(q => q.status === 'done').length;
   const dl = daysLeft();
   $('#daysleft').textContent = dl === 1 ? 'Dernier jour' : `${dl} jours restants`;
@@ -755,6 +756,7 @@ function getPos() {
 async function checkIn(i, sh) {
   const q = S.week.quests[i], p = placeById(q.pid);
   const btn = sh.querySelector('#here'), fb = sh.querySelector('#fb');
+  if (S.testMode) { closeSheet(); takePhoto(i); return; } // mode test : pas de GPS
   btn.disabled = true; btn.textContent = 'Localisation…'; fb.textContent = '';
   try {
     const pos = await getPos();
@@ -963,6 +965,10 @@ function renderProf() {
     <div class="set"><span>Recharger les lieux</span><button class="setbtn" id="reload">Recharger</button></div>
     <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div>
   </div>
+  <div class="panel"><h4>Développeur</h4>
+    <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span><button class="setbtn" id="test">${S.testMode ? 'Activé ✓' : 'Désactivé'}</button></div>
+    <div class="set"><span>Rejouer la semaine<small class="muted" style="display:block;font-size:13px">Nouvelles quêtes, bonus remis à zéro</small></span><button class="setbtn" id="replay">Rejouer</button></div>
+  </div>
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
   document.querySelectorAll('#theme button').forEach(b => {
@@ -976,6 +982,8 @@ function renderProf() {
     ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
   };
   $('#home').onclick = () => onboarding(2);
+  $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderProf(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
+  $('#replay').onclick = () => { S.week = null; ensureWeek(); toast('Nouvelle semaine de test !'); tab('quests'); };
   $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   $('#wipe').onclick = async () => {
     if (!confirm('Effacer toutes tes cartes, tes points et tes réglages ?')) return;
