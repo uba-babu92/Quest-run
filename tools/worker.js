@@ -19,12 +19,14 @@ function town(lat, lng) {
   return bd < 0.003 ? best : 'la ville';
 }
 
-const SYSTEM = `Tu écris de petites fiches pour Quest Run, un jeu de course à pied qui fait découvrir les lieux d'une ville.
-Écris 2 ou 3 phrases en français (350 caractères maximum), vivantes, en tutoyant le joueur.
-Règles strictes :
-- N'invente JAMAIS de date, de nom de personne, d'architecte, de chiffre ou de fait historique dont tu n'es pas certain.
-- Si tu ne connais pas ce lieu précis, décris ce qu'est ce type de lieu, ce qu'on peut y remarquer et l'ambiance du quartier, sans affirmer de fait précis.
-- Pas de formule creuse du type « un lieu incontournable ». Réponds uniquement par le texte.`;
+const SYSTEM = `Tu écris la fiche d'un lieu pour Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville.
+On te donne le nom et le type du lieu, puis des EXTRAITS D'ARTICLES WIKIPÉDIA sur des lieux proches.
+Règles absolues :
+- Utilise UNIQUEMENT les faits écrits dans les extraits. Aucune connaissance extérieure. Aucune date, aucun nom, aucun chiffre qui n'y figure pas.
+- Si un extrait parle du lieu lui-même, raconte son histoire en 3 ou 4 phrases.
+- Sinon, si les extraits racontent l'histoire de la rue, du quartier ou d'un bâtiment voisin, raconte cette histoire en 2 ou 3 phrases, en le disant clairement (par exemple : « Tu es dans le quartier de… »).
+- Si les extraits ne permettent rien d'intéressant et de sûr, réponds exactement : AUCUNE
+- Français, tutoiement, ton vivant, 450 caractères maximum. Réponds uniquement par le texte.`;
 
 export default {
   async fetch(req, env) {
@@ -39,14 +41,21 @@ export default {
     const name = clip(b.name, 120), kind = clip(b.kind, 60), artist = clip(b.artist, 80), date = clip(b.date, 30), insc = clip(b.insc, 120);
     const lat = +b.lat, lng = +b.lng;
     if (!name || !isFinite(lat) || !isFinite(lng)) return new Response('Lieu incomplet', { status: 400, headers: cors });
-    const user = `« ${name} », ${kind || 'lieu'}, près de ${town(lat, lng)}${artist ? `, artiste : ${artist}` : ''}${date ? `, date connue : ${date}` : ''}${insc ? `, inscription : « ${insc} »` : ''}`;
+    const sources = (Array.isArray(b.sources) ? b.sources : []).slice(0, 3)
+      .map(x => ({ title: clip(x && x.title, 120), text: clip(x && x.text, 900) })).filter(x => x.title && x.text);
+    if (!sources.length) return new Response(JSON.stringify({ text: '' }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    const user = `Lieu : « ${name} », ${kind || 'lieu'}, près de ${town(lat, lng)}${artist ? `, artiste : ${artist}` : ''}${date ? `, date : ${date}` : ''}${insc ? `, inscription : « ${insc} »` : ''}
+
+Extraits Wikipédia :
+${sources.map((x, i) => `[${i + 1}] ${x.title} : ${x.text}`).join('\n\n')}`;
     if (!env.AI) return new Response('Liaison Workers AI manquante (nom : AI)', { status: 500, headers: cors });
     let out;
     try {
       out = await env.AI.run('@cf/mistralai/mistral-small-3.1-24b-instruct', {
-        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }], max_tokens: 220, temperature: 0.3 });
+        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: user }], max_tokens: 260, temperature: 0.2 });
     } catch (e) { return new Response('IA indisponible : ' + e.message, { status: 502, headers: cors }); }
-    const text = String(out?.response || '').trim().replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 450);
+    let text = String(out?.response || '').trim().replace(/^["«\s]+|["»\s]+$/g, '').slice(0, 500);
+    if (/^AUCUNE\b/i.test(text) || text.length < 20) text = '';
     return new Response(JSON.stringify({ text }), { headers: { ...cors, 'Content-Type': 'application/json' } });
   }
 };

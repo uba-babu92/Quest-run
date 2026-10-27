@@ -54,6 +54,12 @@
 - La **course est collée à la carte** : km, temps, allure, tracé au dos (fiche). Historique dans le Profil.
 - Mode test : bouton « ▶ Simuler » dans l'écran de course (25 m/s, chrono accéléré ≈ 4:40/km).
 
+## Lieux vérifiables + IA sourcée (27/10, demande de Bazil)
+- **Seulement des lieux nommés** ; graffitis et installations exclus (souvent effacés). `PARSE_V` force un nouveau tri ; les quêtes à faire sur un lieu retiré sont remplacées.
+- L'IA ne doit **jamais inventer** : l'appli envoie au relais les **extraits Wikipédia des articles proches** (geosearch 600 m, 3 max). Consigne : n'utiliser que ces extraits ; sinon raconter le quartier ; sinon répondre AUCUNE → « Pas d'histoire connue ».
+- Affichage : « 📚 D'après Wikipédia (titres cliquables), résumé par IA ». Version des consignes : `AI_V` (les anciens textes non sourcés sont ignorés).
+- L'histoire s'affiche **directement sous la carte** à l'écran de victoire.
+
 ## Histoires à la demande (27/10, choix de Bazil)
 - **Pas de génération en masse.** Quand on ouvre la fiche d'une carte sans Wikipédia, l'appli demande 2-3 phrases à Mistral **une seule fois**, puis les garde (`S.wiki[id].ai`).
 - Passage par un **relais Cloudflare Worker** (`tools/worker.js`) qui utilise **Workers AI** (`@cf/mistralai/mistral-small-3.1-24b-instruct`, quota gratuit quotidien) via une liaison nommée **AI** : aucune clé à gérer. N'accepte que l'origine `https://uba-babu92.github.io`.

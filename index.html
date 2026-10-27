@@ -329,7 +329,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v17';
+const VERSION = 'v18';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVEL_XP = 1000;
@@ -472,7 +472,9 @@ function classify(t) {
       : ({ jewish: 'Synagogue', muslim: 'Mosquée', buddhist: 'Temple' }[t.religion] || 'Lieu de culte');
   }
   if (!label) return null;
-  if (rarity === 'common' && !name) return null;
+  // Lieux vérifiables seulement (27/10) : un nom obligatoire, pas d'œuvres éphémères
+  if (!name) return null;
+  if (t.artwork_type === 'graffiti' || t.artwork_type === 'installation') return null;
   return { label, rarity, name };
 }
 
@@ -552,19 +554,28 @@ async function fetchPlaces(home, km, onSlow) {
 }
 
 // À chaque ouverture : si le robot a ajouté des cases, on ajoute leurs lieux.
+const PARSE_V = 2; // à changer quand le tri des lieux change : force un nouveau tri
 async function upgradePlaces() {
   if (!S.home || !S.places.length) return;
   const local = await fetchLocal(S.home, Math.min(9000, Math.round(S.goal.km * 620)));
   if (!local || !local.els.length) return;
-  if (S.placesFor && S.placesFor.localCount === local.els.length) return;
+  if (S.placesFor && S.placesFor.localCount === local.els.length && S.placesFor.parse === PARSE_V) return;
   const fresh = parsePlaces(local.els, S.home).concat(nearBoulogne(S.home) ? curatedPlaces(S.home) : []);
-  const keep = new Set((S.week ? S.week.quests : []).map(q => q.pid));
-  for (const p of S.places) if (keep.has(p.id) && !fresh.some(f => f.id === p.id)) fresh.push(p);
+  // les quêtes déjà faites gardent leur lieu ; celles à faire sur un lieu retiré sont remplacées
+  const done = new Set((S.week ? S.week.quests : []).filter(q => q.status === 'done').map(q => q.pid));
+  for (const p of S.places) if (done.has(p.id) && !fresh.some(f => f.id === p.id)) fresh.push(p);
   const added = fresh.length - S.places.length;
   S.places = fresh;
-  S.placesFor = Object.assign({}, S.placesFor, { localCount: local.els.length });
+  S.placesFor = Object.assign({}, S.placesFor, { localCount: local.els.length, parse: PARSE_V });
+  let swapped = 0;
+  if (S.week) S.week.quests.forEach((q, i) => {
+    if (q.status === 'done' || placeById(q.pid)) return;
+    const [np] = pickQuests(1, 'tri|' + q.pid, new Set(S.week.quests.map(x => x.pid)));
+    if (np) { S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day }; swapped++; }
+  });
   save();
-  if (added > 0) toast(`+${added} nouveaux lieux autour de toi`);
+  if (swapped) { toast(`${swapped} quête${swapped > 1 ? 's' : ''} remplacée${swapped > 1 ? 's' : ''} par des lieux plus sûrs`); if (current === 'quests') renderQuests(); }
+  else if (added > 0) toast(`+${added} nouveaux lieux autour de toi`);
 }
 
 // Secours : on interroge les 3 serveurs en même temps, le premier qui répond gagne.
@@ -960,24 +971,37 @@ async function storyFor(p) {
 }
 // Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
 const STORY_API = 'https://questrun-histoires.v5nhskv7zy.workers.dev'; // relais Cloudflare (garde la clé Mistral)
+const AI_V = 2; // version des consignes : les anciens textes (non sourcés) sont ignorés
+// Extraits Wikipédia des articles proches du lieu : la seule matière que l'IA a le droit d'utiliser.
+async function nearbySources(p) {
+  const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${p.lat}|${p.lng}&gsradius=600&gslimit=10&format=json&origin=*`);
+  const titles = (g.query?.geosearch || []).map(x => x.title).slice(0, 5);
+  if (!titles.length) return [];
+  const e = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=900&redirects=1&format=json&origin=*&titles=${encodeURIComponent(titles.join('|'))}`);
+  const pages = Object.values(e.query?.pages || {}).filter(x => x.extract && x.extract.length > 80 && !/homonymie/i.test(x.extract));
+  pages.sort((a, b) => titles.indexOf(a.title) - titles.indexOf(b.title));
+  return pages.slice(0, 3).map(x => ({ title: x.title, text: x.extract.slice(0, 900) }));
+}
 async function aiStory(p) {
   const w = S.wiki[p.id];
-  if (w && w.ai) return w.ai;
-  const robot = await storyFor(p);
-  if (robot) return robot;
-  const api = S.storyApi || STORY_API;
   aiError = '';
+  if (w && w.aiV === AI_V && w.ai) return { text: w.ai, src: w.aiSrc || [] };
+  if (w && w.aiV === AI_V && w.aiNone && Date.now() - w.aiT < 7 * 864e5) return null;
+  const api = S.storyApi || STORY_API;
   if (!api) { aiError = 'relais non configuré'; return null; }
   if (!p.name) { aiError = 'lieu sans nom'; return null; }
+  const mark = o => { S.wiki[p.id] = Object.assign(S.wiki[p.id] || { none: true, t: Date.now() }, { aiV: AI_V, ai: null, aiNone: false, aiT: Date.now() }, o); save(); };
   try {
-    const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined,
-      body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc }) });
+    const sources = await nearbySources(p);
+    if (!sources.length) { mark({ aiNone: true }); return null; }
+    const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
+      body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc, sources }) });
     if (!r.ok) { aiError = `relais ${r.status} : ${(await r.text()).slice(0, 120)}`; return null; }
     const j = await r.json();
-    if (!j.text || j.text.length < 20) { aiError = 'réponse vide'; return null; }
-    S.wiki[p.id] = Object.assign(S.wiki[p.id] || { none: true, t: Date.now() }, { ai: j.text });
-    save();
-    return j.text;
+    if (!j.text || j.text.length < 20) { mark({ aiNone: true }); return null; }
+    const src = sources.map(x => x.title);
+    mark({ ai: j.text, aiSrc: src });
+    return { text: j.text, src };
   } catch (e) { aiError = 'relais injoignable (' + (e.name === 'TimeoutError' ? 'trop long' : e.message) + ')'; return null; }
 }
 let aiError = '';
@@ -1119,8 +1143,8 @@ async function fillStory(box, p, c, retry) {
   let h = '<span class="pixel">HISTOIRE</span>';
   if (w && w.img && c.photo && box.id === 'story') h += `<img class="wimg" src="${esc(w.img)}" alt="">`;
   if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
-  else if (ai) h += `<p>${esc(ai)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">✨ Texte généré par IA, peut contenir des erreurs.</p>`;
-  else h += `<p>${facts || "Pas encore d'histoire pour ce lieu. Tu fais partie des rares à l'avoir trouvé !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
+  else if (ai) h += `<p>${esc(ai.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">📚 D'après Wikipédia (${ai.src.map(t => `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, '_'))}" target="_blank" rel="noopener" style="color:#C9A6FF;margin:0;display:inline">${esc(t)}</a>`).join(', ')}), résumé par IA.</p>`;
+  else h += `<p>${facts || "Pas d'histoire connue pour ce lieu : aucune source fiable à proximité. À toi de raconter la tienne !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
   box.innerHTML = h;
   const rb = box.querySelector('#aiRetry'); if (rb) rb.onclick = retry;
 }
