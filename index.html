@@ -240,6 +240,34 @@ h2{font-size:22px;margin:4px 16px 12px}
 .route{width:100%;height:120px;margin-top:10px}
 .v-actions{display:flex;flex-direction:column;gap:10px;align-items:center;position:relative;z-index:2}
 
+/* ---------- paramètres / pages ---------- */
+.topbar .gear{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--text)}
+.topbar .gear svg{width:22px;height:22px}
+.backbtn{display:flex;align-items:center;gap:6px;font-weight:800;color:var(--violet);font-size:16px}
+.switch{position:relative;width:52px;height:32px;border-radius:99px;background:var(--line);transition:.2s;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.25);transition:.2s}
+.switch.on{background:var(--violet)}
+.switch.on::after{left:23px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{padding:8px 12px;border-radius:999px;border:2px solid var(--line);font-weight:800;font-size:14px;background:var(--card)}
+.chips button.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sgrid div{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 6px;text-align:center}
+.sgrid b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.sgrid span{font-size:11px;color:var(--muted);line-height:1.2;display:block;margin-top:2px}
+.trorow{display:flex;align-items:center;gap:10px;width:100%;text-align:left}
+.trorow .mini{display:flex;gap:6px;flex:1}
+.trorow .mini i{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:20px;background:linear-gradient(135deg,#FFE27A,#E8A400)}
+.trorow .mini i.off{background:var(--line);filter:grayscale(1);opacity:.5;font-size:15px}
+.sportpick{display:flex;flex-direction:column;gap:12px}
+.sportpick button{display:flex;align-items:center;gap:14px;padding:18px;border-radius:18px;border:2px solid var(--line);background:var(--card);text-align:left;font-weight:800;font-size:18px;box-shadow:var(--shadow)}
+.sportpick button span{font-size:34px}
+.sportpick button small{display:block;font-weight:500;font-size:14px;color:var(--muted)}
+.sportpick button.on{border-color:var(--violet);background:var(--violet-soft)}
+#run .fabrow{display:flex;justify-content:flex-end;margin-bottom:10px}
+#run .fab{height:56px;padding:0 22px;border-radius:999px;background:linear-gradient(135deg,var(--violet),var(--violet-2));color:#fff;font-weight:900;font-size:17px;box-shadow:0 5px 0 #4E12B0,0 8px 24px rgba(123,47,247,.5)}
+#run .fab:active{transform:translateY(3px);box-shadow:0 2px 0 #4E12B0}
+
 /* ---------- niveaux + trophées ---------- */
 .lvl .n{flex-direction:column;line-height:1.1}
 .lvl .ttl{display:block;font-size:13px;font-weight:800;color:var(--violet);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
@@ -325,9 +353,18 @@ h2{font-size:22px;margin:4px 16px 12px}
 <section id="s-prof" class="screen hidden">
   <div class="topbar">
     <div class="logo pixel">PROFIL</div>
-    <div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
+    <div style="display:flex;gap:8px;align-items:center"><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div>
+      <button class="gear" id="gear" aria-label="Paramètres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button></div>
   </div>
   <div id="prof"></div>
+</section>
+<section id="s-set" class="screen hidden">
+  <div class="topbar"><button class="backbtn" data-back>‹ Profil</button><div class="logo pixel">PARAMÈTRES</div></div>
+  <div id="set"></div>
+</section>
+<section id="s-tro" class="screen hidden">
+  <div class="topbar"><button class="backbtn" data-back>‹ Profil</button><div class="logo pixel">TROPHÉES</div></div>
+  <div id="tro"></div>
 </section>
 
 <nav class="tabbar" id="tabbar">
@@ -341,7 +378,7 @@ h2{font-size:22px;margin:4px 16px 12px}
   <div id="runmap"></div>
   <div class="rtop"><button class="x" id="rclose" aria-label="Fermer">✕</button>
     <div class="tgt" id="rtgt"><div class="dot">★</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div></div>
-  <div class="rbottom"><div class="rcard">
+  <div class="rbottom"><div class="fabrow"><button class="fab" id="rhere">📍 J'y suis</button></div><div class="rcard">
     <div class="ttl" id="rttl">Course à pied</div>
     <div class="stats3">
       <div><b id="rtime">0:00</b><span>temps</span></div>
@@ -350,7 +387,7 @@ h2{font-size:22px;margin:4px 16px 12px}
     </div>
     <div class="splits" id="rsplits"></div>
     <div class="rbtns" id="rbtns"></div>
-    <div class="tools"><button id="rvoice">🔊 Voix</button><button id="rsim" class="hidden">▶ Simuler (test)</button><button id="rhere">J'y suis</button></div>
+    <div class="tools"><button id="rvoice">🔊 Voix</button><button id="rsim" class="hidden">▶ Simuler (test)</button><span></span></div>
   </div></div>
 </div>
 <div id="victory" class="hidden"><canvas id="confetti"></canvas><div id="vin"></div></div>
@@ -366,7 +403,7 @@ h2{font-size:22px;margin:4px 16px 12px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v20';
+const VERSION = 'v21';
 const PTS = { common: 100, rare: 250 };
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -744,7 +781,8 @@ function fixDays() {
 /* ---------- thème ---------- */
 const mq = matchMedia('(prefers-color-scheme: dark)');
 function applyTheme() {
-  const dark = S.theme === 'dark' || (S.theme === 'auto' && mq.matches);
+  if (S.theme === 'auto') S.theme = mq.matches ? 'dark' : 'light'; // plus de mode Auto
+  const dark = S.theme === 'dark';
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.querySelector('meta[name=theme-color]').content = dark ? '#000000' : '#F7F6FB';
 }
@@ -1569,6 +1607,7 @@ function drawRun() {
     const st = $('#rstop'); if (st) st.onclick = () => { if (RUN && RUN.dist < 100 && !confirm('Terminer la course ?')) return; finishRun(); };
   }
   $('#rhere').classList.toggle('hidden', RUN.ready);
+  $('#rhere').textContent = RUN.phase === 'back' ? '🏠 Je suis rentré' : '📍 J\'y suis';
 }
 function togglePause() {
   if (!RUN || RUN.ready) return;
@@ -1699,38 +1738,75 @@ function goalPicker(el, onChange) {
 }
 
 /* ---------- profil + réglages ---------- */
+function statsOf() {
+  const runs = S.runs || [], by = k => runs.filter(r => (r.sport || 'run') === k);
+  const sum = (a, f) => a.reduce((x, r) => x + f(r), 0);
+  const D = sum(runs, r => r.dist), T = sum(runs, r => r.time);
+  const rr = by('run'), bk = by('bike'), wk = by('walk');
+  return { n: runs.length, km: D / 1000, time: T, longest: Math.max(0, ...runs.map(r => r.dist)) / 1000,
+    runPace: rr.length ? pace(sum(rr, r => r.time), sum(rr, r => r.dist)) : null,
+    bikeSpeed: bk.length ? speed(sum(bk, r => r.time), sum(bk, r => r.dist)) : null,
+    walkPace: wk.length ? pace(sum(wk, r => r.time), sum(wk, r => r.dist)) : null };
+}
+function hm(ms) { const m = Math.round(ms / 60000), h = Math.floor(m / 60); return h ? `${h} h ${String(m % 60).padStart(2, '0')}` : `${m} min`; }
+const kmTxt = v => v.toFixed(1).replace('.', ',');
+
 function renderProf() {
   renderPoints();
   const lv = levelOf(S.points), pct = lv.to ? (S.points - lv.from) / (lv.to - lv.from) * 100 : 100;
-  const nT = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).length;
+  const got = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).sort((a, b) => S.trophies[b[0]] - S.trophies[a[0]]);
+  const st = statsOf();
+  const tile = (v, l) => `<div><b>${v}</b><span>${l}</span></div>`;
   $('#prof').innerHTML = `
   <div class="panel"><div class="lvl"><div class="n pixel">${lv.n}</div><div style="flex:1">
     <span class="ttl">Niveau ${lv.n}</span><b style="font-size:20px">${esc(lv.name)}</b>
     <div class="muted" style="font-size:13px;margin-top:2px">${lv.to ? `${fmt(lv.to - S.points)} ★ avant <b>${esc(lv.nextName)}</b>` : 'Titre suprême atteint !'}</div>
     <div class="xp"><i style="width:${pct}%"></i></div></div></div></div>
-  <div class="panel"><h4>Trophées · ${nT}/${TROPHIES.length}</h4><div class="trophies">${TROPHIES.map(([id, ic, name, desc]) => { const on = S.trophies && S.trophies[id];
-    return `<button class="tro ${on ? '' : 'off'}" data-d="${esc(desc)}"><span class="ic">${on ? ic : '🔒'}</span><b>${esc(name)}</b></button>`; }).join('')}</div></div>
-  <div class="panel stats">
-    <div><b>${S.collection.length}</b><span>lieux</span></div>
-    <div><b>${S.collection.filter(c => c.rarity === 'rare').length}</b><span>rares</span></div>
-    <div><b>${S.weeksCleared}</b><span>semaines<br>complètes</span></div>
-  </div>
-  <div class="panel"><h4>Thème</h4><div class="seg" id="theme">
-    <button data-v="light">Clair</button><button data-v="dark">Sombre</button><button data-v="auto">Auto</button></div></div>
   <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
     <div class="set" style="margin-top:12px"><span class="muted" style="font-size:14px">Les quêtes déjà faites sont gardées.</span><button class="setbtn" id="regen">Appliquer</button></div>
   </div>
-  <div class="panel"><h4>Mes courses</h4>${S.runs.length ? `
-    <div class="stats" style="margin-bottom:8px"><div><b>${S.runs.length}</b><span>courses</span></div><div><b>${(S.runs.reduce((a, r) => a + r.dist, 0) / 1000).toFixed(1).replace('.', ',')}</b><span>km au total</span></div><div><b>${pace(S.runs.reduce((a, r) => a + r.time, 0), S.runs.reduce((a, r) => a + r.dist, 0))}</b><span>allure moy.</span></div></div>
-    <div class="runlist">${S.runs.slice(-6).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première course.</p>'}
-  </div>
+  <div class="panel"><h4>Mes stats</h4><div class="sgrid">
+    ${tile(S.collection.length, 'lieux trouvés')}${tile(S.collection.filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}
+    ${tile(st.n, 'sorties')}${tile(kmTxt(st.km), 'km au total')}${tile(st.n ? hm(st.time) : '0 min', 'de sport')}
+    ${tile(st.runPace || '–:––', 'allure course (/km)')}${tile(st.bikeSpeed || '–', 'vitesse vélo (km/h)')}${tile(kmTxt(st.longest), 'km, plus longue sortie')}
+  </div></div>
+  <div class="panel"><button class="trorow" id="trobtn"><div style="flex:none"><h4 style="margin:0 0 6px">Trophées · ${got.length}/${TROPHIES.length}</h4>
+    <div class="mini">${[0, 1, 2].map(i => got[i] ? `<i>${got[i][1]}</i>` : '<i class="off">🔒</i>').join('')}</div></div>
+    <span style="flex:1"></span><span class="setbtn">Voir tout ›</span></button></div>
+  <div class="panel"><h4>Dernières sorties</h4>${S.runs.length ? `<div class="runlist">${S.runs.slice(-5).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première sortie.</p>'}</div>
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION}</p>`;
+  goalPicker($('#pgoal'));
+  $('#trobtn').onclick = () => tab('tro');
+  $('#regen').onclick = async () => {
+    const f = S.placesFor;
+    if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) { return; } }
+    ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
+  };
+}
+
+function renderTro() {
+  const n = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).length;
+  $('#tro').innerHTML = `<h2>${n} / ${TROPHIES.length} <span class="muted" style="font-size:15px;font-weight:600">trophées gagnés</span></h2>
+  <div class="panel"><div class="trophies">${TROPHIES.map(([id, ic, name, desc]) => { const on = S.trophies && S.trophies[id];
+    return `<button class="tro ${on ? '' : 'off'}" data-d="${esc(desc)}${on ? ' · gagné le ' + new Date(on).toLocaleDateString('fr-FR') : ''}"><span class="ic">${on ? ic : '🔒'}</span><b>${esc(name)}</b></button>`; }).join('')}</div></div>
+  <p class="muted" style="text-align:center;font-size:13px;margin:0 16px 24px">Touche un trophée pour savoir comment le gagner.</p>`;
+  document.querySelectorAll('#tro .tro').forEach(b => b.onclick = () => toast(b.dataset.d));
+}
+
+function renderSet() {
+  const sw = (id, on) => `<button class="switch ${on ? 'on' : ''}" id="${id}" role="switch" aria-checked="${!!on}"></button>`;
+  $('#set').innerHTML = `
+  <div class="panel"><h4>Apparence</h4>
+    <div class="set"><span>Mode sombre</span>${sw('swdark', S.theme === 'dark')}</div></div>
+  <div class="panel"><h4>Sorties</h4>
+    <div class="set"><span>Sport par défaut</span><div class="chips" id="spdef">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${(S.sport || 'run') === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div></div>
+    <div class="set"><span>Voix pendant la sortie<small class="muted" style="display:block;font-size:13px">Annonce chaque kilomètre</small></span>${sw('swvoice', S.voice)}</div></div>
   <div class="panel"><h4>Lieux</h4>
     <div class="set"><span>Point de départ</span><button class="setbtn" id="home">Changer</button></div>
     <div class="set"><span>Recharger les lieux</span><button class="setbtn" id="reload">Recharger</button></div>
-    <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div>
-  </div>
+    <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div></div>
   ${S.dev ? `<div class="panel"><h4>Développeur</h4>
-    <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span><button class="setbtn" id="test">${S.testMode ? 'Activé ✓' : 'Désactivé'}</button></div>
+    <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span>${sw('test', S.testMode)}</div>
     <div class="set"><span>Rejouer la semaine<small class="muted" style="display:block;font-size:13px">Nouvelles quêtes, bonus remis à zéro</small></span><button class="setbtn" id="replay">Rejouer</button></div>
     <div class="set"><span>Revoir l'accueil<small class="muted" style="display:block;font-size:13px">Tes cartes et tes points sont gardés</small></span><button class="setbtn" id="reonb">Revoir</button></div>
     <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
@@ -1738,31 +1814,23 @@ function renderProf() {
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
   ${S.dev ? '' : `<button class="link" id="devbtn" style="margin:0 auto 10px">🔒 Mode développeur</button>`}
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
-  document.querySelectorAll('#theme button').forEach(b => {
-    b.classList.toggle('on', b.dataset.v === S.theme);
-    b.onclick = () => { S.theme = b.dataset.v; save(); applyTheme(); renderProf(); };
-  });
-  goalPicker($('#pgoal'));
-  document.querySelectorAll('.tro').forEach(b => b.onclick = () => toast(b.dataset.d));
-  $('#regen').onclick = async () => {
-    const f = S.placesFor;
-    if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) { return; } }
-    ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
-  };
-  $('#home').onclick = () => onboarding(2);
+  $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
+  $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
+  document.querySelectorAll('#spdef [data-sp]').forEach(b => b.onclick = () => { S.sport = b.dataset.sp; save(); renderSet(); });
+  $('#home').onclick = () => onboarding(3);
+  $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   if ($('#devbtn')) $('#devbtn').onclick = async () => {
     const pw = prompt('Mot de passe développeur');
     if (!pw) return;
-    if (await sha256(pw.trim()) === DEV_HASH) { S.dev = true; save(); renderProf(); toast('Mode développeur déverrouillé'); }
+    if (await sha256(pw.trim()) === DEV_HASH) { S.dev = true; save(); renderSet(); toast('Mode développeur déverrouillé'); }
     else toast('Mot de passe incorrect');
   };
   if (S.dev) {
-    $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderProf(); toast('Mode développeur verrouillé'); };
+    $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderSet(); toast('Mode développeur verrouillé'); };
     $('#reonb').onclick = () => { S.onboarded = false; save(); onboarding(0); };
-    $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderProf(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
+    $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderSet(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
     $('#replay').onclick = () => { S.week = null; ensureWeek(); toast('Nouvelle semaine de test !'); tab('quests'); };
   }
-  $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   $('#wipe').onclick = async () => {
     if (!confirm('Effacer toutes tes cartes, tes points et tes réglages ?')) return;
     localStorage.removeItem(KEY); try { await idb.clear(); } catch (e) {}
@@ -1784,19 +1852,25 @@ async function loadPlaces() {
 let current = 'quests';
 function tab(name) {
   current = name;
-  ['quests', 'coll', 'prof'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
-  document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === name));
+  ['quests', 'coll', 'prof', 'set', 'tro'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
+  const tb = name === 'set' || name === 'tro' ? 'prof' : name;
+  document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tb));
+  $('#s-' + name).scrollTop = 0;
   if (name === 'quests') { initMap(); renderQuests(); setTimeout(() => map && map.invalidateSize(), 50); }
   if (name === 'coll') renderColl();
   if (name === 'prof') renderProf();
+  if (name === 'set') renderSet();
+  if (name === 'tro') renderTro();
 }
+$('#gear').onclick = () => tab('set');
+document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => tab('prof'));
 document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
 /* ---------- onboarding ---------- */
 let onbMap = null;
 function onboarding(step = 0) {
   const o = $('#onb'); o.classList.remove('hidden');
-  const dots = n => `<div class="dots">${[0, 1, 2].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div>`;
+  const dots = n => `<div class="dots">${[0, 1, 2, 3].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div>`;
   if (step === 0) {
     o.innerHTML = `<div class="body"><div class="hero">
         <img src="icon.svg" width="112" height="112" alt="">
@@ -1807,15 +1881,29 @@ function onboarding(step = 0) {
     $('#go').onclick = () => onboarding(1);
   }
   if (step === 1) {
-    o.innerHTML = `${dots(0)}<div class="body"><h1>Ta semaine de course</h1>
+    const KM0 = { run: 7, bike: 20, walk: 5 };
+    o.innerHTML = `${dots(0)}<div class="body"><h1>Tu fais plutôt…</h1>
+      <p>On adapte les itinéraires et la distance. Tu pourras changer à chaque sortie.</p>
+      <div class="sportpick">
+        <button data-sp="run"><span>🏃</span><div>Course<small>Footing, running</small></div></button>
+        <button data-sp="bike"><span>🚴</span><div>Vélo<small>Balades et sorties à vélo</small></div></button>
+        <button data-sp="walk"><span>🚶</span><div>Marche / Rando<small>À ton rythme</small></div></button>
+      </div></div>`;
+    o.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
+      S.sport = b.dataset.sp; S.goal.km = KM0[S.sport]; save();
+      b.classList.add('on'); setTimeout(() => onboarding(2), 180);
+    });
+  }
+  if (step === 2) {
+    o.innerHTML = `${dots(1)}<div class="body"><h1>Ta semaine</h1>
       <p>Chaque jour coché = une quête. Le lieu est choisi pour faire un aller-retour de la bonne distance.</p>
       <div id="ogoal"></div></div>
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
     goalPicker($('#ogoal'));
-    $('#go').onclick = () => { save(); onboarding(2); };
+    $('#go').onclick = () => { save(); onboarding(3); };
   }
-  if (step === 2) {
-    o.innerHTML = `${dots(1)}<div class="body"><h1>D'où tu pars ?</h1>
+  if (step === 3) {
+    o.innerHTML = `${dots(2)}<div class="body"><h1>D'où tu pars ?</h1>
       <p>Touche la carte pour placer ton point de départ, ou utilise ta position.</p>
       <div id="onbmap"></div>
       <button class="btn ghost" id="locate" style="flex:none">📍 Utiliser ma position</button></div>
@@ -1837,11 +1925,11 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      S.home = chosen; save(); onboarding(3);
+      S.home = chosen; save(); onboarding(4);
     };
   }
-  if (step === 3) {
-    o.innerHTML = `${dots(2)}<div class="body" style="text-align:center"><div class="loader"></div>
+  if (step === 4) {
+    o.innerHTML = `${dots(3)}<div class="body" style="text-align:center"><div class="loader"></div>
       <h1 id="lt">On cherche les lieux autour de toi…</h1><p id="ls">Statues, fontaines, monuments, parcs…</p><p class="muted" style="font-size:12px">${VERSION}</p></div>
       <button class="btn hidden" id="go">Voir mes quêtes</button>`;
     fetchPlaces(S.home, S.goal.km, k => {
@@ -1861,7 +1949,7 @@ function onboarding(step = 0) {
       $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
       $('#ls').innerHTML = 'Ils sont gratuits et parfois saturés. Réessaie dans une minute.<br><small class="muted">Détail : ' + esc(err && err.message) + '</small>';
       $('#go').textContent = 'Réessayer'; $('#go').classList.remove('hidden');
-      $('#go').onclick = () => onboarding(3);
+      $('#go').onclick = () => onboarding(4);
     });
   }
 }

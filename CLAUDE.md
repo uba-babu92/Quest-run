@@ -37,7 +37,7 @@
 ## Design (validé le 26/10)
 - **Recette Duolingo** : écrans du quotidien propres et sportifs, moments de victoire **arcade** à fond.
 - **Violet électrique** `#7B2FF7` (marque, boutons, quêtes) + **or** `#FFB800` (points, victoires).
-- Fond **clair** par défaut. Réglage **Clair / Sombre (noir) / Auto** dans le Profil.
+- Fond **clair** par défaut. **Interrupteur « Mode sombre »** dans les Paramètres (plus de mode Auto, 27/10).
 - Écrans de victoire toujours **noirs**, police pixel « Press Start 2P », confettis, carte qui se retourne.
 - Cartes : **argent** = commune, **violet** = rare, **or** = légendaire (plus tard).
 
@@ -81,8 +81,14 @@
 - Pas retenu : pause en jaune, titre + ressenti à la fin.
 - Limite HTML : GPS coupé écran verrouillé / autre appli. Passage à une vraie appli (Capacitor, Mac + compte Apple) prévu à l'étape 2-3, ou plus tôt si l'écran allumé gêne.
 
+## Profil / Paramètres / Trophées (27/10, choix de Bazil)
+- **Profil** = niveau + titre, Ma semaine, **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
+- **Paramètres** : roue ⚙️ en haut à droite du Profil. Mode sombre, sport par défaut, voix, lieux, mode développeur, tout effacer.
+- **Accueil** : 1er écran « Tu fais plutôt… » course / vélo / marche-rando (distance proposée 7 / 20 / 5 km).
+- Écran de course : gros bouton violet **« 📍 J'y suis »** en bas à droite (« 🏠 Je suis rentré » au retour).
+
 ## Mode développeur (27/10)
-- Profil → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
+- Paramètres → « 🔒 Mode développeur » → mot de passe (connu de Bazil ; seule son empreinte SHA-256 est dans le code, le dépôt est public).
 - Contient : **mode test** (« J'y suis » sans GPS), rejouer la semaine, revoir l'accueil, verrouiller.
 
 ## Fichiers
@@ -96,6 +102,7 @@ GitHub Pages, branche `main`, dossier racine → https://uba-babu92.github.io/Qu
 Le HTTPS est obligatoire pour le GPS et l'appareil photo.
 
 ## Idées en attente
+- **Avatar** sur le profil (Bazil, 27/10) : après la V1.
 - **Échange de cartes entre joueurs** (Bazil, 27/10) : besoin de comptes + serveur → étape 2-3. Conseil : ne pas échanger la carte d'un lieu (preuve qu'on y a couru), plutôt des cartes bonus/doublons.
 - **« Partager ma carte »** en image pour story Instagram/TikTok (pub gratuite, étape 3).
 - **Motivation façon Duolingo** (Bazil, 27/10) : à préciser avec lui (série, rappels, messages…).
