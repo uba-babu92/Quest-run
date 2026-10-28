@@ -217,11 +217,12 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card.rare{background:linear-gradient(145deg,#B07BFF,#5A12D6,#C9A6FF)}
 .card.legend{background:linear-gradient(145deg,#FFE27A,#D38E00,#FFF3B0)}
 .card.epic{background:linear-gradient(145deg,#8EC5FF,#1559C9,#BFE0FF)}
-.card.mythic{background:linear-gradient(120deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff,#c45fff,#ff5fd2);background-size:300% 300%;animation:rainbow 4s linear infinite}
+.card.mythic{background:linear-gradient(120deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff,#c45fff,#ff5fd2);background-size:300% 300%;animation:rainbow 4s linear infinite;border-radius:16px}
 @keyframes rainbow{to{background-position:300% 0}}
 .b-mythic{background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);color:#1a0b2e}
 /* effet holographique : reflet arc-en-ciel qui suit l'inclinaison */
-.holo{position:relative;overflow:hidden;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s}
+.holo{position:relative;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s;-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;isolation:isolate}
+.holo .in{-webkit-mask-image:-webkit-radial-gradient(white,black)}
 .holo::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:color-dodge;opacity:.55;
   background:linear-gradient(115deg,transparent 20%,rgba(255,95,210,.7) 35%,rgba(255,210,63,.7) 45%,rgba(95,255,208,.7) 55%,rgba(95,157,255,.7) 65%,transparent 80%);
   background-size:250% 250%;background-position:var(--hx,50%) var(--hy,50%);animation:holomove 3.5s ease-in-out infinite alternate}
@@ -233,7 +234,8 @@ h2{font-size:22px;margin:4px 16px 12px}
 .mythhero{margin:0 16px 16px;border-radius:22px;padding:18px;background:radial-gradient(circle at 50% 0%,#3b1a6e,#120d1e 70%);color:#fff;text-align:center;border:1px solid rgba(255,255,255,.12)}
 .mythhero .when{font-size:13px;color:#c9c2e0;margin-top:10px}
 .mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
-.vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:5px;margin:0 auto}
+.vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:6px;margin:0 auto}
+.vcard .in{border-radius:11px}
 .vcard .in{height:100%;border-radius:12px;background:#140f22;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#fff;position:relative;overflow:hidden}
 .vcard .in .ic{font-size:44px;filter:drop-shadow(0 0 12px rgba(255,255,255,.5))}
 .vcard .in b{font-size:13px;text-align:center;padding:0 8px}
@@ -244,6 +246,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .odds{margin:0 16px 16px}
 .odds .o{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
 .odds .o:last-child{border:0}
+.odds .o.locked{opacity:.5}
 .odds .o>span:not(.badge){flex:1;font-size:14px;color:var(--muted)}
 .odds .o .badge{flex:none;min-width:96px;text-align:center}
 .odds .o>span b{display:block;color:var(--text);font-size:15px}
@@ -298,14 +301,24 @@ h2{font-size:22px;margin:4px 16px 12px}
 #onb .onbhead{position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;margin-bottom:10px}
 #onb .onbback{position:absolute;left:-6px;top:50%;transform:translateY(-50%);padding:6px 8px;color:var(--muted);font-weight:600;font-size:15px;opacity:.8}
 #onb .quiz button{font-size:17px}
-#onb .reassure{text-align:center;animation:pop .4s cubic-bezier(.2,1.4,.4,1)}
+#onb .reassure{text-align:center;animation:pop .4s cubic-bezier(.2,1.4,.4,1);margin:auto 0}
 #onb .reassure .big{font-size:72px;margin-bottom:12px}
 #onb .reassure h1{color:var(--violet)}
 #onb .acts{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 #onb .dots{display:flex;gap:6px;justify-content:center}
 #onb .dots i{width:8px;height:8px;border-radius:9px;background:var(--line)}
 #onb .dots i.on{background:var(--violet);width:22px}
-#onb .body{flex:1;display:flex;flex-direction:column;justify-content:center}
+#onb .body{flex:1;display:flex;flex-direction:column;justify-content:flex-start;min-height:0;overflow-y:auto;padding-top:8px}
+#onb .body.intro,#onb .body.center{justify-content:center}
+#onb .onbhead{gap:12px}
+#onb .obar{flex:1;max-width:220px;margin-left:64px;height:6px;border-radius:9px;background:var(--line);overflow:hidden}
+#onb .obar i{display:block;height:100%;border-radius:9px;background:linear-gradient(90deg,var(--violet),#B07BFF);transition:width .4s}
+#onb .sportpick{gap:10px}
+#onb .sportpick button{padding:12px 14px;gap:14px;font-size:17px;border-radius:18px}
+#onb .sportpick button>span{flex:none;width:50px;height:50px;border-radius:50%;display:grid;place-items:center;font-size:27px;background:var(--violet-soft)}
+#onb .sportpick button.on{box-shadow:0 0 0 3px rgba(123,47,247,.35)}
+#onb .namein{width:100%;padding:16px;border-radius:16px;border:2px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:20px;font-weight:700;text-align:center;margin-top:14px}
+#onb .namein:focus{outline:none;border-color:var(--violet)}
 #onb h1{font-size:30px;line-height:1.15;margin:0 0 12px}
 #onb p{font-size:17px;line-height:1.5;color:var(--muted);margin:0 0 18px}
 .hero{display:grid;place-items:center;margin-bottom:28px}
@@ -655,7 +668,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v48';
+const VERSION = 'v49';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -671,7 +684,22 @@ const qTier = q => q.tier || tierOf(placeById(q.pid));
 // chaque quête tire sa rareté ; plus elle est rare, plus elle est loin (29/10, chiffres de Bazil)
 const TIER_ODDS = [['mythic', 1], ['legend', 10], ['epic', 18], ['rare', 35], ['common', 36]];
 const TIER_KM = { common: 1, rare: 1.15, epic: 1.3, legend: 1.5, mythic: 1.6 };
-function rollTier(r = Math.random) { let x = r() * 100; for (const [t, w] of TIER_ODDS) { if (x < w) return t; x -= w; } return 'common'; }
+// les raretés se débloquent avec les sorties réussies (29/10) : pas de Mythique en arrivant
+const TIER_UNLOCK = { common: 0, rare: 0, epic: 3, legend: 6, mythic: 12 };
+function oddsNow(ok = (S.prog && S.prog.okRuns) || 0) {
+  if (ok < 3) return [['rare', 40], ['common', 60]];
+  if (ok < 6) return [['epic', 17], ['rare', 38], ['common', 45]];
+  if (ok < 12) return [['legend', 10], ['epic', 19], ['rare', 35], ['common', 36]];
+  return TIER_ODDS;
+}
+function rollTier(r = Math.random) { let x = r() * 100; for (const [t, w] of oddsNow()) { if (x < w) return t; x -= w; } return 'common'; }
+// une quête tirée trop rare pour ton niveau (avant cette règle) redescend
+function fixTiers() {
+  if (!S.week) return;
+  const ok = (S.prog && S.prog.okRuns) || 0; let ch = false;
+  S.week.quests.forEach(q => { if (q.status === 'todo' && !q.legend && !q.friend && q.tier && TIER_UNLOCK[q.tier] > ok) { q.tier = rollTier(); ch = true; } });
+  if (ch) save();
+}
 const tierBadge = (t, extra = '') => `<span class="badge b-${t}">${TIER_NAME[t] || 'Commune'}${extra}</span>`;
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -831,7 +859,7 @@ async function shareRecap(r) {
   const x = cv.getContext('2d'), F = '-apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif';
   const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#2a1150'); bg.addColorStop(1, '#05040a'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
   try { const logo = await loadImg('icon-512.png'); x.drawImage(logo, W / 2 - 70, 120, 140, 140); } catch (e) {}
-  x.textAlign = 'center'; x.textBaseline = 'top'; x.fillStyle = '#fff'; x.font = `900 92px ${F}`; x.fillText('Ma semaine', W / 2, 330);
+  x.textAlign = 'center'; x.textBaseline = 'top'; x.fillStyle = '#fff'; x.font = `900 92px ${F}`; x.fillText(S.name ? `La semaine de ${S.name}` : 'Ma semaine', W / 2, 330);
   x.fillStyle = '#c9c2e0'; x.font = `600 40px ${F}`;
   x.fillText(new Date(r.a).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + ' → ' + new Date(r.b - 1).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }), W / 2, 450);
   const tiles = [[r.n, 'sorties'], [r.km.toFixed(1).replace('.', ','), 'km'], [r.cards, 'cartes'], [r.dplus, 'm de D+']];
@@ -1379,7 +1407,7 @@ const mythNow = () => mythWindows().find(w => Date.now() >= w.a && Date.now() < 
 const mythNext = () => mythWindows().find(w => w.a > Date.now());
 async function maybeMythic() {
   const w = mythNow();
-  if (!w || !S.week || !S.home || (S.mythSeen || {})[w.key]) return false;
+  if (!w || !S.week || !S.home || (S.mythSeen || {})[w.key] || ((S.prog && S.prog.okRuns) || 0) < TIER_UNLOCK.mythic) return false;
   if (S.collection.some(c => c.myth === w.key)) return false;
   const km = Math.round(Math.max(3, S.goal.km * 1.2) * 2) / 2;
   const [p] = pickQuests(1, 'myth|' + w.key + Date.now(), new Set(S.week.quests.map(q => q.pid)), { km });
@@ -1564,7 +1592,8 @@ function openQuest(i) {
     sh.querySelector('#seecard').onclick = () => { closeSheet(); showFiche(c); };
     return;
   }
-  const [qt, qtxt] = questLine(p);
+  const [qt, qtxt0] = questLine(p);
+  const qtxt = S.name ? qtxt0.replace(/^Hé, toi !( Oui, toi, le coureur !)?/, `Hé, ${S.name} !`) : qtxt0;
   const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'a que 1 % de chance d'apparaître. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   // trésor caché : les indices sont donnés par le sage, dans sa bulle (29/10)
@@ -2051,10 +2080,11 @@ async function cardImage(c, withPhoto = true) {
   // le run
   const r = runOf(c); x.textAlign = 'center'; x.textBaseline = 'top';
   x.fillStyle = '#fff'; x.font = `800 48px ${F}`;
-  x.fillText(r ? `${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)}${r.dplus ? ' · ↗ ' + r.dplus + ' m' : ''}` : `+${c.pts} ★`, W / 2, 1475);
+  x.fillText(r ? `${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)}${r.dplus ? ' · ↗ ' + r.dplus + ' m' : ''}` : `+${c.pts} ★`, W / 2, 1460);
+  if (S.name) { x.fillStyle = '#c9c2e0'; x.font = `700 36px ${F}`; x.fillText(`Trouvée par ${S.name}`, W / 2, 1522); }
   // l'histoire
   const st = storyOf(c);
-  if (st) { x.fillStyle = '#d9d2ef'; x.font = `italic 500 38px ${F}`; wrapLines(x, '« ' + st + ' »', 860, 4).forEach((l, k) => x.fillText(l, W / 2, 1575 + k * 52)); }
+  if (st) { x.fillStyle = '#d9d2ef'; x.font = `italic 500 38px ${F}`; wrapLines(x, '« ' + st + ' »', 860, 4).forEach((l, k) => x.fillText(l, W / 2, 1600 + k * 52)); }
   return new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error('image')), 'image/png'); } catch (e) { rej(e); } });
 }
 async function shareCard(c) {
@@ -2904,12 +2934,10 @@ function renderVit() {
     ${now ? `<div class="when">${esc(now.when)} · c'est maintenant !</div><div class="count">Encore ${Math.ceil((now.b - Date.now()) / 3600e3)} h</div><div style="font-size:13px;color:#c9c2e0">Ouvre l'onglet Quêtes pour la chercher</div>`
       : `<div class="when">Prochaine apparition mythique · ${esc(nx.when)}</div><div class="count">Dans ${days} jour${days > 1 ? 's' : ''}</div><div style="font-size:13px;color:#c9c2e0">${new Date(nx.a).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · 72 h seulement</div>`}
   </div>
-  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">La rareté de chaque quête est tirée au sort. Plus elle est rare, plus le lieu est loin.</p>
-    <div class="o">${tierBadge('common')}<span><b>Commune</b>Ta distance habituelle</span><em>36 %</em></div>
-    <div class="o">${tierBadge('rare')}<span><b>Rare</b>Un peu plus loin (+15 %)</span><em>35 %</em></div>
-    <div class="o">${tierBadge('epic')}<span><b>Épique</b>Plus loin (+30 %)</span><em>18 %</em></div>
-    <div class="o">${tierBadge('legend')}<span><b>Légendaire</b>Bien plus loin (+50 %) · et parfois le week-end</span><em>10 %</em></div>
-    <div class="o">${tierBadge('mythic')}<span><b>Mythique</b>Le défi ultime (+60 %) · et pendant les grands événements</span><em>1 %</em></div>
+  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Tirées au sort à chaque quête. Plus tu réussis de sorties, plus les cartes rares se débloquent (${(S.prog && S.prog.okRuns) || 0} pour l'instant).</p>
+    ${(() => { const ok = (S.prog && S.prog.okRuns) || 0, od = Object.fromEntries(oddsNow()), D = { common: 'Ta distance habituelle', rare: 'Un peu plus loin (+15 %)', epic: 'Plus loin (+30 %)', legend: 'Bien plus loin (+50 %) · et parfois le week-end', mythic: 'Le défi ultime (+60 %) · et pendant les grands événements' };
+      return ['common', 'rare', 'epic', 'legend', 'mythic'].map(t => { const lock = TIER_UNLOCK[t] > ok, left = TIER_UNLOCK[t] - ok;
+        return `<div class="o ${lock ? 'locked' : ''}">${tierBadge(t)}<span><b>${TIER_NAME[t]}</b>${lock ? `🔒 Encore ${left} sortie${left > 1 ? 's' : ''} réussie${left > 1 ? 's' : ''}` : D[t]}</span><em>${lock ? '🔒' : (od[t] || 0) + ' %'}</em></div>`; }).join(''); })()}
   </div>
   <div class="panel"><h4>Les 4 cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
   ${mine.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
@@ -3056,12 +3084,15 @@ function renderPref() {
   <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
     <p class="muted" style="font-size:13px;margin:12px 0 10px">Nouvelles quêtes tout de suite. Les quêtes déjà faites sont gardées. La distance monte aussi toute seule quand tu progresses (gratuit).</p>
     <button class="btn" id="papply" style="width:100%" disabled>Appliquer · ${PREF_COST} 🪙</button></div>
+  <div class="panel"><h4>Ton nom d'aventurier</h4><input id="pname" maxlength="20" value="${esc(S.name || '')}" placeholder="Ton prénom ou pseudo" style="width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:16px;font-weight:700">
+    <p class="muted" style="font-size:13px;margin:8px 0 0">Gratuit. Il apparaît quand tu partages une carte, ta semaine ou une quête.</p></div>
   <div class="panel"><h4>Notifications</h4>
     <div class="set"><span>🔔 Rappels du vieux sage<small class="muted" style="display:block;font-size:13px">1 par jour maximum · pause si tu ne réponds plus</small></span><button class="switch ${S.notif && S.notif.on ? 'on' : ''}" id="swnotif" role="switch"></button></div>
     <div class="set"><span>Heure</span><select id="nhour" class="setbtn" style="background:none;border:0;font:inherit;color:var(--violet);font-weight:700">
       <option value="auto">Auto (${notifHour()} h, ton heure habituelle)</option>${Array.from({ length: 16 }, (_, k) => k + 7).map(h => `<option value="${h}" ${S.notif && +S.notif.hour === h ? 'selected' : ''}>${h} h</option>`).join('')}</select></div></div>
   <div class="panel"><h4>Sport par défaut</h4><div class="chips" id="spdef">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${(S.sport || 'run') === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div>
     <p class="muted" style="font-size:13px;margin:10px 0 0">Gratuit : ne change pas tes quêtes.</p></div>`;
+  $('#pname').onchange = e => { const n = e.target.value.trim().slice(0, 20); if (n) { S.name = n; save(); toast(`Enchanté, ${n} !`); } };
   $('#swnotif').onclick = async () => { const on = S.notif && S.notif.on; if (on) await disablePush(); else await enablePush(); renderPref(); };
   $('#nhour').onchange = e => { S.notif = Object.assign(S.notif || {}, { hour: e.target.value }); save(); pushSync(); toast(e.target.value === 'auto' ? 'Heure automatique' : `Rappels à ${e.target.value} h`); };
   const changed = () => prefDraft.km !== S.goal.km || prefDraft.days.join() !== S.goal.days.join();
@@ -3218,31 +3249,27 @@ document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b
 /* ---------- onboarding ---------- */
 // questions sur ce qui freine les coureurs, avec la réponse de Quest Run
 // questions de l'accueil, adaptées au sport (27/10)
-const LEVELS_ONB = [['debutant', '🌱', 'Débutant', 'Je débute ou je reprends'], ['inter', '💪', 'Intermédiaire', 'Je sors régulièrement'], ['confirme', '🔥', 'Confirmé', "J'ai de l'expérience"]];
+const LEVELS_ONB = [['debutant', '🌱', 'Un petit paladin', 'Débutant'], ['inter', '⚔️', 'Un aventurier aguerri', 'Intermédiaire'], ['confirme', '🛡️', 'Un grand chevalier', 'Confirmé']];
 const KM_LVL = { run: { debutant: 3, inter: 5, confirme: 8 }, walk: { debutant: 3, inter: 5, confirme: 8 }, bike: { debutant: 10, inter: 15, confirme: 20 } };
 const KM_MAX = { run: 30, walk: 30, bike: 20 };
 const VERB = { run: 'cours', walk: 'marches', bike: 'roules' };
 function quizFor(sp) {
   const W = sp === 'walk', B = sp === 'bike';
-  const sortie = W ? 'balade' : 'sortie';
   return [
-  { id: 'frein', q: W ? "Qu'est-ce qui te freine le plus pour aller marcher ?" : B ? "Qu'est-ce qui te freine le plus pour sortir le vélo ?" : "Qu'est-ce qui te freine le plus pour aller courir ?", sub: 'Sois honnête, on est là pour ça.', opts: W ? [
-    ['motivation', '😴', "J'ai la flemme de sortir", 'Tu auras toujours une bonne raison.', 'Chaque balade a un but : un lieu à trouver, une carte à gagner, une histoire à découvrir.'],
-    ['ennui', '🔁', 'Toujours la même balade', 'Plus jamais la même balade.', "Chaque semaine t'emmène vers des pépites cachées de ta ville, avec leur histoire."],
-    ['ou', '🗺️', 'Je ne connais pas les jolis coins', 'On les trouve pour toi.', "Statues, fontaines, châteaux, points de vue : à la bonne distance, avec l'itinéraire prêt à suivre."],
-    ['temps', '⏱️', 'Je ne trouve pas le temps', 'Des balades à ta mesure.', 'Tu choisis tes jours et ta distance : chaque quête tient dans le temps que tu as.']] : [
-    ['motivation', '😴', 'Je manque de motivation', 'Tu auras toujours une mission.', `Chaque ${sortie} a un but : un lieu à trouver, une carte à gagner, des points à marquer.`],
-    ['ennui', '🔁', B ? 'Toujours les mêmes routes' : "Je m'ennuie, c'est toujours pareil", 'Plus jamais le même parcours.', "Chaque sortie t'emmène vers un nouveau lieu de ta ville, avec son histoire."],
-    ['ou', '🗺️', B ? 'Je ne sais pas où rouler' : 'Je ne sais pas où aller', 'On choisit pour toi.', B ? "Des lieux à la bonne distance, et un itinéraire vélo jusqu'à eux, prêt à suivre." : "Des lieux à la bonne distance, et l'itinéraire jusqu'à eux, prêt à suivre."],
-    ['lache', '📉', 'Je commence fort, puis je lâche', 'On te donne des raisons de revenir.', 'Quêtes de la semaine, niveaux, trophées et un gros bonus quand tu tiens ton objectif.']] },
-  { id: 'parcours', q: W ? 'Tu fais souvent la même balade ?' : B ? 'Tu roules souvent sur le même trajet ?' : 'Tu cours souvent sur le même parcours ?', sub: W ? 'Le parc, le même tour…' : B ? 'Ta boucle habituelle…' : 'Ton tour du quartier habituel…', opts: [
-    ['meme', '🔂', W ? 'Toujours la même' : 'Toujours le même', 'On va changer ça.', W ? "Statues cachées, fontaines, châteaux : ton quartier a plein de pépites que tu n'as jamais vues." : "Statues cachées, fontaines, châteaux : ton quartier a plein de trésors que tu n'as jamais vus."],
-    ['deux', '↔️', "J'en ai 2 ou 3", 'Prépare-toi à en découvrir des dizaines.', 'Chaque semaine, de nouvelles quêtes dans des coins où tu ne vas jamais.'],
-    ['varie', '🧭', 'Je varie souvent', 'Tu vas adorer.', 'En plus de varier, tu collectionnes chaque lieu et tu découvres son histoire.']] },
-  { id: 'regularite', q: W ? 'Tu marches autant que tu le voudrais ?' : B ? 'Tu tiens ton objectif de sorties à vélo ?' : 'Tu tiens ton objectif de sorties de la semaine ?', sub: W ? 'Le nombre de balades que tu aimerais faire.' : 'Le nombre de sorties que tu te fixes.', opts: [
-    ['rarement', '😅', 'Rarement', 'On fixe tes jours ensemble.', `Une quête par jour choisi, et chaque semaine complète rapporte +${WEEK_BONUS} ★.`],
-    ['moitie', '⚖️', 'Une semaine sur deux', 'On va passer à toutes les semaines.', 'Les quêtes ratées restent rattrapables, et les séries de semaines débloquent des trophées.'],
-    ['toujours', '🏆', 'Presque toujours', 'Tu es prêt pour les défis.', W ? "Lieux rares, dénivelé, trophées : de quoi pimenter tes balades." : 'Lieux rares, dénivelé, trophées : de quoi pimenter des semaines déjà bien remplies.']] }
+  { id: 'frein', q: W ? "Quel mal te retient de partir en balade, Élu ?" : B ? "Quel mal te retient de seller ton destrier… pardon, ton vélo ?" : "Quel mal te ronge quand vient l'heure de courir ?", opts: [
+    ['motivation', '😴', 'Le sortilège de la flemme', 'Ha ! Je connais bien ce sortilège.', `Le remède : une quête chaque jour. Avec un but, tes ${W ? 'pieds' : B ? 'roues' : 'jambes'} avancent toutes seules !`],
+    ['ennui', '🔁', "L'ennui du même chemin", 'Fini les sentiers battus !', "Chaque quête t'emmène vers un lieu nouveau du royaume, avec son histoire."],
+    ['ou', '🗺️', 'Je ne sais pas où aller', "C'est mon métier, ça !", `Je trace la route, toi tu ${W ? 'marches' : B ? 'roules' : 'cours'}. Il n'y a plus qu'à suivre la carte.`],
+    W ? ['temps', '⏳', 'Le temps me manque', 'Même une petite quête compte, jeune voyageur !', "Tu choisis tes jours et ta distance : chaque quête tient dans le temps que tu as."]
+      : ['lache', '📉', 'Je pars fort… puis je m\'essouffle', "C'est en forgeant qu'on devient forgeron !", 'Une quête après l\'autre, et tu deviendras le plus grand chevalier du royaume.']] },
+  { id: 'parcours', q: "Ton chemin… est-il toujours le même ?", opts: [
+    ['meme', '🔂', 'Toujours le même sentier', "Alors tu n'as lu qu'une page de mon grimoire !", 'Des dizaines de lieux cachés t\'attendent, juste à côté de chez toi.'],
+    ['deux', '↔️', 'Deux ou trois routes', 'Bien ! Mais le royaume est bien plus vaste que ça.', 'Chaque semaine, je t\'enverrai là où tu ne vas jamais.'],
+    ['varie', '🧭', "J'explore sans cesse", "Une âme d'explorateur !", 'Tu vas adorer collectionner chaque lieu et découvrir son histoire.']] },
+  { id: 'regularite', q: "Et tes serments d'entraînement… les tiens-tu ?", opts: [
+    ['rarement', '😅', 'Rarement…', 'Pas de honte, Élu.', `Choisis tes jours, je veillerai sur toi. Chaque semaine tenue rapporte +${WEEK_BONUS} ★.`],
+    ['moitie', '⚖️', 'Une semaine sur deux', 'La moitié du chemin est faite !', 'Chaque semaine tenue te rapportera un trésor. Les quêtes ratées restent rattrapables.'],
+    ['toujours', '🏆', 'Presque toujours', 'Un vrai chevalier !', 'Les quêtes légendaires seront bientôt à ta mesure.']] }
   ];
 }
 let onbMap = null;
@@ -3250,7 +3277,7 @@ function onboarding(step = 0) {
   const o = $('#onb'); o.classList.remove('hidden');
   setTimeout(() => bindBack && bindBack(), 0);
   // en-tête : bouton retour discret (étapes 1 à 3) + points de progression
-  const dots = n => `<div class="onbhead">${step >= 1 && step <= 8 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
+  const dots = n => `<div class="onbhead">${step >= 1 && step <= 8 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="obar"><i style="width:${Math.round((n + 1) / 9 * 100)}%"></i></div></div>`;
   const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
     // le vieux sage présente le jeu, une bulle à la fois (on touche pour passer)
@@ -3269,18 +3296,26 @@ function onboarding(step = 0) {
       <div class="idots">${LINES.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div></div>
       <button class="btn" id="go">Suivant</button>`;
     const show = () => { typeText($("#it"), LINES[k], $("#ib")); o.querySelectorAll('.idots i').forEach((d, j) => d.classList.toggle('on', j === k)); $('#go').textContent = k === LINES.length - 1 ? 'Je suis prêt !' : 'Suivant'; };
-    const next = () => { if (k === LINES.length - 1) return onboarding(1); k++; show(); };
+    const askName = () => {
+      o.innerHTML = `<div class="body center"><div class="sage big">🧙</div><div class="bubble" id="nb" style="flex:none;text-align:left"><p id="nt"></p></div>
+        <input class="namein" id="nin" maxlength="20" placeholder="Ton nom d'aventurier" autocomplete="nickname" value="${esc(S.name || '')}"></div>
+        <button class="btn" id="go">C'est mon nom !</button>`;
+      typeText($('#nt'), "Mais dis-moi… quel est ton nom, Élu ?", $('#nb'));
+      const ok = () => { const n = $('#nin').value.trim().slice(0, 20); if (!n) { toast('Dis-moi ton nom, Élu 🙂'); return; } S.name = n; save(); onboarding(1); };
+      $('#go').onclick = ok; $('#nin').onkeydown = e => { if (e.key === 'Enter') ok(); };
+    };
+    const next = () => { if (k === LINES.length - 1) return askName(); k++; show(); };
     $('#go').onclick = next;
     setTimeout(show, onboarding.splashDone ? 0 : 1500); onboarding.splashDone = true;
   }
   if (step === 1) {
     o.innerHTML = `${dots(0)}<div class="body">${sageBox('', 'say1')}
       <div class="sportpick">
-        <button data-sp="run"><span>🏃</span><div>Course<small>Footing, running</small></div></button>
-        <button data-sp="bike"><span>🚴</span><div>Vélo<small>Balades et sorties à vélo</small></div></button>
-        <button data-sp="walk"><span>🚶</span><div>Marche / Rando<small>À ton rythme</small></div></button>
+        <button data-sp="run"><span>🏃</span><div>À pied, à toute allure !<small>Course à pied</small></div></button>
+        <button data-sp="bike"><span>🐎</span><div>À cheval… enfin, à vélo !<small>Vélo</small></div></button>
+        <button data-sp="walk"><span>🥾</span><div>Mes bottes de cuir me suffisent<small>Marche et rando</small></div></button>
       </div></div>`;
-    typeText($('#say1'), "Dis-moi, Élu… comment partiras-tu en quête ?", $('#say1b'));
+    typeText($('#say1'), `Enchanté, ${S.name || 'Élu'} ! Dis-moi… comment pars-tu à l'aventure ?`, $('#say1b'));
     o.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
       S.sport = b.dataset.sp; S.goal.km = KM_LVL[S.sport].inter; save();
       b.classList.add('on'); setTimeout(() => onboarding(2), 180);
@@ -3290,7 +3325,7 @@ function onboarding(step = 0) {
     const sp = S.sport || 'run';
     o.innerHTML = `${dots(1)}<div class="body">${sageBox('', 'say2')}
       <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · on commence à ${KM_LVL[sp][v]} km</small></div></button>`).join('')}</div></div>`;
-    typeText($('#say2'), `Et tes jambes, elles en sont où ${sp === 'walk' ? 'pour marcher' : sp === 'bike' ? 'à vélo' : 'pour courir'} ? Sois honnête, hé hé… On commencera à ton niveau, puis ça montera avec toi.`, $('#say2b'));
+    typeText($('#say2'), "Et toi, quel genre d'aventurier es-tu ? Sois honnête, hé hé… je te ferai grandir.", $('#say2b'));
     o.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
       S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; S.prog = { credits: 0, fails: 0, okRuns: 0 }; save();
       (S.quiz = S.quiz || {}).niveau = S.skill; track('quiz', { id: 'niveau', value: S.skill });
@@ -3321,16 +3356,16 @@ function onboarding(step = 0) {
       <div id="ogoal"></div></div>
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
     goalPicker($('#ogoal'));
-    typeText($('#say6'), "Quels jours pourras-tu partir en quête ? Chaque jour coché, je te confierai une mission.", $('#say6b'));
+    typeText($('#say6'), "Quels jours partiras-tu en quête ? Et jusqu'où tes jambes peuvent-elles te porter ?", $('#say6b'));
     $('#go').onclick = () => { save(); onboarding(7); };
   }
   if (step === 7) {
     o.innerHTML = `${dots(6)}<div class="body">${sageBox('', 'say7')}
       <div id="onbmap"></div>
       </div>
-      <div class="acts"><button class="btn ghost" id="locate">📍 Utiliser ma position</button>
-      <button class="btn" id="go">C'est mon point de départ</button></div>`;
-    typeText($('#say7'), "D'où pars-tu, Élu ? Touche la carte… ou laisse-moi te trouver.", $('#say7b'));
+      <div class="acts"><button class="btn ghost" id="locate">📍 Me localiser</button>
+      <button class="btn" id="go">C'est mon camp !</button></div>`;
+    typeText($('#say7'), "Où se trouve ton camp de base, Élu ? Touche la carte… ou laisse-moi te trouver.", $('#say7b'));
     if (onbMap) { onbMap.remove(); onbMap = null; }
     const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
     let chosen = S.home ? { ...S.home } : null;
@@ -3344,7 +3379,7 @@ function onboarding(step = 0) {
       $('#locate').textContent = 'Localisation…';
       try { const p = await getPos(); setPt(p.lat, p.lng); onbMap.setView([p.lat, p.lng], 15); }
       catch (e) { toast('Position indisponible : touche la carte.'); }
-      $('#locate').textContent = '📍 Utiliser ma position';
+      $('#locate').textContent = '📍 Me localiser';
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
@@ -3354,7 +3389,7 @@ function onboarding(step = 0) {
   if (step === 8) {
     // première victoire, façon Pokémon Go : le sage offre sa carte
     if (!S.collection.some(c => c.welcome)) {
-      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'rare', pts: 100, date: Date.now(), img: 'icon-512.png', photo: false });
+      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'rare', pts: 100, date: Date.now(), img: 'grimoire.svg', photo: false });
       S.points += 100; save();
     }
     const card = S.collection.find(c => c.welcome);
@@ -3552,7 +3587,8 @@ if (typeof L === 'undefined') {
 } else if (!S.onboarded || !S.home) {
   onboarding(0);
 } else {
-  ensureWeek(); fixDays(); initProgress(); comeback(); pushSync();
+  ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
+  S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');
   setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else await maybeLegend(); }, 1200);

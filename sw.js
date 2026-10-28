@@ -1,6 +1,6 @@
 // Hors-ligne : on essaie le réseau d'abord, sinon la copie en cache.
-const CACHE = 'questrun-v48';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png'];
+const CACHE = 'questrun-v49';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './grimoire.svg'];
 const HOSTS = ['cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', e => {
