@@ -267,6 +267,20 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card.mys .ph i{position:absolute;inset:-14px;background-size:cover;background-position:center;filter:blur(9px) saturate(.7) brightness(.75)}
 .card.mys .ph .q{position:relative;font-size:46px;font-weight:900;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
 .tro small{font-size:11px;color:var(--muted);line-height:1.2}
+/* événements de l'année en petites cartes Mythiques (28/10) */
+.evgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.evgrid .card{padding:4px;border-radius:13px}
+.evgrid .card .in{border-radius:10px}
+.evgrid .card .pts,.evgrid .card .cap span{display:none}
+.evgrid .card .r{font-size:9px;padding:3px 6px;top:5px;left:5px}
+.evgrid .card .cap{padding:6px 7px}
+.evgrid .card .cap b{font-size:11px}
+.evlock{animation:none!important;background:linear-gradient(120deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff)!important;opacity:.55}
+.evlock .in{background:radial-gradient(circle at 50% 35%,#2a2140,#120d1e)!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;padding:6px}
+.evlock .ic{font-size:34px;filter:grayscale(1) brightness(.85);margin-bottom:4px}
+.evlock b{font-size:11.5px;color:#fff;line-height:1.2;white-space:nowrap}
+.evlock small{font-size:10.5px;color:#b9b0d6}
+.btn.buy{flex:none;height:46px;padding:0 30px;margin:0 auto;font-size:15px;border-radius:14px}
 .mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:6px;margin:0 auto}
 .vcard .in{border-radius:11px}
@@ -713,7 +727,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v60';
+const VERSION = 'v61';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3213,7 +3227,7 @@ function buyQuest(p, t, star) {
   const sh = sheet(`<div style="text-align:center"><div class="starcard" style="width:132px;margin:0 auto 12px">${mysCard(p, t)}</div>
     <h3 style="margin:0 0 4px">${esc(mysteryName(p))}</h3>
     <p class="muted" style="margin:0 0 14px">Une quête ${TIER_NAME[t]} vers un lieu secret. Tu devras quand même courir jusque-là pour gagner sa carte !</p></div>
-    <div class="row" style="margin-top:0"><button class="btn gold" id="buyq">Débloquer la quête · ${fmt(price)} 🪙</button></div>
+    <div class="row" style="margin-top:0"><button class="btn buy" id="buyq">Débloquer · ${fmt(price)} 🪙</button></div>
     <p class="muted" style="text-align:center;font-size:13px;margin:8px 0 0">${ok ? `Tu as ${fmt(coins)} 🪙` : `Tu as ${fmt(coins)} 🪙 · il t'en manque ${fmt(price - coins)}`}</p>`);
   // pas assez de pièces : le bouton reste normal et mène à la boutique de pièces
   if (!ok) { sh.querySelector('#buyq').onclick = () => { closeSheet(); tab('shop'); toast(`Il te manque ${fmt(price - coins)} 🪙`); }; return; }
@@ -3262,8 +3276,9 @@ function renderVit() {
   </div>
   <div class="panel"><h4>Événements de l'année · ${nEv} / ${MYTHS.length}</h4>
     <p class="muted" style="font-size:13px;margin:-6px 0 12px">Pendant 72 h, une quête Mythique apparaît dans tes Quêtes, vers un lieu en rapport avec l'événement.</p>
-    <div class="trophies">${MYTHS.map(m => { const w = evWon(m.id);
-      return `<button class="tro ${w.length ? '' : 'off'}" ${w.length ? `data-ev="${esc(w[w.length - 1].pid)}"` : `data-d="${esc(m.name + ' · ' + m.when)}"`}><span class="ic">${w.length ? m.ic : '🔒'}</span><b>${esc(m.short)}</b><small>${w.length ? 'Gagnée ✓' : esc(m.day)}</small></button>`; }).join('')}</div></div>
+    <div class="evgrid">${MYTHS.map(m => { const w = evWon(m.id);
+      return w.length ? cardHtml(w[w.length - 1])
+        : `<div class="card mythic evlock" data-d="${esc(m.name + ' · ' + m.when)}"><div class="in"><span class="ic">${m.ic}</span><b>${esc(m.short)}</b><small>${esc(m.day === m.short ? 'Jour férié' : m.day)}</small></div></div>`; }).join('')}</div></div>
   ${mine.length ? `<h4 class="vh">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
   <div class="panel" style="text-align:center"><div style="font-size:40px">📦</div><h4 style="margin:6px 0">Reçois tes cartes en vrai</h4>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Un booster imprimé avec ta photo, ton run, la date et l'histoire de chaque lieu.</p>
@@ -3274,7 +3289,8 @@ function renderVit() {
   $('#vit').querySelectorAll('.vrow .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
   $('#vit').querySelectorAll('[data-mys]').forEach(el => el.onclick = () => { const p = placeById(el.dataset.mys); if (!p) return; const isStar = !!el.closest('.mythhero'); if (isStar && starOwned) return toast('Elle t’attend dans tes Quêtes !'); buyQuest(p, isStar ? 'mythic' : el.dataset.t, isStar); });
   $('#vit').querySelectorAll('[data-ev]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.ev)));
-  $('#vit').querySelectorAll('.tro[data-d]').forEach(el => el.onclick = () => toast('🔒 ' + el.dataset.d));
+  $('#vit').querySelectorAll('.evlock[data-d]').forEach(el => el.onclick = () => toast('🔒 ' + el.dataset.d));
+  $('#vit').querySelectorAll('.evgrid .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
   // photos floues des lieux secrets (chargées une fois, gardées)
   [star, ...tease.map(x => x[0])].filter(p => p && !(S.wiki[p.id] && S.wiki[p.id].img)).slice(0, 9).forEach(p => wikiFor(p).then(w => { if (!w || !w.img) return; $('#vit').querySelectorAll(`[data-mys="${CSS.escape(p.id)}"] .ph i`).forEach(i => i.style.backgroundImage = `url('${w.img}')`); }).catch(() => {}));
   $('#boost').onclick = () => {
