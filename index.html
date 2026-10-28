@@ -355,7 +355,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 #onb .quiz button{font-size:17px}
 #onb .reassure .bubble b{font-size:18px;margin-bottom:6px}
 #onb .reassure .bubble p{color:var(--muted);font-size:15px}
-#onb .reassure{text-align:center;animation:pop .4s cubic-bezier(.2,1.4,.4,1);margin:auto 0}
+#onb .reassure{text-align:center;animation:rise .35s ease-out;margin:auto 0}
 #onb .reassure .big{font-size:72px;margin-bottom:12px}
 #onb .reassure h1{color:var(--violet)}
 #onb .acts{display:flex;flex-direction:column;gap:12px;margin-top:12px}
@@ -402,6 +402,7 @@ h2{font-size:22px;margin:4px 16px 12px}
   box-shadow:0 0 40px rgba(155,92,255,.7);animation:wobble 1s infinite}
 @keyframes wobble{50%{transform:scale(1.03) rotate(-1deg)}}
 @keyframes pop{from{transform:scale(.3);opacity:0}}
+@keyframes rise{from{transform:translateY(12px);opacity:0}}
 #victory .btn{flex:none;width:min(80vw,320px);position:relative;z-index:2}
 .flip.small{width:min(48vw,200px);margin:0 auto}
 .vcardwrap{position:relative;width:min(48vw,200px);margin:10px auto 22px}
@@ -730,7 +731,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v65';
+const VERSION = 'v66';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -2196,7 +2197,8 @@ const swapPrice = () => S.week && S.week.freeSwap ? SWAP_COST : 0;
 function swapQuest(i) {
   const q = S.week.quests[i], p = placeById(q.pid); if (!p) return;
   const price = swapPrice();
-  if (price > (S.coins || 0)) { toast(`Il te faut ${price} 🪙 pour changer (tu en as ${S.coins || 0})`); return; }
+  // jamais bloqué (28/10, Bazil) : pas assez de pièces → direction la boutique
+  if (price > (S.coins || 0)) { closeSheet(); tab('shop'); toast(`Il te manque ${price - (S.coins || 0)} 🪙 pour changer de mission`); return; }
   const exclude = new Set(S.week.quests.map(x => x.pid));
   const pool = pickQuests(8, 'choix|' + q.pid + '|' + Date.now(), exclude, { km: q.km });
   const same = pool.filter(x => x.rarity === p.rarity), other = pool.filter(x => x.rarity !== p.rarity);
@@ -3629,7 +3631,7 @@ function renderPref() {
   $('#pref').innerHTML = `
   <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
     <p class="muted" style="font-size:13px;margin:12px 0 10px">Nouvelles quêtes tout de suite. Les quêtes déjà faites sont gardées. La distance monte aussi toute seule quand tu progresses (gratuit).</p>
-    <button class="btn" id="papply" style="width:100%" disabled>Appliquer · ${PREF_COST} 🪙</button></div>
+    <button class="btn" id="papply" style="width:100%">Appliquer · ${PREF_COST} 🪙</button></div>
   <div class="panel"><h4>Ton nom d'aventurier</h4><input id="pname" maxlength="20" value="${esc(S.name || '')}" placeholder="Ton prénom ou pseudo" style="width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:16px;font-weight:700">
     <p class="muted" style="font-size:13px;margin:8px 0 0">Gratuit. Il apparaît quand tu partages une carte, ta semaine ou une quête.</p></div>
   ${S.notif && S.notif.on ? '' : `<div class="panel"><h4>Rappels du vieux sage</h4>
@@ -3640,22 +3642,16 @@ function renderPref() {
   $('#pname').onchange = e => { const n = e.target.value.trim().slice(0, 20); if (n) { S.name = n; save(); toast(`Enchanté, ${n} !`); } };
   if ($('#pnotif')) $('#pnotif').onclick = async () => { await enablePush(); renderPref(); };
   const changed = () => prefDraft.km !== S.goal.km || prefDraft.days.join() !== S.goal.days.join();
-  const upd = () => { $('#papply').disabled = !changed(); };
+  const upd = () => {};
   goalPicker($('#pgoal'), upd, prefDraft);
   document.querySelectorAll('#spdef [data-sp]').forEach(b => b.onclick = () => { S.sport = b.dataset.sp; save(); document.querySelectorAll('#spdef [data-sp]').forEach(x => x.classList.toggle('on', x === b)); toast('Sport par défaut changé'); });
   $('#papply').onclick = () => {
-    if (!changed()) return;
+    if (!changed()) { toast('Change d\u2019abord tes jours ou ta distance'); return; }
     const have = S.coins || 0;
-    if (have < PREF_COST) {
-      const sh = sheet(`<h3>Il te faut ${PREF_COST} 🪙</h3><p class="muted">Tu en as ${have}. Trouve des lieux pour en gagner (+${COIN_PLACE} 🪙 chacun).</p>
-        <div class="row"><button class="btn" id="pshop">Boutique</button></div><button class="link" id="pno">Plus tard</button>`);
-      sh.querySelector('#pshop').onclick = () => { closeSheet(); tab('shop'); };
-      sh.querySelector('#pno').onclick = closeSheet;
-      return;
-    }
+    if (have < PREF_COST) { tab('shop'); toast(`Il te manque ${PREF_COST - have} 🪙 pour changer ta semaine`); return; }
     const sh = sheet(`<h3>Changer ta semaine ?</h3>
       <p class="muted"><b>${prefDraft.days.length} sortie${prefDraft.days.length > 1 ? 's' : ''} de ${String(prefDraft.km).replace('.', ',')} km</b>. Tes quêtes à faire seront remplacées, celles déjà faites sont gardées.</p>
-      <div class="row"><button class="btn gold" id="ppay">Payer ${PREF_COST} 🪙</button></div><button class="link" id="pno">Annuler</button>`);
+      <div class="row"><button class="btn buy" id="ppay">Payer · ${PREF_COST} 🪙</button></div><button class="link" id="pno">Annuler</button>`);
     sh.querySelector('#pno').onclick = closeSheet;
     sh.querySelector('#ppay').onclick = async () => {
       closeSheet();
