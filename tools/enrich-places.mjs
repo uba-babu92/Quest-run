@@ -63,19 +63,22 @@ for (const f of files) {
   const second = [];
   for (const id of own) { const e = wdCache.get(id); for (const p of ['P170', 'P84', 'P186', 'P180', 'P1435', 'P138', 'P547']) second.push(...claimIds(e, p)); }
   await wdLoad(second);
-  // 2) chaque lieu
+  // 2) un article Wikipédia tout près avec le même nom (6 recherches en même temps)
+  const found = new Map();
+  const todo = named.filter(e => !e.tags.wikipedia && !frwiki(e.tags.wikidata ? wdCache.get(e.tags.wikidata) : null));
+  let next = 0;
+  await Promise.all(Array.from({ length: 6 }, async () => {
+    while (next < todo.length) {
+      const e = todo[next++];
+      const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${e.lat}|${e.lon}&gsradius=250&gslimit=15&format=json`);
+      const hit = (g?.query?.geosearch || []).find(x => sameName(e.tags.name, x.title));
+      if (hit) found.set(e, 'fr:' + hit.title);
+    }
+  }));
+  // 3) chaque lieu
   for (const e of named) {
     const t = e.tags, it = t.wikidata ? wdCache.get(t.wikidata) : null, fx = {};
-    let sw = null;
-    if (t.wikipedia) sw = t.wikipedia;
-    else if (frwiki(it)) sw = 'fr:' + frwiki(it);
-    else {
-      // un article Wikipédia tout près avec le même nom
-      const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${e.lat}|${e.lon}&gsradius=250&gslimit=15&format=json`);
-      const hit = (g?.query?.geosearch || []).find(x => sameName(t.name, x.title));
-      if (hit) sw = 'fr:' + hit.title;
-      await sleep(120);
-    }
+    const sw = t.wikipedia || (frwiki(it) ? 'fr:' + frwiki(it) : found.get(e) || null);
     const by = (t['artist:wikidata'] && ref(t['artist:wikidata'].split(';')[0])) || claimIds(it, 'P170').map(ref).find(Boolean) || (t.artist_name ? [t.artist_name] : null);
     if (by) fx.by = by;
     const arch = claimIds(it, 'P84').map(ref).find(Boolean) || (t.architect ? [t.architect] : null);
