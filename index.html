@@ -629,7 +629,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v43';
+const VERSION = 'v44';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1358,7 +1358,7 @@ async function maybeMythic() {
   save(); wikiFor(p);
   await overlay(`<div class="v-title gold pixel">APPARITION<br>MYTHIQUE !</div>
     <div class="vcard card mythic holo" style="margin:16px auto"><div class="in"><span class="ic">${w.ic}</span><b>${esc(w.name)}</b><small>${esc(w.when)}</small></div></div>
-    <div class="v-sub">Seulement <b style="color:#FFD23F">4 fois par an</b> ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
+    <div class="v-sub">Seulement <b style="color:#FFD23F">${String(MYTH_PCT).replace('.', ',')} % de chance</b> de la voir ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
     <button class="btn gold" data-close>Voir la quête</button>`);
   if (current === 'quests') renderQuests();
   return true;
@@ -1534,7 +1534,7 @@ function openQuest(i) {
     return;
   }
   const [qt, qtxt] = questLine(p);
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'apparaît que quatre fois par an. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'a que ${String(MYTH_PCT).replace('.', ',')} % de chance d'apparaître. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   const sh = sheet(`${sageBox(qt, 'qsay')}
     <div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
@@ -2842,6 +2842,19 @@ function holoTilt(root) {
     el.addEventListener('touchend', reset); el.addEventListener('mouseleave', reset);
   });
 }
+// chance qu'une quête de la semaine soit de chaque rareté, d'après les vrais lieux autour de toi
+function tierOdds() {
+  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist || []), n = { common: 0, rare: 0, epic: 0, legend: 0 };
+  const fac = weekFactors(Math.max(1, S.goal.days.length));
+  for (const p of S.places || []) {
+    if (found.has(p.id) || black.has(p.id)) continue;
+    const e = effortM(p), hit = fac.some(f => Math.abs(e - S.goal.km * f * 1000) <= S.goal.km * f * 280);
+    if (hit) n[tierOf(p)]++;
+  }
+  const tot = n.common + n.rare + n.epic + n.legend || 1, pc = v => v ? Math.max(1, Math.round(v / tot * 100)) : 0;
+  return { common: pc(n.common), rare: pc(n.rare), epic: pc(n.epic), legend: pc(n.legend) };
+}
+const MYTH_PCT = Math.round(MYTHS.length * 3 / 365 * 1000) / 10; // 12 jours sur 365 ≈ 3,3 %
 function renderVit() {
   renderPoints();
   const nx = mythNext(), now = mythNow(), days = nx ? Math.ceil((nx.a - Date.now()) / 864e5) : 0;
@@ -2849,7 +2862,7 @@ function renderVit() {
   const mine = S.collection.filter(c => c.rarity === 'legend' || c.rarity === 'mythic');
   // les lieux les plus lointains = les plus belles cartes à aller chercher
   const far = (S.places || []).filter(p => p.name && !S.collection.some(c => c.pid === p.id)).map(p => [tierOf(p), p]).filter(([t]) => t === 'legend' || t === 'epic').sort((a, b) => effortM(b[1]) - effortM(a[1])).slice(0, 6);
-  const P = prog();
+  const P = prog(), od = tierOdds(), pct = v => `${v} %`;
   $('#vit').innerHTML = `
   <h2>Les cartes les plus rares</h2><p class="lead">Elles ne s'achètent pas : elles se gagnent en courant.</p>
   <div class="mythhero">
@@ -2857,12 +2870,12 @@ function renderVit() {
     ${now ? `<div class="when">${esc(now.when)} · c'est maintenant !</div><div class="count">Encore ${Math.ceil((now.b - Date.now()) / 3600e3)} h</div><div style="font-size:13px;color:#c9c2e0">Ouvre l'onglet Quêtes pour la chercher</div>`
       : `<div class="when">Prochaine apparition mythique · ${esc(nx.when)}</div><div class="count">Dans ${days} jour${days > 1 ? 's' : ''}</div><div style="font-size:13px;color:#c9c2e0">${new Date(nx.a).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · 72 h seulement</div>`}
   </div>
-  <div class="panel odds"><h4>Tes chances</h4>
-    <div class="o">${tierBadge('common')}<span><b>Commune</b>Moins de 6 km aller-retour</span><em>Toujours</em></div>
-    <div class="o">${tierBadge('rare')}<span><b>Rare</b>6 à 12 km, ou un trésor caché</span><em>Chaque semaine</em></div>
-    <div class="o">${tierBadge('epic')}<span><b>Épique</b>12 à 20 km, ou un trésor caché loin</span><em>Si tu progresses</em></div>
-    <div class="o">${tierBadge('legend')}<span><b>Légendaire</b>Plus de 20 km, ou une apparition le week-end (48 h)${(P.okRuns || 0) < 6 ? ` · encore ${6 - (P.okRuns || 0)} sortie${6 - (P.okRuns || 0) > 1 ? 's' : ''} réussie${6 - (P.okRuns || 0) > 1 ? 's' : ''} pour y avoir droit` : ''}</span><em>1 chance sur 3</em></div>
-    <div class="o">${tierBadge('mythic')}<span><b>Mythique</b>Seulement 4 dates par an, 72 h</span><em>4 fois par an</em></div>
+  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Pour chaque quête, à ta distance actuelle. Plus tu progresses, plus elles montent.</p>
+    <div class="o">${tierBadge('common')}<span><b>Commune</b>Moins de 6 km aller-retour</span><em>${pct(od.common)}</em></div>
+    <div class="o">${tierBadge('rare')}<span><b>Rare</b>6 à 12 km, ou un trésor caché</span><em>${pct(od.rare)}</em></div>
+    <div class="o">${tierBadge('epic')}<span><b>Épique</b>12 à 20 km, ou un trésor caché loin</span><em>${pct(od.epic)}</em></div>
+    <div class="o">${tierBadge('legend')}<span><b>Légendaire</b>Chaque week-end, pendant 48 h${(P.okRuns || 0) < 6 ? ` · dans ${6 - (P.okRuns || 0)} sortie${6 - (P.okRuns || 0) > 1 ? 's' : ''}` : ''}</span><em>${Math.round(LEG_CHANCE * 100)} %</em></div>
+    <div class="o">${tierBadge('mythic')}<span><b>Mythique</b>Chaque jour</span><em>${String(MYTH_PCT).replace('.', ',')} %</em></div>
   </div>
   <div class="panel"><h4>Les 4 cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
   ${far.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">À aller chercher près de chez toi</h4>
@@ -2900,7 +2913,7 @@ function notifPlan() {
     const tail = fire ? ` 🔥 Série de ${fire}` : '';
     let msg = null;
     const myth = mythWindows().find(w => d.getTime() >= w.a && d.getTime() < w.b && !(S.mythSeen || {})[w.key]);
-    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'apparaît que 4 fois par an… Le vieux sage t'attend !`];
+    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'a que ${String(MYTH_PCT).replace('.', ',')} % de chance d'apparaître… Le vieux sage t'attend !`];
     else if (S.goal.days.includes(wd) && !(S.streak && S.streak.last === key)) {
       const q = S.week && weekId(d) === S.week.id && S.week.quests.find(x => x.status === 'todo' && x.day === wd && !x.friend && !x.legend);
       const pl = q && placeById(q.pid);
