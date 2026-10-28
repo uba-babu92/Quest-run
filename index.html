@@ -120,6 +120,15 @@ h2{font-size:22px;margin:4px 16px 12px}
 /* le vieux sage (avatar provisoire en attendant les dessins de Bazil) */
 .sagebox{display:flex;gap:12px;align-items:flex-start;margin:2px 0 14px}
 .sage{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:34px;background:radial-gradient(circle at 35% 30%,#9B5CFF,#4E12B0);box-shadow:0 4px 14px rgba(123,47,247,.45);animation:sagebob 3s ease-in-out infinite}
+.splash{position:fixed;inset:0;z-index:1100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 40%,#9B5CFF,#7B2FF7 45%,#4E12B0);transition:opacity .45s}
+.splash img{width:168px;height:168px;border-radius:38px;box-shadow:0 18px 50px rgba(0,0,0,.35);animation:pop .6s cubic-bezier(.2,1.5,.4,1)}
+.splash b{color:#fff;font-size:34px;font-weight:900;letter-spacing:.02em}
+.splash.out{opacity:0;pointer-events:none}
+#onb .sagebox .bubble p{font-size:17px}
+#onb .sagebox{margin-bottom:16px}
+.gift1{text-align:center}
+.gift1 .bubble{text-align:left}
+.gift1 .flip{margin:10px auto 18px}
 .sage.big{width:120px;height:120px;font-size:72px;margin:18px auto 14px}
 #onb .intro{text-align:center;justify-content:center}
 #onb .intro .hero{margin-bottom:4px}
@@ -130,6 +139,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .idots{display:flex;gap:6px;justify-content:center;margin-top:14px}
 .idots i{width:7px;height:7px;border-radius:9px;background:var(--line)}
 .idots i.on{background:var(--violet);width:18px}
+.sage.mid{width:84px;height:84px;font-size:50px;margin:0 auto 12px}
 .sage.sm{width:34px;height:34px;font-size:20px;animation:none;box-shadow:none}
 @keyframes sagebob{50%{transform:translateY(-3px)}}
 .bubble{position:relative;flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;min-height:58px}
@@ -639,7 +649,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v46';
+const VERSION = 'v47';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1971,6 +1981,7 @@ async function questClear() {
 /* ---------- histoire d'un lieu (fiche et écran de victoire) ---------- */
 async function fillStory(box, p, c, retry) {
   if (!box) return;
+  if (c && c.welcome) { box.innerHTML = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>Ce grimoire, je l'écris depuis des siècles. Chaque page garde l'histoire d'un lieu de la ville. Mais les pages se sont envolées… À toi de les retrouver, Élu Runner. Chaque carte que tu gagnes en est une !</p>`; return; }
   const w = await wikiFor(p);
   let ai = null;
   if (!(w && w.text)) {
@@ -2145,7 +2156,7 @@ function showFiche(c) {
   // photo du lieu au dos
   const putBack = img => { const el = $('#vin [data-back]'); if (el && img) { el.style.backgroundImage = `url("${img}")`; el.innerHTML = ''; } };
   putBack((S.wiki[c.pid] && S.wiki[c.pid].img) || (c.photo ? null : c.img));
-  wikiFor(p).then(w => w && putBack(w.img));
+  if (!c.welcome) wikiFor(p).then(w => w && putBack(w.img));
   $('#cshare').onclick = () => shareCard(c);
   $('#favbtn').onclick = () => {
     c.fav = !c.fav; save(); vibrate(20);
@@ -3237,28 +3248,33 @@ function onboarding(step = 0) {
   const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
     // le vieux sage présente le jeu, une bulle à la fois (on touche pour passer)
-    const LINES = ["Ah, te voilà enfin, jeune coureur !", "Je suis le vieux sage. Chaque lieu de ta ville cache une carte… et une histoire.",
-      "Une prophétie annonce l'Élu Runner : celui qui les retrouvera toutes. Hé hé… c'est toi !",
-      "Je te donne des quêtes. Tu cours jusqu'au lieu, tu gagnes sa carte, et je te raconte son histoire.",
-      "Plus tu cours loin, plus la carte est rare. Alors, Élu… tu es prêt ?"];
+    const LINES = ["Ah, te voilà enfin, jeune coureur ! Je suis le vieux sage.",
+      "Chaque lieu de ta ville cache une carte… et une histoire. Une prophétie dit que l'Élu Runner les retrouvera toutes.",
+      "Hé hé… l'Élu, c'est toi ! Je te donne des quêtes, tu cours jusqu'au lieu, tu gagnes sa carte. Prêt ?"];
     let k = 0;
-    o.innerHTML = `<div class="body intro"><div class="hero"><img src="icon.svg" width="76" height="76" alt=""><div class="logo pixel">QUEST RUN</div></div>
+    if (!onboarding.splashed) {
+      onboarding.splashed = true;
+      const sp = document.createElement('div'); sp.className = 'splash'; sp.innerHTML = '<img src="icon-512.png" alt=""><b>Quest Run</b>';
+      document.body.appendChild(sp);
+      setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, 1200);
+    }
+    o.innerHTML = `<div class="body intro">
       <div class="sage big">🧙</div><div class="bubble" id="ib"><p id="it"></p><span class="more">▼</span></div>
       <div class="idots">${LINES.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div></div>
       <button class="btn" id="go">Suivant</button>`;
     const show = () => { typeText($("#it"), LINES[k], $("#ib")); o.querySelectorAll('.idots i').forEach((d, j) => d.classList.toggle('on', j === k)); $('#go').textContent = k === LINES.length - 1 ? 'Je suis prêt !' : 'Suivant'; };
     const next = () => { if (k === LINES.length - 1) return onboarding(1); k++; show(); };
     $('#go').onclick = next;
-    show();
+    setTimeout(show, onboarding.splashDone ? 0 : 1500); onboarding.splashDone = true;
   }
   if (step === 1) {
-    o.innerHTML = `${dots(0)}<div class="body"><h1>Tu fais plutôt…</h1>
-      <p>On adapte les itinéraires et la distance. Tu pourras changer à chaque sortie.</p>
+    o.innerHTML = `${dots(0)}<div class="body">${sageBox('', 'say1')}
       <div class="sportpick">
         <button data-sp="run"><span>🏃</span><div>Course<small>Footing, running</small></div></button>
         <button data-sp="bike"><span>🚴</span><div>Vélo<small>Balades et sorties à vélo</small></div></button>
         <button data-sp="walk"><span>🚶</span><div>Marche / Rando<small>À ton rythme</small></div></button>
       </div></div>`;
+    typeText($('#say1'), "Dis-moi, Élu… comment partiras-tu en quête ?", $('#say1b'));
     o.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
       S.sport = b.dataset.sp; S.goal.km = KM_LVL[S.sport].inter; save();
       b.classList.add('on'); setTimeout(() => onboarding(2), 180);
@@ -3266,9 +3282,9 @@ function onboarding(step = 0) {
   }
   if (step === 2) {
     const sp = S.sport || 'run';
-    o.innerHTML = `${dots(1)}<div class="body"><h1>Ton niveau ${sp === 'walk' ? 'en marche' : sp === 'bike' ? 'à vélo' : 'en course'} ?</h1>
-      <p>On commence à ton niveau, puis la distance monte avec toi, sortie après sortie.</p>
+    o.innerHTML = `${dots(1)}<div class="body">${sageBox('', 'say2')}
       <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · on commence à ${KM_LVL[sp][v]} km</small></div></button>`).join('')}</div></div>`;
+    typeText($('#say2'), `Et tes jambes, elles en sont où ${sp === 'walk' ? 'pour marcher' : sp === 'bike' ? 'à vélo' : 'pour courir'} ? Sois honnête, hé hé… On commencera à ton niveau, puis ça montera avec toi.`, $('#say2b'));
     o.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
       S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; S.prog = { credits: 0, fails: 0, okRuns: 0 }; save();
       (S.quiz = S.quiz || {}).niveau = S.skill; track('quiz', { id: 'niveau', value: S.skill });
@@ -3277,8 +3293,9 @@ function onboarding(step = 0) {
   }
   if (step >= 3 && step <= 5) {
     const q = quizFor(S.sport || 'run')[step - 3];
-    o.innerHTML = `${dots(step - 1)}<div class="body"><h1>${q.q}</h1><p>${q.sub}</p>
+    o.innerHTML = `${dots(step - 1)}<div class="body">${sageBox('', 'sayq')}
       <div class="sportpick quiz">${q.opts.map(([v, ic, t]) => `<button data-v="${v}"><span>${ic}</span><div>${t}</div></button>`).join('')}</div></div>`;
+    typeText($('#sayq'), q.q, $('#sayqb'));
     o.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
       const v = b.dataset.v, opt = q.opts.find(x => x[0] === v);
       (S.quiz = S.quiz || {})[q.id] = v; save();
@@ -3287,27 +3304,27 @@ function onboarding(step = 0) {
       // petite phrase qui rassure, puis on passe à la suite
       setTimeout(() => {
         const body = o.querySelector('.body');
-        body.innerHTML = `<div class="reassure"><div class="big">${opt[1]}</div><h1>${opt[3]}</h1><p>${opt[4]}</p></div>`;
-        setTimeout(() => { if ($('#onb .reassure')) onboarding(step + 1); }, 2200);
+        body.innerHTML = `<div class="reassure"><div class="sage big">🧙</div><div class="bubble" style="flex:none;text-align:left"><b>${opt[3]}</b><p>${opt[4]}</p></div><p class="muted" style="font-size:13px;margin-top:14px">Touche pour continuer</p></div>`;
+        setTimeout(() => { if ($('#onb .reassure')) onboarding(step + 1); }, 3600);
         body.onclick = () => onboarding(step + 1);
       }, 200);
     });
   }
   if (step === 6) {
-    o.innerHTML = `${dots(5)}<div class="body"><h1>Ta semaine</h1>
-      <p>Chaque jour coché = une quête. Le lieu est choisi pour faire un aller-retour de la bonne distance.</p>
+    o.innerHTML = `${dots(5)}<div class="body scrolly">${sageBox('', 'say6')}
       <div id="ogoal"></div></div>
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
     goalPicker($('#ogoal'));
+    typeText($('#say6'), "Quels jours pourras-tu partir en quête ? Chaque jour coché, je te confierai une mission.", $('#say6b'));
     $('#go').onclick = () => { save(); onboarding(7); };
   }
   if (step === 7) {
-    o.innerHTML = `${dots(6)}<div class="body"><h1>D'où tu pars ?</h1>
-      <p>Touche la carte pour placer ton point de départ, ou utilise ta position.</p>
+    o.innerHTML = `${dots(6)}<div class="body">${sageBox('', 'say7')}
       <div id="onbmap"></div>
       </div>
       <div class="acts"><button class="btn ghost" id="locate">📍 Utiliser ma position</button>
       <button class="btn" id="go">C'est mon point de départ</button></div>`;
+    typeText($('#say7'), "D'où pars-tu, Élu ? Touche la carte… ou laisse-moi te trouver.", $('#say7b'));
     if (onbMap) { onbMap.remove(); onbMap = null; }
     const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
     let chosen = S.home ? { ...S.home } : null;
@@ -3329,22 +3346,33 @@ function onboarding(step = 0) {
     };
   }
   if (step === 8) {
-    const sp = S.sport || 'run', go = sp === 'walk' ? 'balade' : 'sortie';
-    o.innerHTML = `${dots(7)}<div class="body scrolly">${sageBox('', 'osay')}
-      <div class="explain">
-        <div><span class="ic">🎮</span><div><b>Chaque ${go} devient une quête</b><p>Un vrai lieu à trouver, des cartes à gagner, des niveaux et des trophées.</p></div></div>
-        <div><span class="ic">📚</span><div><b>Découvre ton quartier</b><p>Statues cachées, châteaux, fontaines : chaque lieu trouvé te raconte son histoire.</p></div></div>
-        <div><span class="ic">🏆</span><div><b>Qui aura la carte la plus rare ?</b><p>Plus tu vas loin, plus la carte est rare. Compare ta collection et tes ${go}s les plus folles avec tes potes.</p></div></div>
-      </div></div>
-      <button class="btn" id="go" style="margin-top:16px">En route, Élu !</button>`;
-    $('#go').onclick = () => onboarding(9);
-    typeText($('#osay'), "Dernière chose, Élu. Retiens bien ces trois secrets :", $('#osayb'));
+    // première victoire, façon Pokémon Go : le sage offre sa carte
+    if (!S.collection.some(c => c.welcome)) {
+      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'rare', pts: 100, date: Date.now(), img: 'icon-512.png', photo: false });
+      S.points += 100; save();
+    }
+    const card = S.collection.find(c => c.welcome);
+    o.innerHTML = `${dots(7)}<div class="body gift1">${sageBox('', 'say8')}
+      <div class="flip small" id="gflip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
+      <div class="v-pts" style="color:#D9A000;font-weight:900;font-size:22px">+100 ★</div></div>
+      <button class="btn" id="go">Merci, Sage !</button>`;
+    fillPhotos(o);
+    typeText($('#say8'), "Avant de partir… prends ceci. Mon grimoire ! C'est ta toute première carte. Il y en a des centaines d'autres qui t'attendent dehors.", $('#say8b'));
+    setTimeout(() => { const f = $('#gflip'); if (f) { f.classList.add('on'); vibrate([30, 40, 60]); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
+    $('#go').onclick = () => {
+      // puis il propose les rappels
+      o.querySelector('.body').innerHTML = `<div class="sage big">🧙</div><div class="bubble" id="say8nb" style="flex:none;text-align:left"><p id="say8n"></p></div>`;
+      typeText($('#say8n'), "Une dernière chose. Veux-tu que je te prévienne quand une quête t'attend ? Une fois par jour, pas plus. Promis !", $('#say8nb'));
+      $('#go').outerHTML = `<div class="acts"><button class="btn" id="nyes">🔔 Oui, préviens-moi !</button><button class="btn ghost" id="nno">Plus tard</button></div>`;
+      $('#nyes').onclick = async () => { await enablePush(); onboarding(9); };
+      $('#nno').onclick = () => onboarding(9);
+    };
   }
   if (step === 9) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
     o.innerHTML = `${dots(8)}<div class="body" style="text-align:center">
-      <div class="scan"><div class="ic">🧭</div></div>
-      <h1 id="lt" style="font-size:24px">Recherche des trésors dans ton quartier…</h1>
+      <div class="scan"><div class="ic">🧙</div></div>
+      <h1 id="lt" style="font-size:22px">Hmm… je cherche les cartes cachées autour de chez toi…</h1>
       <ul class="steps" id="steps">
         <li><i></i><span>Analyse de ta semaine : <b>${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} de ${S.goal.km} km</b> ${sp.ic}</span></li>
         <li><i></i><span id="st1">Recherche des lieux historiques autour de toi…</span></li>
