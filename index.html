@@ -343,6 +343,12 @@ h2{font-size:22px;margin:4px 16px 12px}
 .v-card .card{width:min(62vw,250px);margin:8px auto 26px}
 
 /* ---------- image verrouillée ---------- */
+.lockimg.sm{height:110px}
+.qsharei{position:absolute;top:10px;right:10px;z-index:2;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.45);color:#fff;backdrop-filter:blur(6px)}
+.qsharei svg{width:19px;height:19px}
+.qlinks{display:flex;justify-content:center;align-items:center;gap:8px;margin:12px 0 4px;font-size:14px;color:var(--muted)}
+.qlinks button{color:var(--violet);font-weight:700;padding:6px 2px}
+.qlinks button#lost{color:var(--muted);font-weight:600;text-decoration:underline}
 .lockimg{position:relative;height:150px;border-radius:16px;overflow:hidden;margin:4px 0 12px;background:linear-gradient(135deg,#2a2140,#5A12D6)}
 .lockimg .bg{position:absolute;inset:-30px;background-size:cover;background-position:center;filter:blur(16px) grayscale(1) brightness(.75);transform:scale(1.1)}
 .lockimg.rare .bg{filter:blur(26px) grayscale(1) brightness(.6)}
@@ -649,7 +655,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v47';
+const VERSION = 'v48';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1561,18 +1567,18 @@ function openQuest(i) {
   const [qt, qtxt] = questLine(p);
   const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'a que 1 % de chance d'apparaître. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
-  const sh = sheet(`${sageBox(qt, 'qsay')}
-    <div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
+  // trésor caché : les indices sont donnés par le sage, dans sa bulle (29/10)
+  const say = rare && !q.legend && !q.friend ? `Psst… ${article(p.label).replace(/^./, c => c.toLowerCase())} se cache dans cette zone.${p.name ? ` Son nom commence par « ${p.name.slice(0, 3)}… ».` : ''}${p.artist ? ` Une œuvre de ${p.artist}.` : ''} Trouve-la, jeune coureur !` : intro;
+  const sh = sheet(`<div class="lockimg sm ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer sa carte</span></div>
+      <button class="qsharei" id="qshare" aria-label="Partager la quête avec un ami"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
     ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
-    <h3>${esc(shownName(p, false))}</h3>
-    <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
-    ${rare ? `<div class="hint">${hintFor(p)}</div>` : ''}
-    <div class="row"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
-    <button class="qshare" id="qshare">👥 Partager la quête avec un ami</button>
+    <h3 style="margin:8px 0 2px">${esc(shownName(p, false))}</h3>
+    <p class="muted" style="margin:0 0 12px">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
+    ${sageBox(qt, 'qsay')}
+    <div class="row" style="margin-top:0"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
     ${S.testMode ? '<button class="link" id="here" style="margin:4px auto 0">✅ J\'y suis (test)</button>' : ''}
     ${q.easy ? `<div class="row"><button class="btn swap easybtn" id="easy">🎯 Une plus proche · gratuit</button></div>` : ''}
-    ${q.legend ? '' : `<div class="row"><button class="btn swap" id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button></div>`}
-    <button class="link" id="lost">Je ne trouve pas</button>`);
+    <div class="qlinks">${q.legend ? '' : `<button id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button><span>·</span>`}<button id="lost">Je ne trouve pas</button></div>`);
   if (sh.querySelector('#swap')) sh.querySelector('#swap').onclick = () => swapQuest(i);
   if (sh.querySelector('#easy')) sh.querySelector('#easy').onclick = () => easierQuest(i);
   wikiFor(p).then(w => { const bg = sh.querySelector('#lbg'); if (w && w.img && bg) bg.style.backgroundImage = `url("${w.img}")`; });
@@ -1580,7 +1586,7 @@ function openQuest(i) {
   if (sh.querySelector('#here')) sh.querySelector('#here').onclick = () => { closeSheet(); takePhoto(i); };
   sh.querySelector('#lost').onclick = () => report(i);
   sh.querySelector('#qshare').onclick = () => shareQuest(q, p);
-  typeText(sh.querySelector('#qsay'), intro, sh.querySelector('#qsayb'));
+  typeText(sh.querySelector('#qsay'), say, sh.querySelector('#qsayb'));
   const row = document.querySelector(`#qlist .quest[data-i="${i}"] .num`); if (row) row.classList.remove('new');
 }
 
