@@ -12,6 +12,7 @@ import { execSync } from 'node:child_process';
 function publish(msg) {
   if (!process.env.GITHUB_ACTIONS) return;
   try {
+    execSync('git config user.name "Robot des lieux" && git config user.email "41898282+github-actions[bot]@users.noreply.github.com"', { shell: '/bin/bash' });
     execSync('git add data/places', { stdio: 'inherit' });
     execSync('git diff --cached --quiet || (git commit -q -m "' + msg + '" && git pull -q --rebase origin main && git push -q origin HEAD:main)', { stdio: 'inherit', shell: '/bin/bash' });
   } catch (e) { console.log('  enregistrement raté, on continue'); }
@@ -49,7 +50,7 @@ async function wdLoad(ids) {
     const part = need.slice(i, i + 50);
     const j = await getJSON(`https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${part.join('|')}&props=labels|claims|sitelinks&languages=fr|en&sitefilter=frwiki&format=json`);
     for (const id of part) wdCache.set(id, j?.entities?.[id] || null);
-    await sleep(300);
+    await sleep(100);
   }
 }
 const label = e => e?.labels?.fr?.value || e?.labels?.en?.value || null;
@@ -73,18 +74,30 @@ for (const f of files) {
   const second = [];
   for (const id of own) { const e = wdCache.get(id); for (const p of ['P170', 'P84', 'P186', 'P180', 'P1435', 'P138', 'P547']) second.push(...claimIds(e, p)); }
   await wdLoad(second);
-  // 2) un article Wikipédia tout près avec le même nom (6 recherches en même temps)
-  const found = new Map();
+  // 2) un article Wikipédia tout près avec le même nom. Rapide (28/10) : on récupère d'un coup tous les articles
+  //    de la case (grands cercles de 1,6 km, 500 articles max chacun, recoupés en 4 si pleins), puis on compare en local.
   const todo = named.filter(e => !e.tags.wikipedia && !frwiki(e.tags.wikidata ? wdCache.get(e.tags.wikidata) : null));
-  let next = 0;
-  await Promise.all(Array.from({ length: 6 }, async () => {
-    while (next < todo.length) {
-      const e = todo[next++];
-      const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${e.lat}|${e.lon}&gsradius=250&gslimit=15&format=json`);
-      const hit = (g?.query?.geosearch || []).find(x => sameName(e.tags.name, x.title));
+  const found = new Map();
+  if (todo.length) {
+    const arts = new Map();
+    const grab = async (lat, lon, r) => {
+      const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${lat.toFixed(5)}|${lon.toFixed(5)}&gsradius=${r}&gslimit=500&format=json`);
+      const list = g?.query?.geosearch || [];
+      for (const x of list) arts.set(x.pageid, x);
+      if (list.length >= 500 && r > 300) { const d = r / 2 / 111320, dl = d / Math.cos(lat * Math.PI / 180); await Promise.all([[d, dl], [d, -dl], [-d, dl], [-d, -dl]].map(([a, b]) => grab(lat + a, lon + b, Math.round(r / 2)))); }
+    };
+    const [ti, tj] = f.replace('.json', '').split('_').map(Number), s0 = ti * 0.1, w0 = tj * 0.1, pts = [];
+    for (let a = 0.01; a < 0.1; a += 0.02) for (let b = 0.015; b < 0.1; b += 0.03) pts.push([s0 + a, w0 + b]);
+    let next = 0;
+    await Promise.all(Array.from({ length: 4 }, async () => { while (next < pts.length) { const [a, b] = pts[next++]; await grab(a, b, 1600); } }));
+    const all = [...arts.values()];
+    const m = (a, b, c, d) => Math.hypot((a - c) * 111320, (b - d) * 73000);
+    for (const e of todo) {
+      const hit = all.filter(x => m(e.lat, e.lon, x.lat, x.lon) <= 250 && sameName(e.tags.name, x.title)).sort((x, y) => m(e.lat, e.lon, x.lat, x.lon) - m(e.lat, e.lon, y.lat, y.lon))[0];
       if (hit) found.set(e, 'fr:' + hit.title);
     }
-  }));
+    console.log(`  ${all.length} articles Wikipédia dans la case, ${found.size} lieux reconnus`);
+  }
   // 3) chaque lieu
   for (const e of named) {
     const t = e.tags, it = t.wikidata ? wdCache.get(t.wikidata) : null, fx = {};
