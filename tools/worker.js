@@ -119,6 +119,17 @@ async function sendPush(env, sub, msg) {
   const body = await encryptPush(sub, JSON.stringify(msg));
   return fetch(sub.endpoint, { method: 'POST', body, headers: { 'Content-Encoding': 'aes128gcm', 'Content-Type': 'application/octet-stream', TTL: '43200', Urgency: 'normal', Authorization: await vapidAuth(env, sub.endpoint) } });
 }
+// téléphone(s) du créateur qui reçoivent les signalements (28/10) : inscription protégée par le mot de passe développeur
+// (seule son empreinte SHA-256 est ici, la même que dans l'appli)
+const ADMIN_HASH = '54008b6212bb130ceb674696c809004e1503e596cc4007e96f32143846369754';
+const hex = buf => [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2, '0')).join('');
+async function notifyAdmins(env, msg) {
+  const page = await env.PUSH.list({ prefix: 'admin:' });
+  for (const k of page.keys) {
+    const rec = await env.PUSH.get(k.name, 'json'); if (!rec) continue;
+    try { const r = await sendPush(env, rec.sub, msg); if (r.status === 404 || r.status === 410) await env.PUSH.delete(k.name); } catch (e) {}
+  }
+}
 async function subKey(endpoint) { return 'sub:' + b64u(await crypto.subtle.digest('SHA-256', enc(endpoint))).slice(0, 32); }
 async function pushRoute(req, env, path, cors) {
   const json = (o, st = 200) => new Response(JSON.stringify(o), { status: st, headers: { ...cors, 'Content-Type': 'application/json' } });
@@ -130,6 +141,14 @@ async function pushRoute(req, env, path, cors) {
   if (!sub || typeof sub.endpoint !== 'string' || !/^https:\/\//.test(sub.endpoint) || !sub.keys || !sub.keys.p256dh || !sub.keys.auth) return json({ error: 'abonnement invalide' }, 400);
   const key = await subKey(sub.endpoint);
   if (path === '/push/off') { await env.PUSH.delete(key); return json({ ok: true }); }
+  if (path === '/push/admin') {
+    if (hex(await crypto.subtle.digest('SHA-256', enc(String(b.pw || '').trim()))) !== ADMIN_HASH) return json({ error: 'mot de passe incorrect' }, 403);
+    const ak = 'admin:' + key.slice(4);
+    if (b.off) { await env.PUSH.delete(ak); return json({ ok: true, off: true }); }
+    await env.PUSH.put(ak, JSON.stringify({ sub: { endpoint: sub.endpoint, keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth } }, at: Date.now() }));
+    const r = await sendPush(env, sub, { title: '🐞 Signalements activés', body: 'Tu recevras une notification à chaque bug ou idée envoyé par un joueur.' });
+    return json({ ok: true, push: r.status });
+  }
   if (path === '/push/test') { const r = await sendPush(env, sub, { title: 'Quest Run', body: 'Hé hé… Les notifications marchent ! Le vieux sage te fera signe 🧙' }); return json({ ok: r.ok, status: r.status }); }
   if (path === '/push/plan') {
     const plan = (Array.isArray(b.plan) ? b.plan : []).slice(0, 12).map(x => ({ t: +x.t, title: String(x.title || '').slice(0, 60), body: String(x.body || '').slice(0, 180) })).filter(x => x.t > Date.now() - 3600e3 && x.title);
@@ -187,5 +206,8 @@ async function bugRoute(req, env, cors) {
   if (text.length < 3) return json({ error: 'message vide' }, 400);
   const rec = { type: clip(b.type, 10), text, email: clip(b.email, 120), v: clip(b.v, 10), ua: clip(b.ua, 200), screen: clip(b.screen, 20), app: !!b.app, tab: clip(b.tab, 10), t: clip(b.t, 30) || new Date().toISOString() };
   await env.PUSH.put('bug:' + new Date().toISOString() + ':' + Math.random().toString(36).slice(2, 6), JSON.stringify(rec), { expirationTtl: 365 * 86400 });
+  // prévient le créateur sur son téléphone
+  const label = { bug: '🐞 Nouveau bug', idee: '💡 Nouvelle idée', lieu: '📍 Lieu faux signalé', autre: '💬 Nouveau message' }[rec.type] || '💬 Nouveau message';
+  try { await notifyAdmins(env, { title: label, body: text.slice(0, 160) + (rec.email ? ' · ' + rec.email : '') }); } catch (e) {}
   return json({ ok: true });
 }

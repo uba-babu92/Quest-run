@@ -727,7 +727,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v61';
+const VERSION = 'v62';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3416,6 +3416,20 @@ async function enablePush() {
     return true;
   } catch (e) { toast('Notifications pas encore prêtes : ' + (e.message || e)); return false; }
 }
+// le téléphone du créateur reçoit une notification à chaque signalement (28/10) ; protégé par le mot de passe développeur
+async function bugAdmin(on) {
+  const pw = prompt('Mot de passe développeur'); if (!pw) return;
+  if (await sha256(pw.trim()) !== DEV_HASH) return toast('Mot de passe incorrect');
+  if (on && !(S.notif && S.notif.on) && !(await enablePush())) return;
+  try {
+    const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription();
+    if (!sub) return toast('Active d\u2019abord les notifications');
+    const r = await pushPost('/push/admin', { sub: sub.toJSON(), pw: pw.trim(), off: !on });
+    if (!r.ok) throw new Error(r.error || 'erreur');
+    S.bugAdmin = on; save(); renderSet();
+    toast(on ? 'C\u2019est noté : tu seras prévenu à chaque signalement 🐞' : 'Signalements coupés sur ce téléphone');
+  } catch (e) { toast('Relais pas à jour : recolle tools/worker.js dans Cloudflare (' + (e.message || e) + ')'); }
+}
 async function disablePush() {
   S.notif = Object.assign(S.notif || {}, { on: false }); save();
   try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if (sub) { await pushPost('/push/off', { sub: sub.toJSON() }); await sub.unsubscribe(); } } catch (e) {}
@@ -3529,6 +3543,7 @@ function renderSet() {
         <div><b>${x.worst ? x.worst[0].replace('niveau_', 'Niv. ') : '–'}</b><span>niveau le plus bloquant${x.worst ? ' (' + x.worst[1] + ' échecs)' : ''}</span></div>
       </div>`; })()}
     <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0} · intérêt booster : ${S.boosterTaps || 0}${S.boosterMail ? ' (e-mail laissé)' : ''} · e-mails : Cloudflare → KV → clés « mail: »</small></span><button class="setbtn" id="give">+100 🪙</button></div>
+    <div class="set"><span>Recevoir les signalements<small class="muted" style="display:block;font-size:13px">${S.bugAdmin ? 'Activé sur ce téléphone ✓ · une notif à chaque bug ou idée' : 'Une notification sur ce téléphone à chaque bug ou idée'}</small></span><button class="setbtn" id="bugadm">${S.bugAdmin ? 'Couper' : 'Activer'}</button></div>
     <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
   </div>` : ''}
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
@@ -3548,6 +3563,7 @@ function renderSet() {
   };
   if (S.dev) {
     $('#mexp').onclick = () => Metrics.exportJSON();
+    $('#bugadm').onclick = () => bugAdmin(!S.bugAdmin);
     $('#give').onclick = () => { S.coins = (S.coins || 0) + 100; save(); renderPoints(); toast('+100 🪙'); };
     $('#recapbtn').onclick = () => weeklyRecap(true);
     $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderSet(); toast('Mode développeur verrouillé'); };
