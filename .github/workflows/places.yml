@@ -29,8 +29,6 @@ jobs:
           git config user.name "Robot des lieux"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node tools/build-places.mjs
-      - name: Vérifier les histoires (Wikipédia, Wikidata)
-        run: node tools/enrich-places.mjs
       - name: Enregistrer
         run: |
           git config user.name "Robot des lieux"
