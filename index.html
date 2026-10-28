@@ -639,7 +639,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v45';
+const VERSION = 'v46';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -2839,7 +2839,9 @@ function renderProf() {
     <div class="mini">${[0, 1, 2].map(i => got[i] ? `<i>${got[i][1]}</i>` : '<i class="off">🔒</i>').join('')}</div></div>
     <span style="flex:1"></span><span class="setbtn">Voir tout ›</span></button></div>
   <div class="panel"><h4>Dernières sorties</h4>${S.runs.length ? `<div class="runlist">${S.runs.slice(-5).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km${r.dplus ? ' · ↗' + r.dplus + ' m' : ''} · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première sortie.</p>'}</div>
+  <button class="btn ghost" id="bugbtn" style="display:block;width:calc(100% - 32px);margin:0 16px 12px">🐞 Signaler un bug ou une idée</button>
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION}</p>`;
+  $('#bugbtn').onclick = openBugReport;
   $('#prefbtn').onclick = () => tab('pref');
   $('#trobtn').onclick = () => tab('tro');
   $('#shopbtn').onclick = () => tab('shop');
@@ -2921,6 +2923,36 @@ function renderVit() {
       } catch (e) { sh.querySelector('#okb').disabled = false; toast('Oups, réessaie dans un moment'); }
     };
   };
+}
+
+/* ---------- signaler un bug ou une idée (29/10) : envoyé au relais, rangé dans Cloudflare (KV, clés « bug: ») ---------- */
+const BUG_TYPES = [['bug', '🐞', 'Bug'], ['idee', '💡', 'Idée'], ['lieu', '📍', 'Lieu faux'], ['autre', '💬', 'Autre']];
+function openBugReport() {
+  let type = 'bug';
+  const sh = sheet(`<h3>Signaler un bug ou une idée</h3><p class="muted" style="margin-top:-4px">Merci ! Ça nous aide à améliorer Quest Run.</p>
+    <div class="chips" id="btype" style="margin:4px 0 12px">${BUG_TYPES.map(([k, ic, t]) => `<button data-k="${k}" class="${k === type ? 'on' : ''}">${ic} ${t}</button>`).join('')}</div>
+    <textarea id="btxt" rows="5" maxlength="2000" placeholder="Raconte-nous ce qui s'est passé…" style="width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:16px;resize:vertical"></textarea>
+    <input type="email" id="bmail2" placeholder="Ton e-mail (facultatif, pour te répondre)" autocomplete="email" style="width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:16px;margin-top:10px">
+    <p class="muted" style="font-size:12px;margin:8px 0 0">On ajoute la version de l'appli et le modèle de téléphone pour t'aider.</p>
+    <div class="row"><button class="btn" id="bsend">Envoyer</button></div>`);
+  sh.querySelectorAll('#btype [data-k]').forEach(b => b.onclick = () => { type = b.dataset.k; sh.querySelectorAll('#btype [data-k]').forEach(x => x.classList.toggle('on', x === b)); });
+  sh.querySelector('#bsend').onclick = async () => {
+    const text = sh.querySelector('#btxt').value.trim(), email = sh.querySelector('#bmail2').value.trim();
+    if (text.length < 3) { toast('Écris quelques mots 🙂'); return; }
+    const r = { type, text, email, v: VERSION, ua: navigator.userAgent, screen: innerWidth + 'x' + innerHeight, app: isStandalone(), tab: current, t: new Date().toISOString() };
+    (S.bugQueue = S.bugQueue || []).push(r); save(); closeSheet();
+    track('bug_report', { type });
+    toast((await flushBugs()) ? 'Merci, c\'est envoyé ! 🙏' : 'Merci ! Ce sera envoyé dès que possible 🙏');
+  };
+}
+// envoie les signalements en attente (gardés sur le téléphone si le relais ne répond pas)
+async function flushBugs() {
+  const q = S.bugQueue || []; let ok = true;
+  while (q.length) {
+    try { const r = await fetch(STORY_API + '/bug', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(q[0]) }).then(x => x.json()); if (!r.ok) throw 0; q.shift(); save(); }
+    catch (e) { ok = false; break; }
+  }
+  return ok;
 }
 
 /* ---------- notifications perso (28/10) : 1 par jour max, à ton heure habituelle ---------- */
@@ -3487,6 +3519,7 @@ if (typeof L === 'undefined') {
   onboarding(0);
 } else {
   ensureWeek(); fixDays(); initProgress(); comeback(); pushSync();
+  if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');
   setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else await maybeLegend(); }, 1200);
   upgradePlaces().catch(() => {});

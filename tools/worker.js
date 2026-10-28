@@ -39,6 +39,7 @@ export default {
     const path = new URL(req.url).pathname;
     if (path.startsWith('/push/')) return pushRoute(req, env, path, cors);
     if (path === '/mail') return mailRoute(req, env, cors);
+    if (path === '/bug') return bugRoute(req, env, cors);
     if (req.method !== 'POST') return new Response('Interdit', { status: 403, headers: cors });
     let b;
     try { b = await req.json(); } catch (e) { return new Response('JSON invalide', { status: 400, headers: cors }); }
@@ -172,5 +173,19 @@ async function mailRoute(req, env, cors) {
   const key = 'mail:' + b64u(await crypto.subtle.digest('SHA-256', enc(email))).slice(0, 24);
   const old = await env.PUSH.get(key, 'json');
   await env.PUSH.put(key, JSON.stringify({ email, news: true, src: String(b.src || '').slice(0, 20), t: old ? old.t : new Date().toISOString() }));
+  return json({ ok: true });
+}
+
+/* ---------- « Signaler un bug ou une idée » (29/10) : rangés dans PUSH sous « bug:… » ---------- */
+async function bugRoute(req, env, cors) {
+  const json = (o, st = 200) => new Response(JSON.stringify(o), { status: st, headers: { ...cors, 'Content-Type': 'application/json' } });
+  if (!env.PUSH) return json({ error: 'Espace KV manquant (nom : PUSH)' }, 500);
+  if (req.method !== 'POST') return json({ error: 'POST attendu' }, 405);
+  let b; try { b = await req.json(); } catch (e) { return json({ error: 'JSON invalide' }, 400); }
+  const clip = (v, n) => String(v == null ? '' : v).slice(0, n);
+  const text = clip(b.text, 2000).trim();
+  if (text.length < 3) return json({ error: 'message vide' }, 400);
+  const rec = { type: clip(b.type, 10), text, email: clip(b.email, 120), v: clip(b.v, 10), ua: clip(b.ua, 200), screen: clip(b.screen, 20), app: !!b.app, tab: clip(b.tab, 10), t: clip(b.t, 30) || new Date().toISOString() };
+  await env.PUSH.put('bug:' + new Date().toISOString() + ':' + Math.random().toString(36).slice(2, 6), JSON.stringify(rec), { expirationTtl: 365 * 86400 });
   return json({ ok: true });
 }
