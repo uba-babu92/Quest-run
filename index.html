@@ -683,7 +683,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v54';
+const VERSION = 'v55';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -697,17 +697,26 @@ function tierOf(p, sport) {
 }
 const qTier = q => q.tier || tierOf(placeById(q.pid));
 // chaque quête tire sa rareté ; plus elle est rare, plus elle est loin (29/10, chiffres de Bazil)
-const TIER_ODDS = [['mythic', 1], ['legend', 10], ['epic', 18], ['rare', 35], ['common', 36]];
+const TIER_ODDS = [['mythic', 2], ['legend', 10], ['epic', 18], ['rare', 35], ['common', 35]];
 const TIER_KM = { common: 1, rare: 1.15, epic: 1.3, legend: 1.5, mythic: 1.6 };
-// les raretés se débloquent avec les sorties réussies (29/10) : pas de Mythique en arrivant
-const TIER_UNLOCK = { common: 0, rare: 0, epic: 3, legend: 6, mythic: 12 };
+// les raretés se débloquent avec les sorties réussies (29/10, deux fois plus vite le 28/10) : pas de Mythique en arrivant
+const TIER_UNLOCK = { common: 0, rare: 0, epic: 1, legend: 3, mythic: 6 };
 function oddsNow(ok = (S.prog && S.prog.okRuns) || 0) {
-  if (ok < 3) return [['rare', 40], ['common', 60]];
-  if (ok < 6) return [['epic', 17], ['rare', 38], ['common', 45]];
-  if (ok < 12) return [['legend', 10], ['epic', 19], ['rare', 35], ['common', 36]];
+  if (ok < TIER_UNLOCK.epic) return [['rare', 40], ['common', 60]];
+  if (ok < TIER_UNLOCK.legend) return [['epic', 17], ['rare', 38], ['common', 45]];
+  if (ok < TIER_UNLOCK.mythic) return [['legend', 10], ['epic', 19], ['rare', 35], ['common', 36]];
   return TIER_ODDS;
 }
-function rollTier(r = Math.random) { let x = r() * 100; for (const [t, w] of oddsNow()) { if (x < w) return t; x -= w; } return 'common'; }
+// garantie (28/10) : après 8 quêtes sans Épique ou mieux, la suivante l'est forcément
+const PITY = 8, HIGH = new Set(['epic', 'legend', 'mythic']);
+function rollTier(r = Math.random) {
+  const odds = oddsNow(), pick = list => { const tot = list.reduce((a, x) => a + x[1], 0); let x = r() * tot; for (const [t, w] of list) { if (x < w) return t; x -= w; } return list[list.length - 1][0]; };
+  if (!odds.some(([t]) => HIGH.has(t))) return pick(odds);
+  if ((S.dry || 0) >= PITY) { S.dry = 0; return pick(odds.filter(([t]) => HIGH.has(t))); }
+  const t = pick(odds);
+  S.dry = HIGH.has(t) ? 0 : (S.dry || 0) + 1;
+  return t;
+}
 // une quête tirée trop rare pour ton niveau (avant cette règle) redescend
 function fixTiers() {
   if (!S.week) return;
@@ -807,7 +816,23 @@ function bumpStreak() {
 
 /* ---------- défi du mois + badge (28/10) ---------- */
 const MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-const MONTH_IC = ['❄️', '💘', '🌱', '🌷', '🌸', '☀️', '🏖️', '🌻', '🍂', '🎃', '🍁', '🎄'];
+const MONTH_IC = ['👑', '🕯️', '🌧️', '🐟', '🍒', '🍓', '🌊', '🌻', '🎒', '🌰', '🍁', '🎄'];
+// carte du mois (28/10) : offerte quand le défi du mois est réussi, Épique, illustrée, sans lieu
+const MONTH_PTS = 300;
+const MONTH_CARDS = [
+  ['La Galette de Janvier', "Chaque janvier, les rois de la ville se disputaient la fève… Moi, je l'ai gardée dans ma poche pendant trois cents ans. Cette carte, c'est ta couronne, Élu : tu as tenu ton défi quand tous les autres rangeaient leurs baskets !"],
+  ['La Chandelle de Février', "À la Chandeleur, on dit que la lumière revient. Cette chandelle ne s'éteint jamais : elle brûle pour ceux qui courent même quand il fait nuit à 18 h. Comme toi."],
+  ['La Giboulée de Mars', "Pluie, soleil, grêle… en mars, le ciel ne sait pas ce qu'il veut. Toi, si. Garde cette giboulée en souvenir : elle n'a pas réussi à t'arrêter."],
+  ['Le Poisson d\'Avril', "Hé hé ! On t'a sûrement accroché un poisson dans le dos ce mois-ci. Mais celui-là n'est pas une blague : c'est une vraie carte, gagnée à la sueur de tes foulées !"],
+  ['La Cerise de Mai', "En mai, les cerisiers de la ville rougissent. On raconte qu'un coureur qui en cueille une gagne des jambes légères tout l'été. Croque-la, Élu !"],
+  ['La Fraise de Juin', "Les jours les plus longs de l'année, les fraises les plus sucrées… Juin récompense ceux qui sortent. Et tu es sorti, encore et encore."],
+  ['La Vague de Juillet', "Pendant que la ville part à la plage, toi tu as couru. Cette vague, c'est la fraîcheur que tu as bien méritée. Ne la laisse pas filer !"],
+  ['Le Tournesol d\'Août', "Le tournesol suit le soleil, toi tu suis tes quêtes. En août, même sous la chaleur, tu n'as rien lâché. Le sage est fier de toi !"],
+  ['Le Cartable de Septembre', "C'est la rentrée ! Les écoliers ont leurs cahiers, toi tu as tes cartes. Range celle-ci bien au chaud : elle prouve que tu as repris du bon pied."],
+  ['La Châtaigne d\'Octobre', "Les feuilles tombent, les châtaignes aussi. Attention, elle pique un peu… comme tes mollets après ce défi. Bravo, Élu !"],
+  ['La Feuille de Novembre', "Rouge, or, cuivre… en novembre, la ville se couvre de feuilles. Celle-ci, je l'ai ramassée pour toi : un trésor d'automne pour un coureur qui ne se cache pas sous la couette."],
+  ['Le Sapin de Décembre', "Le froid, la nuit, les fêtes… et pourtant, tu as couru. Ce sapin, c'est mon cadeau avant l'heure. Ho ho… euh, pardon, je me suis trompé de vieux barbu !"]
+];
 const MONTHLY = ['km', 'cards', 'dplus', 'rares', 'km', 'cards', 'hidden', 'km', 'rares', 'dplus', 'hidden', 'cards'];
 const MONTHLY_TXT = { km: n => `Cours ${n} km ce mois-ci`, cards: n => `Gagne ${n} cartes`, dplus: n => `Grimpe ${n} m de dénivelé`, rares: n => `Gagne ${n} cartes Rares ou mieux`, hidden: n => `Trouve ${n} trésors cachés` };
 function monthlyNow() {
@@ -828,16 +853,26 @@ function renderMonthly() {
   const el = $('#monthly'); if (!el) return;
   const m = monthlyNow(), v = Math.min(m.target, monthlyProgress(m)), mo = +m.key.split('-')[1] - 1;
   const left = Math.ceil((new Date(+m.key.split('-')[0], mo + 1, 1) - Date.now()) / 864e5);
-  el.innerHTML = `<span class="ic">${MONTH_IC[mo]}</span><div class="t"><b>Défi de ${MONTH_NAMES[mo]}${m.done ? ' · réussi ✓' : ''}</b><span>${MONTHLY_TXT[m.type](m.target)} · ${m.done ? 'badge gagné' : `encore ${left} j`}</span><div class="bar"><i style="width:${v / m.target * 100}%"></i></div></div><em>${v}/${m.target}</em>`;
-  el.onclick = () => toast(m.done ? 'Badge du mois gagné ! Il est dans tes trophées.' : `${MONTHLY_TXT[m.type](m.target)} avant la fin du mois : badge + 50 🪙`);
+  el.innerHTML = `<span class="ic">${MONTH_IC[mo]}</span><div class="t"><b>Défi de ${MONTH_NAMES[mo]}${m.done ? ' · réussi ✓' : ''}</b><span>${MONTHLY_TXT[m.type](m.target)} · ${m.done ? 'carte gagnée' : `encore ${left} j`}</span><div class="bar"><i style="width:${v / m.target * 100}%"></i></div></div><em>${v}/${m.target}</em>`;
+  el.onclick = () => toast(m.done ? 'Défi réussi ! La carte est dans ta collection, le trophée dans tes trophées.' : `${MONTHLY_TXT[m.type](m.target)} avant la fin du mois : une carte Épique + un trophée`);
 }
 async function checkMonthly() {
   const m = monthlyNow(); if (m.done || monthlyProgress(m) < m.target) return;
   const mo = +m.key.split('-')[1] - 1, name = MONTH_NAMES[mo][0].toUpperCase() + MONTH_NAMES[mo].slice(1) + ' ' + m.key.split('-')[0];
-  m.done = true; (S.badges = S.badges || []).push({ key: m.key, name, ic: MONTH_IC[mo], date: Date.now() }); S.coins = (S.coins || 0) + 50; save();
-  await overlay(`<div class="v-title gold pixel">DÉFI<br>RÉUSSI !</div><div class="big-ic">${MONTH_IC[mo]}</div>
-    <div class="v-sub" style="font-size:22px;color:#fff;font-weight:900">Badge ${esc(name)}</div>
-    <div class="v-sub">${MONTHLY_TXT[m.type](m.target)} : c'est fait ! <b style="color:#FFD23F">+50 🪙</b></div><button class="btn gold" data-close>Génial</button>`);
+  m.done = true; (S.badges = S.badges || []).push({ key: m.key, name, ic: MONTH_IC[mo], date: Date.now() });
+  const card = { pid: 'month-' + m.key, month: m.key, name: MONTH_CARDS[mo][0], label: 'Carte du mois', rarity: 'epic', pts: MONTH_PTS, date: Date.now(), img: `month/${mo + 1}.svg`, photo: false };
+  if (!S.collection.some(c => c.pid === card.pid)) { S.collection.push(card); S.points += MONTH_PTS; }
+  save();
+  const p = overlay(`<div class="fiche" style="text-align:center"><div class="v-title gold pixel">DÉFI<br>RÉUSSI !</div>
+    <div class="pixel" style="font-size:12px;margin-top:8px;color:#8EC5FF">CARTE DU MOIS · ÉPIQUE !</div>
+    <div class="v-pts pixel" id="vp">+0 ★</div>
+    <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div></div>
+    <div class="v-sub">${MONTHLY_TXT[m.type](m.target)} : c'est fait !<br>${MONTH_IC[mo]} Trophée <b style="color:#FFD23F">${esc(name)}</b> gagné</div>
+    <div class="box vstory" style="text-align:left"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p></div>
+    <div class="v-actions"><button class="btn gold" data-close>Génial</button></div></div>`, true);
+  fillPhotos($('#vin')); countUp($('#vp'), MONTH_PTS); vibrate([30, 40, 30]); sfx('trophy');
+  setTimeout(() => { const f = $('#flip'); if (f) { f.classList.add('on'); vibrate(60); sfx('flip'); confetti(['#1559C9', '#8EC5FF', '#FFD23F', '#fff']); } }, 900);
+  await p; renderPoints();
 }
 
 /* ---------- bilan de la semaine (le lundi) ---------- */
@@ -1415,14 +1450,23 @@ function comeback() {
   if (nk < S.goal.km) { S.goal.km = nk; save(); toast(`Reprise en douceur : ${String(nk).replace('.', ',')} km par sortie`); }
 }
 
-/* ---------- apparition légendaire : 48 h, le week-end, après 6 sorties réussies ---------- */
+/* ---------- apparition légendaire : 48 h, le week-end, après 3 sorties réussies ---------- */
 const LEG_MS = 48 * 3600e3, LEG_CHANCE = 1 / 3;
-/* ---------- cartes mythiques : 4 dates par an, 72 h (jours où l'on court le plus) ---------- */
+/* ---------- cartes mythiques : une par mois (28/10, avant 4 par an), 72 h, aux moments où l'on court ---------- */
+const nthDay = (y, mo, wd, n) => { const d = new Date(y, mo, 1); while (d.getDay() !== wd) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d; };
 const MYTHS = [
+  { id: 'jan', ic: '🔥', name: 'La Flamme des Résolutions', when: '2e week-end de janvier', start: y => nthDay(y, 0, 5, 2) },
+  { id: 'fev', ic: '💘', name: 'Le Cœur de Sprinter', when: 'Saint-Valentin', start: y => new Date(y, 1, 13) },
+  { id: 'mars', ic: '🌱', name: 'La Pousse de Printemps', when: 'Début mars · semi-marathon de Paris', start: y => { const d = nthDay(y, 2, 6, 1); d.setDate(d.getDate() - 1); return d; } },
+  { id: 'avr', ic: '🏅', name: 'Le Laurier du Marathon', when: 'Week-end du marathon de Paris', start: y => { const d = nthDay(y, 3, 0, 2); d.setDate(d.getDate() - 2); return d; } },
   { id: 'mai', ic: '🌸', name: 'Le Muguet d\'Or', when: 'Week-end du 1er mai', start: y => new Date(y, 4, 1) },
-  { id: 'juin', ic: '🏃', name: 'La Foulée d\'Or', when: 'Journée mondiale de la course', start: y => { const d = new Date(y, 5, 1); while (d.getDay() !== 3) d.setDate(d.getDate() + 1); return d; } },
-  { id: 'sept', ic: '🏛️', name: 'Le Gardien du Patrimoine', when: 'Journées du patrimoine', start: y => { const d = new Date(y, 8, 1); while (d.getDay() !== 6) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 13); return d; } },
-  { id: 'nov', ic: '💙', name: 'Le Bleuet', when: '11 novembre', start: y => new Date(y, 10, 10) }
+  { id: 'juin', ic: '🏃', name: 'La Foulée d\'Or', when: 'Journée mondiale de la course', start: y => nthDay(y, 5, 3, 1) },
+  { id: 'juil', ic: '🎆', name: 'L\'Étoile de Juillet', when: '14 juillet', start: y => new Date(y, 6, 13) },
+  { id: 'aout', ic: '☀️', name: 'Le Soleil d\'Août', when: '15 août', start: y => new Date(y, 7, 14) },
+  { id: 'sept', ic: '🏛️', name: 'Le Gardien du Patrimoine', when: 'Journées du patrimoine', start: y => { const d = nthDay(y, 8, 6, 1); d.setDate(d.getDate() + 13); return d; } },
+  { id: 'oct', ic: '🎃', name: 'La Citrouille Spectrale', when: 'Halloween', start: y => new Date(y, 9, 30) },
+  { id: 'nov', ic: '💙', name: 'Le Bleuet', when: '11 novembre', start: y => new Date(y, 10, 10) },
+  { id: 'dec', ic: '❄️', name: 'Le Flocon d\'Argent', when: 'Week-end avant Noël', start: y => { const d = new Date(y, 11, 24); while (d.getDay() !== 5) d.setDate(d.getDate() - 1); return d; } }
 ];
 const MYTH_MS = 72 * 3600e3;
 function mythWindows(from = Date.now()) {
@@ -1444,7 +1488,7 @@ async function maybeMythic() {
   save(); wikiFor(p);
   await overlay(`<div class="v-title gold pixel">APPARITION<br>MYTHIQUE !</div>
     <div class="vcard card mythic holo" style="margin:16px auto"><div class="in"><span class="ic">${w.ic}</span><b>${esc(w.name)}</b><small>${esc(w.when)}</small></div></div>
-    <div class="v-sub">Seulement <b style="color:#FFD23F">1 % de chance</b> de la voir ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
+    <div class="v-sub">Seulement <b style="color:#FFD23F">72 h</b> pour la saisir ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
     <button class="btn gold" data-close>Voir la quête</button>`);
   if (current === 'quests') renderQuests();
   return true;
@@ -1464,7 +1508,7 @@ async function maybeLegend() {
   if (!S.week || !S.home) return;
   const P = prog(), d = new Date().getDay();
   if (await maybeMythic()) return;
-  if ((d !== 6 && d !== 0) || (P.okRuns || 0) < 6 || S.legendWeek === S.week.id || legendQuest()) return;
+  if ((d !== 6 && d !== 0) || (P.okRuns || 0) < TIER_UNLOCK.legend || S.legendWeek === S.week.id || legendQuest()) return;
   S.legendWeek = S.week.id;                                   // un seul tirage par week-end
   if (Math.random() >= LEG_CHANCE) { save(); return; }
   const best = Math.max(0, ...(S.runs || []).filter(r => r.found).map(r => r.dist)) / 1000;
@@ -1621,7 +1665,7 @@ function openQuest(i) {
   }
   const [qt, qtxt0] = questLine(p);
   const qtxt = S.name ? qtxt0.replace(/^Hé, toi !( Oui, toi, le coureur !)?/, `Hé, ${S.name} !`) : qtxt0;
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'a que 1 % de chance d'apparaître. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'apparaît qu'une fois par mois. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   // trésor caché : les indices sont donnés par le sage, dans sa bulle (29/10)
   const say = rare && !q.legend && !q.friend ? `Psst… ${article(p.label).replace(/^./, c => c.toLowerCase())} se cache dans cette zone.${p.name ? ` Son nom commence par « ${p.name.slice(0, 3)}… ».` : ''}${p.artist ? ` Une œuvre de ${p.artist}.` : ''} Trouve-la, jeune coureur !` : intro;
@@ -2159,6 +2203,7 @@ async function questClear() {
 /* ---------- histoire d'un lieu (fiche et écran de victoire) ---------- */
 async function fillStory(box, p, c, retry) {
   if (!box) return;
+  if (c && c.month) { const mo = +c.month.split('-')[1] - 1; box.innerHTML = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p>`; return; }
   if (c && c.welcome) { box.innerHTML = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>Ce grimoire, je l'écris depuis des siècles. Chaque page garde l'histoire d'un lieu de la ville. Mais les pages se sont envolées… À toi de les retrouver, Élu Runner. Chaque carte que tu gagnes en est une !</p>`; return; }
   const head = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div>`;
   if (!(S.wiki[p.id] && S.wiki[p.id].aiV === AI_V && S.wiki[p.id].ai)) box.innerHTML = head + '<p style="color:#b9b0d6">Hmm… je feuillette mon grimoire…</p>';
@@ -2309,7 +2354,7 @@ function showFiche(c) {
     <div class="fliphint"><span class="hand">👆</span>Glisse pour retourner la carte</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="favbtn ${c.fav ? 'on' : ''}" id="favbtn">${c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris'}</button><button class="favbtn" id="cshare">📤 Partager</button></div>
     <h2>${esc(c.name)}</h2>
-    <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    <p class="sub">${esc(c.label)} · ${c.month || c.welcome ? 'gagnée' : 'trouvé'} le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     ${r ? `<div class="box"><span class="pixel">TA SORTIE · ${sportOf(r).ic} ${esc(sportOf(r).name.toUpperCase())}</span>
       <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div>
       ${r.dplus != null ? `<p style="text-align:center;margin:10px 0 0;color:#e8e3f6">↗ <b>${r.dplus} m</b> de dénivelé positif</p>` : ''}
@@ -2334,7 +2379,7 @@ function showFiche(c) {
   // photo du lieu au dos
   const putBack = img => { const el = $('#vin [data-back]'); if (el && img) { el.style.backgroundImage = `url("${img}")`; el.innerHTML = ''; } };
   putBack((S.wiki[c.pid] && S.wiki[c.pid].img) || (c.photo ? null : c.img));
-  if (!c.welcome) wikiFor(p).then(w => w && putBack(w.img));
+  if (!c.welcome && !c.month) wikiFor(p).then(w => w && putBack(w.img));
   $('#cshare').onclick = () => shareCard(c);
   $('#favbtn').onclick = () => {
     c.fav = !c.fav; save(); vibrate(20); if (c.fav) sfx('fav');
@@ -3060,7 +3105,7 @@ function tierOdds() {
   const tot = n.common + n.rare + n.epic + n.legend || 1, pc = v => v ? Math.max(1, Math.round(v / tot * 100)) : 0;
   return { common: pc(n.common), rare: pc(n.rare), epic: pc(n.epic), legend: pc(n.legend) };
 }
-const MYTH_PCT = Math.round(MYTHS.length * 3 / 365 * 1000) / 10; // 12 jours sur 365 ≈ 3,3 %
+const MYTH_PCT = Math.round(MYTHS.length * 3 / 365 * 1000) / 10; // 36 jours sur 365 ≈ 9,9 %
 function renderVit() {
   renderPoints();
   const nx = mythNext(), now = mythNow(), days = nx ? Math.ceil((nx.a - Date.now()) / 864e5) : 0;
@@ -3081,7 +3126,7 @@ function renderVit() {
       return ['common', 'rare', 'epic', 'legend', 'mythic'].map(t => { const lock = TIER_UNLOCK[t] > ok, left = TIER_UNLOCK[t] - ok;
         return `<div class="o ${lock ? 'locked' : ''}">${tierBadge(t)}<span><b>${TIER_NAME[t]}</b>${lock ? `🔒 Encore ${left} sortie${left > 1 ? 's' : ''} réussie${left > 1 ? 's' : ''}` : D[t]}</span><em>${lock ? '🔒' : (od[t] || 0) + ' %'}</em></div>`; }).join(''); })()}
   </div>
-  <div class="panel"><h4>Les 4 cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
+  <div class="panel"><h4>Les ${MYTHS.length} cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
   ${mine.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
   <div class="panel" style="text-align:center"><div style="font-size:40px">📦</div><h4 style="margin:6px 0">Reçois tes cartes en vrai</h4>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Un booster imprimé avec ta photo, ton run, la date et l'histoire de chaque lieu.</p>
@@ -3160,14 +3205,14 @@ function notifPlan() {
     const tail = fire ? ` 🔥 Série de ${fire}` : '';
     let msg = null;
     const myth = mythWindows().find(w => d.getTime() >= w.a && d.getTime() < w.b && !(S.mythSeen || {})[w.key]);
-    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'a que 1 % de chance d'apparaître… Le vieux sage t'attend !`];
+    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'apparaît qu'une fois par mois… Le vieux sage t'attend !`];
     else if (S.goal.days.includes(wd) && !(S.streak && S.streak.last === key)) {
       const q = S.week && weekId(d) === S.week.id && S.week.quests.find(x => x.status === 'todo' && x.day === wd && !x.friend && !x.legend);
       const pl = q && placeById(q.pid);
       msg = ['🏃 Ta quête du jour', pl ? `${questLine(pl)[0]} · ${roundTripKm(pl).toFixed(1).replace('.', ',')} km${tail}` : `Hé, toi ! Le vieux sage a une mission pour toi aujourd'hui.${tail}`];
     }
     else if (wd === 0) msg = ['🗺️ Nouvelles quêtes !', "Le vieux sage a de nouvelles missions pour toi… et ton bilan de la semaine t'attend."];
-    else if (wd === 5 && (prog().okRuns || 0) >= 6) msg = ['✨ Une rumeur court…', "On dit qu'une carte légendaire pourrait apparaître ce week-end. Garde l'œil ouvert !"];
+    else if (wd === 5 && (prog().okRuns || 0) >= TIER_UNLOCK.legend) msg = ['✨ Une rumeur court…', "On dit qu'une carte légendaire pourrait apparaître ce week-end. Garde l'œil ouvert !"];
     if (!msg && !m.done && m.key === d.getFullYear() + '-' + (d.getMonth() + 1) && Math.round((new Date(d.getFullYear(), d.getMonth() + 1, 1) - d) / 864e5) === 3) {
       const left = Math.max(1, m.target - monthlyProgress(m));
       msg = ['🏅 Défi du mois', `Plus que ${left} pour le badge de ${MONTH_NAMES[d.getMonth()]} !`];
@@ -3288,7 +3333,8 @@ function renderShop() {
 
 function renderTro() {
   const n = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).length, bd = S.badges || [];
-  $('#tro').innerHTML = `${bd.length ? `<div class="panel"><h4>Badges du mois · ${bd.length}</h4><div class="badges">${bd.map(b => `<div class="bd"><span>${b.ic}</span>${esc(b.name)}</div>`).join('')}</div></div>` : ''}<h2>${n} / ${TROPHIES.length} <span class="muted" style="font-size:15px;font-weight:600">trophées gagnés</span></h2>
+  $('#tro').innerHTML = `<div class="panel"><h4>Trophées du mois · ${new Set(bd.map(b => +b.key.split('-')[1])).size} / 12</h4><div class="trophies">${MONTH_NAMES.map((mn, i) => { const got = bd.filter(b => +b.key.split('-')[1] === i + 1);
+    return `<button class="tro ${got.length ? '' : 'off'}" data-d="${got.length ? 'Gagné : ' + esc(got.map(b => b.name).join(', ')) : 'Réussis le défi de ' + mn + ' pour le gagner'}"><span class="ic">${got.length ? MONTH_IC[i] : '🔒'}</span><b>${mn[0].toUpperCase() + mn.slice(1)}${got.length > 1 ? ' ×' + got.length : ''}</b></button>`; }).join('')}</div></div><h2>${n} / ${TROPHIES.length} <span class="muted" style="font-size:15px;font-weight:600">trophées gagnés</span></h2>
   <div class="panel"><div class="trophies">${TROPHIES.map(([id, ic, name, desc]) => { const on = S.trophies && S.trophies[id];
     return `<button class="tro ${on ? '' : 'off'}" data-d="${esc(desc)}${on ? ' · gagné le ' + new Date(on).toLocaleDateString('fr-FR') : ''}"><span class="ic">${on ? ic : '🔒'}</span><b>${esc(name)}</b></button>`; }).join('')}</div></div>
   <p class="muted" style="text-align:center;font-size:13px;margin:0 16px 24px">Touche un trophée pour savoir comment le gagner.</p>`;
