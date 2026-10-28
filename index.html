@@ -229,6 +229,13 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card.mythic{background:linear-gradient(120deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff,#c45fff,#ff5fd2);background-size:300% 300%;animation:rainbow 4s linear infinite;border-radius:16px}
 @keyframes rainbow{to{background-position:300% 0}}
 .b-mythic{background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);color:#1a0b2e}
+/* cartes bonus (28/10) : à part des cartes de lieu, comme les cartes promo */
+.b-bonus{background:#24211F;color:#F3ECDF;letter-spacing:.08em}
+.card.bonus{background:#E6DCC9;box-shadow:inset 0 0 0 2px #24211F22}
+.card.bonus .in{background:#F3ECDF}
+.card.bonus .cap{background:#FBF7F0}
+.card.bonus .pts{background:#24211F}
+.bonushead{grid-column:1/-1;margin:14px 0 2px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}
 /* effet holographique : reflet arc-en-ciel qui suit l'inclinaison */
 .holo{position:relative;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s;-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;isolation:isolate}
 .holo .in{-webkit-mask-image:-webkit-radial-gradient(white,black)}
@@ -683,11 +690,13 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v55';
+const VERSION = 'v56';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
-const TIER_NAME = { common: 'Commune', rare: 'Rare', epic: 'Épique', legend: 'Légendaire', mythic: 'Mythique' };
+const TIER_NAME = { common: 'Commune', rare: 'Rare', epic: 'Épique', legend: 'Légendaire', mythic: 'Mythique', bonus: 'Bonus' };
+const isBonus = c => !!(c && (c.welcome || c.month || c.rarity === 'bonus'));
+const placeCards = () => S.collection.filter(c => !isBonus(c));
 function tierOf(p, sport) {
   if (!p) return 'common';
   const k = effortM(p) / 1000 / ((sport || S.sport) === 'bike' ? 3 : 1);
@@ -846,7 +855,7 @@ function monthlyNow() {
 }
 function monthlyProgress(m) {
   const [y, mo] = m.key.split('-').map(Number), a = new Date(y, mo - 1, 1).getTime(), b = new Date(y, mo, 1).getTime();
-  const runs = (S.runs || []).filter(r => r.date >= a && r.date < b), cards = S.collection.filter(c => c.date >= a && c.date < b);
+  const runs = (S.runs || []).filter(r => r.date >= a && r.date < b), cards = placeCards().filter(c => c.date >= a && c.date < b);
   return { km: Math.floor(runs.reduce((x, r) => x + r.dist, 0) / 1000), cards: cards.length, dplus: runs.reduce((x, r) => x + (r.dplus || 0), 0), rares: cards.filter(c => c.rarity !== 'common').length, hidden: cards.filter(c => c.hidden).length }[m.type];
 }
 function renderMonthly() {
@@ -860,18 +869,18 @@ async function checkMonthly() {
   const m = monthlyNow(); if (m.done || monthlyProgress(m) < m.target) return;
   const mo = +m.key.split('-')[1] - 1, name = MONTH_NAMES[mo][0].toUpperCase() + MONTH_NAMES[mo].slice(1) + ' ' + m.key.split('-')[0];
   m.done = true; (S.badges = S.badges || []).push({ key: m.key, name, ic: MONTH_IC[mo], date: Date.now() });
-  const card = { pid: 'month-' + m.key, month: m.key, name: MONTH_CARDS[mo][0], label: 'Carte du mois', rarity: 'epic', pts: MONTH_PTS, date: Date.now(), img: `month/${mo + 1}.svg`, photo: false };
+  const card = { pid: 'month-' + m.key, month: m.key, name: MONTH_CARDS[mo][0], label: 'Carte du mois', rarity: 'bonus', pts: MONTH_PTS, date: Date.now(), img: `month/${mo + 1}.svg`, photo: false };
   if (!S.collection.some(c => c.pid === card.pid)) { S.collection.push(card); S.points += MONTH_PTS; }
   save();
   const p = overlay(`<div class="fiche" style="text-align:center"><div class="v-title gold pixel">DÉFI<br>RÉUSSI !</div>
-    <div class="pixel" style="font-size:12px;margin-top:8px;color:#8EC5FF">CARTE DU MOIS · ÉPIQUE !</div>
+    <div class="pixel" style="font-size:12px;margin-top:8px;color:#F3ECDF">CARTE BONUS DU MOIS !</div>
     <div class="v-pts pixel" id="vp">+0 ★</div>
     <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div></div>
     <div class="v-sub">${MONTHLY_TXT[m.type](m.target)} : c'est fait !<br>${MONTH_IC[mo]} Trophée <b style="color:#FFD23F">${esc(name)}</b> gagné</div>
     <div class="box vstory" style="text-align:left"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Génial</button></div></div>`, true);
   fillPhotos($('#vin')); countUp($('#vp'), MONTH_PTS); vibrate([30, 40, 30]); sfx('trophy');
-  setTimeout(() => { const f = $('#flip'); if (f) { f.classList.add('on'); vibrate(60); sfx('flip'); confetti(['#1559C9', '#8EC5FF', '#FFD23F', '#fff']); } }, 900);
+  setTimeout(() => { const f = $('#flip'); if (f) { f.classList.add('on'); vibrate(60); sfx('flip'); confetti(['#D9622B', '#E8B53A', '#6E9B68', '#3E73B9']); } }, 900);
   await p; renderPoints();
 }
 
@@ -882,7 +891,7 @@ function weekRange(id) {
 }
 function recapOf(id) {
   const [a, b] = weekRange(id);
-  const runs = (S.runs || []).filter(r => r.date >= a && r.date < b), cards = S.collection.filter(c => c.date >= a && c.date < b);
+  const runs = (S.runs || []).filter(r => r.date >= a && r.date < b), cards = placeCards().filter(c => c.date >= a && c.date < b);
   const best = cards.slice().sort((x, y) => (PTS[y.rarity] || 0) - (PTS[x.rarity] || 0))[0];
   return { id, a, b, n: runs.length, km: runs.reduce((x, r) => x + r.dist, 0) / 1000, dplus: runs.reduce((x, r) => x + (r.dplus || 0), 0), time: runs.reduce((x, r) => x + r.time, 0), cards: cards.length, best, fire: streakNow() };
 }
@@ -2053,18 +2062,19 @@ function fillPhotos(root) {
 let collFilter = 'all';
 function renderColl() {
   renderPoints();
-  const n = S.collection.length, r = S.collection.filter(c => c.rarity !== 'common').length;
+  const n = placeCards().length, r = placeCards().filter(c => c.rarity !== 'common').length;
   $('#colltitle').innerHTML = `Ma collection <span class="muted" style="font-size:15px;font-weight:600">· ${n} lieu${n > 1 ? 'x' : ''} · ${r} rare${r > 1 ? 's' : ''}</span>`;
-  if (!n) {
+  if (!S.collection.length) {
     $('#collbar').innerHTML = '';
     $('#grid').innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUNE CARTE</span>Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.</div>`;
     return;
   }
   const nf = S.collection.filter(c => c.fav).length;
-  $('#collbar').innerHTML = `<button data-f="all" class="${collFilter === 'all' ? 'on' : ''}">Toutes · ${n}</button><button data-f="fav" class="${collFilter === 'fav' ? 'on' : ''}">♥ Favoris · ${nf}</button>`;
+  $('#collbar').innerHTML = `<button data-f="all" class="${collFilter === 'all' ? 'on' : ''}">Toutes · ${S.collection.length}</button><button data-f="fav" class="${collFilter === 'fav' ? 'on' : ''}">♥ Favoris · ${nf}</button>`;
   $('#collbar').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { collFilter = b.dataset.f; renderColl(); });
   const list = S.collection.slice().reverse().filter(c => collFilter !== 'fav' || c.fav).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0));
-  $('#grid').innerHTML = list.length ? list.map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('')
+  const main = list.filter(c => !isBonus(c)), bonus = list.filter(isBonus), btn = c => `<button style="padding:0">${cardHtml(c)}</button>`;
+  $('#grid').innerHTML = list.length ? main.map(btn).join('') + (bonus.length ? `<div class="bonushead">Cartes bonus · ${bonus.length}</div>` + bonus.map(btn).join('') : '')
     : `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUN FAVORI</span>Ouvre une carte et touche ♡ pour la mettre en favori.</div>`;
   fillPhotos($('#grid'));
   $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)).then(() => current === 'coll' && renderColl()));
@@ -2221,7 +2231,7 @@ async function fillStory(box, p, c, retry) {
 }
 
 /* ---------- partager une carte en image (format story, logo seul) ---------- */
-const TIER_COL = { common: ['#D9DDE4', '#9AA1AE', '#E9ECF1'], rare: ['#B07BFF', '#5A12D6', '#C9A6FF'], epic: ['#8EC5FF', '#1559C9', '#BFE0FF'], legend: ['#FFE27A', '#D38E00', '#FFF3B0'], mythic: ['#FF5FD2', '#5F9DFF', '#FFD23F'] };
+const TIER_COL = { bonus: ['#F3ECDF', '#D9622B', '#FBF7F0'], common: ['#D9DDE4', '#9AA1AE', '#E9ECF1'], rare: ['#B07BFF', '#5A12D6', '#C9A6FF'], epic: ['#8EC5FF', '#1559C9', '#BFE0FF'], legend: ['#FFE27A', '#D38E00', '#FFF3B0'], mythic: ['#FF5FD2', '#5F9DFF', '#FFD23F'] };
 const loadImg = (src, cors) => new Promise((res, rej) => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
 function rrect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
 function wrapLines(x, text, w, max) {
@@ -2394,7 +2404,7 @@ function showFiche(c) {
 /* ---------- trophées ---------- */
 const CAT = { culte: ['Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Temple', 'Lieu de culte'], vert: ['Parc', 'Jardin'], statue: ['Statue', 'Buste', 'Sculpture'], musee: ['Musée'] };
 function tstats() {
-  const runs = S.runs || [], col = S.collection;
+  const runs = S.runs || [], col = placeCards();
   const labels = new Set(col.map(c => c.label));
   const has = k => CAT[k].some(l => labels.has(l));
   const weeks = (S.clearedWeeks || []).slice().sort();
@@ -3063,7 +3073,7 @@ function renderProf() {
     <div class="xp"><i style="width:${pct}%"></i></div></div></div></div>
   <div class="panel"><button class="trorow" id="prefbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Ma semaine</h4><b style="font-size:16px">${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} · ${String(S.goal.km).replace('.', ',')} km</b></div><span style="flex:1"></span><span class="setbtn">Modifier ›</span></button></div>
   <div class="panel"><h4>Mes stats</h4><div class="sgrid">
-    ${tile(S.collection.length, 'lieux trouvés')}${tile(S.collection.filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}
+    ${tile(placeCards().length, 'lieux trouvés')}${tile(placeCards().filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}
     ${tile(st.n, 'sorties')}${tile(kmTxt(st.km), 'km au total')}${tile(st.n ? hm(st.time) : '0 min', 'de sport')}
     ${tile(st.runPace || '–:––', 'allure course (/km)')}${tile(st.bikeSpeed || '–', 'vitesse vélo (km/h)')}${tile(kmTxt(st.longest), 'km, plus longue sortie')}
     ${tile(fmt(st.dplus), 'm de D+ au total')}${tile(fmt(st.maxDplus), 'm, plus gros D+')}${tile(st.km ? Math.round(st.dplus / st.km) : 0, 'm de D+ par km')}
@@ -3598,7 +3608,7 @@ function onboarding(step = 0) {
   if (step === 8) {
     // première victoire, façon Pokémon Go : le sage offre sa carte
     if (!S.collection.some(c => c.welcome)) {
-      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'rare', pts: 100, date: Date.now(), img: 'grimoire.svg', photo: false });
+      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'bonus', pts: 100, date: Date.now(), img: 'grimoire.svg', photo: false });
       S.points += 100; save();
     }
     const card = S.collection.find(c => c.welcome);
@@ -3798,7 +3808,7 @@ if (typeof L === 'undefined') {
   onboarding(0);
 } else {
   ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
-  S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; });
+  S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'bonus') c.rarity = 'bonus'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');
   setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else await maybeLegend(); }, 1200);

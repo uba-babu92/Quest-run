@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400">
-  <defs><radialGradient id="bg" cx="50%" cy="38%" r="75%"><stop offset="0" stop-color="#CFE8FF"/><stop offset=".55" stop-color="#5F8FC9"/><stop offset="1" stop-color="#1D3557"/></radialGradient>
-  <radialGradient id="gl" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".75"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></radialGradient></defs>
-  <rect width="300" height="400" fill="url(#bg)"/><circle cx="150" cy="195" r="125" fill="url(#gl)"/>
-  <g fill="#FFFFFF" opacity=".85"><path d="M52 64l4 10 10 4-10 4-4 10-4-10-10-4 10-4z"/><path d="M246 92l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><path d="M256 300l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/><circle cx="40" cy="300" r="3"/><circle cx="210" cy="54" r="2.5"/></g>
-  <circle cx="190" cy="140" r="34" fill="#FFD23F"/>
-  <g fill="#FFFFFF"><circle cx="120" cy="175" r="38"/><circle cx="165" cy="165" r="44"/><circle cx="205" cy="185" r="30"/><rect x="90" y="180" width="140" height="40" rx="20"/></g>
-  <g fill="#7FC4FF"><path d="M110 240 q-8 14 0 18 q8 -4 0 -18z"/><path d="M150 250 q-8 14 0 18 q8 -4 0 -18z"/><path d="M190 240 q-8 14 0 18 q8 -4 0 -18z"/><path d="M130 280 q-8 14 0 18 q8 -4 0 -18z"/><path d="M175 285 q-8 14 0 18 q8 -4 0 -18z"/></g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400"><rect width="300" height="400" fill="#F3ECDF"/><polygon points="58.4,220 65.8,175.1 105.6,162.2 127.2,123.4 173.1,119.6 205.3,147 245.1,154.7 249.3,202.6 230.9,224" fill="#3E73B9"/><polygon points="214,92.2 234.4,95.7 243.3,114.8 239.2,134.5 224.2,147.9 203.1,149.9 185.8,136.3 183.6,114.6 195.8,98.3" fill="#E8B53A"/><polygon points="87.2,252.6 75.9,281.5 82.7,284.2 94.5,258" fill="#3E73B9"/><polygon points="135.5,261.4 127.2,289.3 135.4,292.3 145.2,261.6" fill="#3E73B9"/><polygon points="187.3,253.6 175.6,279.7 185.1,284.5 194.9,257.2" fill="#3E73B9"/><polygon points="109.6,300.2 102.2,328 109.4,328.1 119,303.5" fill="#3E73B9"/><polygon points="159.6,303.3 150,331.5 160.8,334.3 169.1,307.7" fill="#3E73B9"/></svg>
