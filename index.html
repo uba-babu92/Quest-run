@@ -707,7 +707,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v57';
+const VERSION = 'v58';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3285,6 +3285,8 @@ async function flushBugs() {
 /* ---------- notifications perso (28/10) : 1 par jour max, à ton heure habituelle ---------- */
 const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+// navigateur intégré d'une autre appli (TikTok, Instagram…) : impossible d'y installer l'appli
+const inAppBrowser = () => /Instagram|FBAN|FBAV|FB_IAB|musical_ly|Bytedance|TikTok|Snapchat|LinkedInApp|Twitter|Line\/|GSA\//.test(navigator.userAgent);
 // heure habituelle de départ (médiane des 10 dernières sorties), 18 h sans historique
 function notifHour() {
   const hs = (S.runs || []).slice(-10).map(r => new Date(r.date).getHours()).sort((a, b) => a - b);
@@ -3576,19 +3578,22 @@ function onboarding(step = 0) {
       setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, 1200);
     }
     // iPhone dans Safari : on installe d'abord (Safari et l'appli installée ne partagent pas leur mémoire)
-    if (isIOS() && !isStandalone() && !S.skipInstall && !onboarding.installShown) {
+    // 28/10 (Bazil) : sur iPhone, l'installation est obligatoire, plus de « Continuer dans Safari »
+    if (isIOS() && !isStandalone()) {
       onboarding.installShown = true;
       const showInstall = () => {
+        const iab = inAppBrowser();
+        const step = (n, ic, b, sm) => `<div><span class="n">${n}</span><span class="ic">${ic}</span><span class="t"><b>${b}</b><small>${sm}</small></span></div>`;
+        const DOTS = '<span style="font-size:22px;font-weight:900;letter-spacing:1px;line-height:1">•••</span>';
         o.innerHTML = `<div class="body center install">
           <div class="sage big">🧙</div><div class="bubble" id="ib0" style="flex:none;text-align:left"><p id="it0"></p></div>
-          <div class="isteps">
-            <div><span class="n">1</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></span><span class="t"><b>Touche Partager</b><small>en bas de Safari</small></span></div>
-            <div><span class="n">2</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span><span class="t"><b>Sur l'écran d'accueil</b><small>puis « Ajouter »</small></span></div>
-            <div><span class="n">3</span><span class="ic"><img src="icon-192.png" alt=""></span><span class="t"><b>Ouvre Quest Run</b><small>depuis ton écran d'accueil</small></span></div>
+          <div class="isteps">${iab
+            ? step(1, DOTS, 'Touche •••', 'en haut ou en bas de l’écran') + step(2, '🧭', 'Ouvrir dans Safari', 'ou « Ouvrir dans le navigateur »') + step(3, '<img src="icon-192.png" alt="">', 'Installe Quest Run', 'Safari te montrera comment')
+            : step(1, DOTS, 'Touche ••• puis Partager', 'en bas de Safari') + step(2, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>', 'Sur l’écran d’accueil', 'puis « Ajouter »') + step(3, '<img src="icon-192.png" alt="">', 'Ouvre Quest Run', 'depuis ton écran d’accueil')}
           </div></div>
-          <button class="link" id="skipinst" style="margin:6px auto 0">Continuer dans Safari (sans les rappels)</button>`;
-        typeText($('#it0'), "Avant de partir à l'aventure, installe-moi sur ton écran d'accueil, Élu ! Je pourrai te prévenir de tes quêtes.", $('#ib0'));
-        $('#skipinst').onclick = () => { S.skipInstall = true; save(); onboarding(0); };
+          ${iab ? '<button class="link" id="copyurl" style="margin:6px auto 0">Copier le lien</button>' : ''}`;
+        typeText($('#it0'), iab ? "Ce navigateur ne me laisse pas m'installer, Élu… Ouvre-moi dans Safari, et je t'attends là-bas !" : "Avant de partir à l'aventure, installe-moi sur ton écran d'accueil, Élu ! C'est là que commence ta quête.", $('#ib0'));
+        if (iab) $('#copyurl').onclick = async () => { try { await navigator.clipboard.writeText(location.origin + location.pathname); toast('Lien copié : colle-le dans Safari'); } catch (e) { toast(location.origin + location.pathname); } };
       };
       setTimeout(showInstall, onboarding.splashDone ? 0 : 1500); onboarding.splashDone = true;
       if (!onboarding.splashed) { onboarding.splashed = true; const sp = document.createElement('div'); sp.className = 'splash'; sp.innerHTML = '<img src="icon-512.png" alt=""><b>Quest Run</b>'; document.body.appendChild(sp); setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, 1200); }
@@ -3888,7 +3893,7 @@ applyTheme();
 readFriendLink();
 if (typeof L === 'undefined') {
   document.body.innerHTML = '<div class="empty" style="margin-top:40vh">Pas de connexion : la carte ne peut pas se charger.<br><br><button class="btn" onclick="location.reload()">Réessayer</button></div>';
-} else if (!S.onboarded || !S.home) {
+} else if (!S.onboarded || !S.home || (isIOS() && !isStandalone())) {
   onboarding(0);
 } else {
   ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
