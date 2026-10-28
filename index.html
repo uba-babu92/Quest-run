@@ -730,7 +730,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v63';
+const VERSION = 'v64';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1401,6 +1401,50 @@ function isGreen(p) {
   if (['Parc', 'Jardin', 'Point de vue'].includes(p.label)) return greenCache[p.id] = true;
   return greenCache[p.id] = (S.places || []).some(x => (x.label === 'Parc' || x.label === 'Jardin' || x.label === 'Point de vue') && Math.abs(x.lat - p.lat) < 0.003 && dist(p, x) < 250);
 }
+/* ---------- zones vertes (28/10) : grille de carrés de ~55 m préparée par le robot (data/green/), 1 = parc, bois,
+   jardin, bord de l'eau ou rue piétonne. Gardée sur le téléphone pour être prête dès l'ouverture. ---------- */
+let GREEN = null;
+const GREEN_KEY = 'questrun.green';
+try { const g = JSON.parse(localStorage.getItem(GREEN_KEY) || 'null'); if (g) GREEN = greenDecode(g); } catch (e) {}
+function greenDecode(g) {
+  const tiles = {};
+  for (const [k, t] of Object.entries(g.tiles || {})) { const bin = atob(t.b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); tiles[k] = { s: t.s, w: t.w, u }; }
+  return { ...g, tiles };
+}
+async function loadGreen() {
+  if (!S.home) return false;
+  const idx = await fetch('data/green/index.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  if (!idx || !idx.tiles) return false;
+  if (GREEN && GREEN.updated === idx.updated && GREEN.home === tileKey(S.home.lat, S.home.lng)) return false;
+  const d = 0.1, need = [];
+  for (let i = Math.floor((S.home.lat - d) / TILE_STEP); i <= Math.floor((S.home.lat + d) / TILE_STEP); i++)
+    for (let j = Math.floor((S.home.lng - d * 1.5) / TILE_STEP); j <= Math.floor((S.home.lng + d * 1.5) / TILE_STEP); j++) if (`${i}_${j}` in idx.tiles) need.push(`${i}_${j}`);
+  if (!need.length) return false;
+  const parts = await Promise.all(need.map(k => fetch(`data/green/${k}.json`).then(r => r.ok ? r.json() : null).catch(() => null)));
+  const raw = { updated: idx.updated, home: tileKey(S.home.lat, S.home.lng), dlat: idx.dlat, dlng: idx.dlng, nr: idx.nr, nc: idx.nc, tiles: {} };
+  need.forEach((k, i) => { if (parts[i]) raw.tiles[k] = parts[i]; });
+  try { localStorage.setItem(GREEN_KEY, JSON.stringify(raw)); } catch (e) {}
+  GREEN = greenDecode(raw); for (const k in greenPathCache) delete greenPathCache[k];
+  return true;
+}
+function greenAt(lat, lng) {
+  const t = GREEN && GREEN.tiles[tileKey(lat, lng)]; if (!t) return null;
+  const r = Math.floor((lat - t.s) / GREEN.dlat), c = Math.floor((lng - t.w) / GREEN.dlng);
+  if (r < 0 || c < 0 || r >= GREEN.nr || c >= GREEN.nc) return null;
+  const x = r * GREEN.nc + c; return (t.u[x >> 3] >> (x & 7)) & 1;
+}
+// vert à ~110 m près (l'itinéraire se décale vers les parcs et les quais)
+const nearGreenAt = (lat, lng) => { for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) if (a * a + b * b <= 5 && greenAt(lat + a * GREEN.dlat, lng + b * GREEN.dlng)) return true; return false; };
+const greenPathCache = {};
+// part du trajet maison → lieu qui passe dans le vert ou au bord de l'eau (0 à 1), null sans données
+function pathGreen(p) {
+  if (!GREEN || !S.home || !p) return null;
+  if (greenPathCache[p.id] != null) return greenPathCache[p.id];
+  if (greenAt(S.home.lat, S.home.lng) == null || greenAt(p.lat, p.lng) == null) return greenPathCache[p.id] = null;
+  const n = Math.max(4, Math.round(dist(S.home, p) / 60)); let g = 0;
+  for (let i = 1; i <= n; i++) { const t = i / n; if (nearGreenAt(S.home.lat + (p.lat - S.home.lat) * t, S.home.lng + (p.lng - S.home.lng) * t)) g++; }
+  return greenPathCache[p.id] = g / n;
+}
 function pickQuests(n, seed, exclude, o = {}) {
   // on vise la distance en EFFORT (montées comprises), pas seulement en km
   const km = o.km || S.goal.km, target = km * 1000, others = o.others || [];
@@ -1409,11 +1453,21 @@ function pickQuests(n, seed, exclude, o = {}) {
   let pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.28);
   if (pool.length < n * 3) pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.5);
   if (pool.length < n) pool = S.places.filter(ok);
+  // un trajet agréable passe avant la distance exacte (28/10, Bazil : 80 % dans le vert ou au bord de l'eau) :
+  // on prend les lieux au trajet vert, quitte à aller un peu moins loin ou à rester dans la même zone verte
+  if (GREEN) {
+    const wide = S.places.filter(p => ok(p) && effortM(p) >= target * 0.5 && effortM(p) <= target * 1.3);
+    for (const lim of [0.8, 0.65, 0.5]) {
+      const g = pool.filter(p => (pathGreen(p) ?? 0) >= lim), gw = wide.filter(p => (pathGreen(p) ?? 0) >= lim && !g.includes(p));
+      const all = g.concat(gw);
+      if (all.length >= Math.max(n * 2, 3)) { pool = all; break; }
+    }
+  }
   // priorité aux lieux qui ont une histoire vérifiable (article Wikipédia, puis faits sur l'objet)
   const told = pool.filter(p => (p.st || 0) >= 2);
   if (told.length >= Math.max(n * 2, 3)) pool = told;
   const r = rng(seed);
-  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0);
+  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0) - (pathGreen(p) ?? 0) * 0.8;
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const wantRare = o.hidden === true ? n : o.hidden === false ? 0 : n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
@@ -2636,10 +2690,10 @@ const ROUTER = p => `https://routing.openstreetmap.de/${p}/route/v1/driving/`;
 // on évite les grands axes, le bruit et le trafic (étiquettes « estimated_* » de BRouter). Secours : profils standards.
 const BROUTER_PROF = { 'routed-foot': 'hiking-mountain', 'routed-bike': 'trekking' };
 const NICE = `
-assign green switch estimated_forest_class=5|6 0.8 switch estimated_forest_class=3|4 0.88 switch estimated_forest_class=1|2 0.95 1
-assign water switch estimated_river_class=5|6 0.8 switch estimated_river_class=3|4 0.88 switch estimated_river_class=1|2 0.95 1
-assign noisy switch estimated_noise_class=6 1.5 switch estimated_noise_class=5 1.35 switch estimated_noise_class=4 1.18 switch estimated_noise_class=3 1.06 1
-assign busy switch estimated_traffic_class=6 1.5 switch estimated_traffic_class=5 1.35 switch estimated_traffic_class=4 1.18 switch estimated_traffic_class=3 1.06 1
+assign green switch estimated_forest_class=5|6 0.7 switch estimated_forest_class=3|4 0.8 switch estimated_forest_class=1|2 0.92 1
+assign water switch estimated_river_class=5|6 0.7 switch estimated_river_class=3|4 0.8 switch estimated_river_class=1|2 0.92 1
+assign noisy switch estimated_noise_class=6 1.7 switch estimated_noise_class=5 1.45 switch estimated_noise_class=4 1.22 switch estimated_noise_class=3 1.08 1
+assign busy switch estimated_traffic_class=6 1.7 switch estimated_traffic_class=5 1.45 switch estimated_traffic_class=4 1.22 switch estimated_traffic_class=3 1.08 1
 assign nice multiply min green water multiply noisy busy`;
 const PROFILES = {
   'routed-foot': `---context:global
@@ -2652,7 +2706,7 @@ assign uphillcutoff 1.5
 assign turncost 0
 assign initialcost 0
 assign closed or access=private|no foot=no
-assign base switch highway=footway|pedestrian|path 1.3 switch highway=living_street 1.35 switch highway=track|bridleway 1.4 switch highway=cycleway 1.45 switch highway=residential|service 1.5 switch highway=unclassified|road 1.6 switch highway=steps 2.0 switch highway=tertiary|tertiary_link 1.9 switch highway=secondary|secondary_link 2.5 switch highway=primary|primary_link 3.3 10000
+assign base switch highway=footway|pedestrian|path 1.45 switch highway=living_street 1.5 switch highway=track|bridleway 1.5 switch highway=cycleway 1.6 switch highway=residential|service 1.75 switch highway=unclassified|road 1.85 switch highway=steps 2.2 switch highway=tertiary|tertiary_link 2.3 switch highway=secondary|secondary_link 3.1 switch highway=primary|primary_link 4.2 10000
 ${NICE}
 assign costfactor switch closed 10000 max 1 multiply base nice
 ---context:node
@@ -2688,18 +2742,15 @@ async function brouter(points, prof, alt = 0, profile) {
   const c = f.geometry.coordinates;
   return { pts: c.map(x => [x[1], x[0]]), ele: c.map(x => x[2]), dist: +f.properties['track-length'] || 0, engine: profile ? 'BRouter agréable' : 'BRouter' };
 }
-// itinéraire agréable s'il ne fait pas plus de 15 % de plus que l'itinéraire standard
+// seulement l'itinéraire agréable (28/10, Bazil : plus d'ancien profil) ; plafond : environ +40 % par rapport à un trajet normal
 async function niceRoute(points, prof) {
-  const std = brouter(points, prof, 0);
-  let nice = null;
-  try {
-    const id = await niceProfile(prof);
-    nice = await brouter(points, prof, 0, id).catch(async e => { delete niceId[prof]; return brouter(points, prof, 0, await niceProfile(prof)); });
-  } catch (e) {}
-  const s0 = await std.catch(() => null);
-  if (nice && (!s0 || nice.dist <= s0.dist * 1.15)) return s0 ? [nice, s0] : [nice];
-  if (s0) return [s0];
-  throw new Error('brouter');
+  const get = async alt => { try { return await brouter(points, prof, alt, await niceProfile(prof)); } catch (e) { delete niceId[prof]; return brouter(points, prof, alt, await niceProfile(prof)); } };
+  const res = (await Promise.allSettled(points.length === 2 ? [get(0), get(1)] : [get(0)])).filter(x => x.status === 'fulfilled').map(x => x.value);
+  if (!res.length) throw new Error('brouter');
+  let straight = 0; for (let i = 1; i < points.length; i++) straight += dist(points[i - 1], points[i]);
+  const cap = straight * 1.3 * 1.4;
+  res.sort((a, b) => (a.dist > cap) - (b.dist > cap));
+  return res;
 }
 async function routeVia(points, prof = 'routed-foot') {
   try {
@@ -3917,6 +3968,7 @@ function onboarding(step = 0) {
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
       S.homeEle = null;
       try { await Promise.race([loadElevations(), wait(6000)]); } catch (e) {}
+      try { await Promise.race([loadGreen(), wait(6000)]); } catch (e) {}
       S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
       mark(4); await wait(1200);
       mark(5);
@@ -4057,6 +4109,8 @@ if (typeof L === 'undefined') {
   onboarding(0);
 } else {
   ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
+  // 1re fois avec les zones vertes : les quêtes pas encore faites sont refaites, plus vertes
+  loadGreen().then(() => { if (GREEN && !S.greenV && S.week) { S.greenV = 1; ensureWeek(true); save(); if (current === 'quests') renderQuests(); toast('🌳 Nouvelles quêtes : plus de parcs et de bords de Seine !'); } }).catch(() => {});
   S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'rare') c.rarity = 'rare'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');
