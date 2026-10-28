@@ -145,6 +145,9 @@ h2{font-size:22px;margin:4px 16px 12px}
 .bubble{position:relative;flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;min-height:58px}
 .bubble::before{content:"";position:absolute;left:-8px;top:20px;border:8px solid transparent;border-right-color:var(--line);border-left:0}
 .bubble b{display:block;font-size:16px;margin-bottom:4px}
+.tt{position:relative}
+.tt .tt-ghost{visibility:hidden}
+.tt .tt-live{position:absolute;left:0;top:0;right:0}
 .bubble p{margin:0;font-size:15px;line-height:1.45}
 .bubble .more{position:absolute;right:10px;bottom:6px;font-size:11px;color:var(--violet);animation:blink 1s infinite}
 .fiche .bubble,#victory .bubble{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#fff}
@@ -301,6 +304,8 @@ h2{font-size:22px;margin:4px 16px 12px}
 #onb .onbhead{position:relative;display:flex;align-items:center;justify-content:center;min-height:34px;margin-bottom:10px}
 #onb .onbback{position:absolute;left:-6px;top:50%;transform:translateY(-50%);padding:6px 8px;color:var(--muted);font-weight:600;font-size:15px;opacity:.8}
 #onb .quiz button{font-size:17px}
+#onb .reassure .bubble b{font-size:18px;margin-bottom:6px}
+#onb .reassure .bubble p{color:var(--muted);font-size:15px}
 #onb .reassure{text-align:center;animation:pop .4s cubic-bezier(.2,1.4,.4,1);margin:auto 0}
 #onb .reassure .big{font-size:72px;margin-bottom:12px}
 #onb .reassure h1{color:var(--violet)}
@@ -668,7 +673,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v49';
+const VERSION = 'v50';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1273,9 +1278,12 @@ function questLine(p) {
 // texte qui s'écrit lettre par lettre ; toucher = tout afficher
 function typeText(el, text, box) {
   if (!el) return;
-  let i = 0; el.textContent = '';
-  const t = setInterval(() => { i += 2; el.textContent = text.slice(0, i); if (i >= text.length) stop(); }, 22);
-  const stop = () => { clearInterval(t); el.textContent = text; const m = box && box.querySelector('.more'); if (m) m.remove(); };
+  // la bulle prend tout de suite sa taille finale : le texte complet (invisible) réserve la place
+  el.classList.add('tt'); el.innerHTML = `<span class="tt-ghost">${esc(text)}</span><span class="tt-live"></span>`;
+  const live = el.querySelector('.tt-live');
+  let i = 0;
+  const t = setInterval(() => { i += 2; live.textContent = text.slice(0, i); if (i >= text.length) stop(); }, 22);
+  const stop = () => { clearInterval(t); live.textContent = text; const m = box && box.querySelector('.more'); if (m) m.remove(); };
   if (box) box.addEventListener('click', stop, { once: true });
 }
 const sageBox = (title, id) => `<div class="sagebox"><div class="sage">🧙</div><div class="bubble" id="${id}b">${title ? `<b>${esc(title)}</b>` : ''}<p id="${id}"></p><span class="more">▼</span></div></div>`;
@@ -3249,7 +3257,7 @@ document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b
 /* ---------- onboarding ---------- */
 // questions sur ce qui freine les coureurs, avec la réponse de Quest Run
 // questions de l'accueil, adaptées au sport (27/10)
-const LEVELS_ONB = [['debutant', '🌱', 'Un petit paladin', 'Débutant'], ['inter', '⚔️', 'Un aventurier aguerri', 'Intermédiaire'], ['confirme', '🛡️', 'Un grand chevalier', 'Confirmé']];
+const LEVELS_ONB = [['debutant', '🌱', 'Débutant', 'Je débute ou je reprends'], ['inter', '💪', 'Intermédiaire', 'Je sors régulièrement'], ['confirme', '🔥', 'Confirmé', "J'ai de l'expérience"]];
 const KM_LVL = { run: { debutant: 3, inter: 5, confirme: 8 }, walk: { debutant: 3, inter: 5, confirme: 8 }, bike: { debutant: 10, inter: 15, confirme: 20 } };
 const KM_MAX = { run: 30, walk: 30, bike: 20 };
 const VERB = { run: 'cours', walk: 'marches', bike: 'roules' };
@@ -3257,19 +3265,19 @@ function quizFor(sp) {
   const W = sp === 'walk', B = sp === 'bike';
   return [
   { id: 'frein', q: W ? "Quel mal te retient de partir en balade, Élu ?" : B ? "Quel mal te retient de seller ton destrier… pardon, ton vélo ?" : "Quel mal te ronge quand vient l'heure de courir ?", opts: [
-    ['motivation', '😴', 'Le sortilège de la flemme', 'Ha ! Je connais bien ce sortilège.', `Le remède : une quête chaque jour. Avec un but, tes ${W ? 'pieds' : B ? 'roues' : 'jambes'} avancent toutes seules !`],
-    ['ennui', '🔁', "L'ennui du même chemin", 'Fini les sentiers battus !', "Chaque quête t'emmène vers un lieu nouveau du royaume, avec son histoire."],
-    ['ou', '🗺️', 'Je ne sais pas où aller', "C'est mon métier, ça !", `Je trace la route, toi tu ${W ? 'marches' : B ? 'roules' : 'cours'}. Il n'y a plus qu'à suivre la carte.`],
-    W ? ['temps', '⏳', 'Le temps me manque', 'Même une petite quête compte, jeune voyageur !', "Tu choisis tes jours et ta distance : chaque quête tient dans le temps que tu as."]
-      : ['lache', '📉', 'Je pars fort… puis je m\'essouffle', "C'est en forgeant qu'on devient forgeron !", 'Une quête après l\'autre, et tu deviendras le plus grand chevalier du royaume.']] },
+    ['motivation', '😴', W ? "J'ai la flemme de sortir" : 'Je manque de motivation', 'Ha ! Je connais bien ce sortilège.', 'Chaque sortie a un but : un lieu à trouver et une carte à gagner.'],
+    ['ennui', '🔁', W ? 'Toujours la même balade' : B ? 'Toujours les mêmes routes' : "Je m'ennuie, c'est toujours pareil", 'Fini les sentiers battus !', 'Chaque semaine, de nouveaux lieux de ta ville, avec leur histoire.'],
+    ['ou', '🗺️', W ? 'Je ne connais pas les jolis coins' : B ? 'Je ne sais pas où rouler' : 'Je ne sais pas où aller', "C'est mon métier, ça !", "On choisit le lieu à ta distance, avec l'itinéraire prêt à suivre."],
+    W ? ['temps', '⏳', 'Je ne trouve pas le temps', 'Même une petite quête compte, jeune voyageur !', 'Tu choisis tes jours et ta distance, même courte.']
+      : ['lache', '📉', 'Je commence fort, puis je lâche', "C'est en forgeant qu'on devient forgeron !", `Des quêtes à ton niveau qui montent petit à petit, et un bonus quand tu tiens ta semaine.`]] },
   { id: 'parcours', q: "Ton chemin… est-il toujours le même ?", opts: [
-    ['meme', '🔂', 'Toujours le même sentier', "Alors tu n'as lu qu'une page de mon grimoire !", 'Des dizaines de lieux cachés t\'attendent, juste à côté de chez toi.'],
-    ['deux', '↔️', 'Deux ou trois routes', 'Bien ! Mais le royaume est bien plus vaste que ça.', 'Chaque semaine, je t\'enverrai là où tu ne vas jamais.'],
-    ['varie', '🧭', "J'explore sans cesse", "Une âme d'explorateur !", 'Tu vas adorer collectionner chaque lieu et découvrir son histoire.']] },
+    ['meme', '🔂', W ? 'Toujours la même balade' : 'Toujours le même', "Tu n'as lu qu'une page de mon grimoire !", 'Statues, fontaines, châteaux : des dizaines de lieux près de chez toi.'],
+    ['deux', '↔️', "J'en ai 2 ou 3", 'Le royaume est bien plus vaste que ça !', 'Chaque semaine, des quêtes dans des coins où tu ne vas jamais.'],
+    ['varie', '🧭', 'Je varie souvent', "Une âme d'explorateur !", 'En plus, tu collectionnes chaque lieu et tu découvres son histoire.']] },
   { id: 'regularite', q: "Et tes serments d'entraînement… les tiens-tu ?", opts: [
-    ['rarement', '😅', 'Rarement…', 'Pas de honte, Élu.', `Choisis tes jours, je veillerai sur toi. Chaque semaine tenue rapporte +${WEEK_BONUS} ★.`],
-    ['moitie', '⚖️', 'Une semaine sur deux', 'La moitié du chemin est faite !', 'Chaque semaine tenue te rapportera un trésor. Les quêtes ratées restent rattrapables.'],
-    ['toujours', '🏆', 'Presque toujours', 'Un vrai chevalier !', 'Les quêtes légendaires seront bientôt à ta mesure.']] }
+    ['rarement', '😅', 'Rarement', 'Pas de honte, Élu.', `Tu choisis tes jours, on te rappelle tes quêtes. Une semaine complète = +${WEEK_BONUS} ★.`],
+    ['moitie', '⚖️', 'Une semaine sur deux', 'La moitié du chemin est faite !', 'Les quêtes ratées restent rattrapables toute la semaine.'],
+    ['toujours', '🏆', 'Presque toujours', 'Un vrai chevalier !', 'Lieux rares, dénivelé, cartes légendaires : de quoi pimenter tes semaines.']] }
   ];
 }
 let onbMap = null;
@@ -3311,11 +3319,11 @@ function onboarding(step = 0) {
   if (step === 1) {
     o.innerHTML = `${dots(0)}<div class="body">${sageBox('', 'say1')}
       <div class="sportpick">
-        <button data-sp="run"><span>🏃</span><div>À pied, à toute allure !<small>Course à pied</small></div></button>
-        <button data-sp="bike"><span>🐎</span><div>À cheval… enfin, à vélo !<small>Vélo</small></div></button>
-        <button data-sp="walk"><span>🥾</span><div>Mes bottes de cuir me suffisent<small>Marche et rando</small></div></button>
+        <button data-sp="run"><span>🏃</span><div>Course à pied<small>Footing, running</small></div></button>
+        <button data-sp="bike"><span>🚴</span><div>Vélo<small>Balades et sorties à vélo</small></div></button>
+        <button data-sp="walk"><span>🥾</span><div>Marche / Rando<small>À ton rythme</small></div></button>
       </div></div>`;
-    typeText($('#say1'), `Enchanté, ${S.name || 'Élu'} ! Dis-moi… comment pars-tu à l'aventure ?`, $('#say1b'));
+    typeText($('#say1'), `Enchanté, ${S.name || 'Élu'} ! Pars-tu au galop sur ton destrier, ou tes bottes de cuir te suffisent-elles ?`, $('#say1b'));
     o.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
       S.sport = b.dataset.sp; S.goal.km = KM_LVL[S.sport].inter; save();
       b.classList.add('on'); setTimeout(() => onboarding(2), 180);
@@ -3325,7 +3333,7 @@ function onboarding(step = 0) {
     const sp = S.sport || 'run';
     o.innerHTML = `${dots(1)}<div class="body">${sageBox('', 'say2')}
       <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · on commence à ${KM_LVL[sp][v]} km</small></div></button>`).join('')}</div></div>`;
-    typeText($('#say2'), "Et toi, quel genre d'aventurier es-tu ? Sois honnête, hé hé… je te ferai grandir.", $('#say2b'));
+    typeText($('#say2'), "Es-tu un petit paladin, un aventurier aguerri… ou un grand chevalier ? Sois honnête, hé hé.", $('#say2b'));
     o.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
       S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; S.prog = { credits: 0, fails: 0, okRuns: 0 }; save();
       (S.quiz = S.quiz || {}).niveau = S.skill; track('quiz', { id: 'niveau', value: S.skill });
@@ -3363,8 +3371,8 @@ function onboarding(step = 0) {
     o.innerHTML = `${dots(6)}<div class="body">${sageBox('', 'say7')}
       <div id="onbmap"></div>
       </div>
-      <div class="acts"><button class="btn ghost" id="locate">📍 Me localiser</button>
-      <button class="btn" id="go">C'est mon camp !</button></div>`;
+      <div class="acts"><button class="btn ghost" id="locate">📍 Utiliser ma position</button>
+      <button class="btn" id="go">Valider</button></div>`;
     typeText($('#say7'), "Où se trouve ton camp de base, Élu ? Touche la carte… ou laisse-moi te trouver.", $('#say7b'));
     if (onbMap) { onbMap.remove(); onbMap = null; }
     const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
@@ -3379,7 +3387,7 @@ function onboarding(step = 0) {
       $('#locate').textContent = 'Localisation…';
       try { const p = await getPos(); setPt(p.lat, p.lng); onbMap.setView([p.lat, p.lng], 15); }
       catch (e) { toast('Position indisponible : touche la carte.'); }
-      $('#locate').textContent = '📍 Me localiser';
+      $('#locate').textContent = '📍 Utiliser ma position';
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
