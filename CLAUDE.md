@@ -173,6 +173,7 @@ GitHub Pages, branche `main`, dossier racine → https://uba-babu92.github.io/Qu
 Le HTTPS est obligatoire pour le GPS et l'appareil photo.
 
 ## Idées en attente
+- **Suivi de course écran éteint** (30/10, reporté par Bazil aux étapes suivantes) : une page web ne peut pas lire la position d'une autre appli. Pistes : 1) « Connecter Strava » une fois (webhook vers le relais Cloudflare, tracé reçu tout seul ; Strava limite à 1 utilisateur avant validation) ; 2) vraie appli Capacitor (GPS en arrière-plan, Mac + compte Apple 99 €/an, TestFlight pour les potes). Import GPX manuel rejeté (« personne ne veut le faire »).
 - **Avatar** sur le profil (Bazil, 27/10) : après la V1.
 - **Échange de cartes entre joueurs** (Bazil, 27/10) : besoin de comptes + serveur → étape 2-3. Conseil : ne pas échanger la carte d'un lieu (preuve qu'on y a couru), plutôt des cartes bonus/doublons.
 - **« Partager ma carte »** en image pour story Instagram/TikTok (pub gratuite, étape 3).
