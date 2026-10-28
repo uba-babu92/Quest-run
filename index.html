@@ -629,7 +629,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v42';
+const VERSION = 'v43';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1637,7 +1637,7 @@ async function award(i, blob) {
   save();
   await victory(card, pts);
   if (bonus) await questClear();
-  const fire = bumpStreak();
+  const fire = bumpStreak(); pushSync();
   if (fire > 1) toast(`🔥 Série de ${fire} ! Continue comme ça`);
   renderPoints();
   await checkMonthly();
@@ -2882,6 +2882,80 @@ function renderVit() {
   };
 }
 
+/* ---------- notifications perso (28/10) : 1 par jour max, à ton heure habituelle ---------- */
+const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+function notifHour() {
+  const n = S.notif || {};
+  if (n.hour && n.hour !== 'auto') return +n.hour;
+  const hs = (S.runs || []).slice(-10).map(r => new Date(r.date).getHours()).sort((a, b) => a - b);
+  return hs.length ? Math.max(7, Math.min(21, hs[Math.floor(hs.length / 2)])) : 18;
+}
+function notifPlan() {
+  const H = notifHour(), out = [], now = Date.now(), m = monthlyNow(), fire = streakNow();
+  for (let k = 0; k < 8; k++) {
+    const d = new Date(); d.setDate(d.getDate() + k); d.setHours(H, 0, 0, 0);
+    if (d.getTime() <= now + 60e3) continue;
+    const wd = (d.getDay() + 6) % 7, key = dayKey(d);
+    const tail = fire ? ` 🔥 Série de ${fire}` : '';
+    let msg = null;
+    const myth = mythWindows().find(w => d.getTime() >= w.a && d.getTime() < w.b && !(S.mythSeen || {})[w.key]);
+    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'apparaît que 4 fois par an… Le vieux sage t'attend !`];
+    else if (S.goal.days.includes(wd) && !(S.streak && S.streak.last === key)) {
+      const q = S.week && weekId(d) === S.week.id && S.week.quests.find(x => x.status === 'todo' && x.day === wd && !x.friend && !x.legend);
+      const pl = q && placeById(q.pid);
+      msg = ['🏃 Ta quête du jour', pl ? `${questLine(pl)[0]} · ${roundTripKm(pl).toFixed(1).replace('.', ',')} km${tail}` : `Hé, toi ! Le vieux sage a une mission pour toi aujourd'hui.${tail}`];
+    }
+    else if (wd === 0) msg = ['🗺️ Nouvelles quêtes !', "Le vieux sage a de nouvelles missions pour toi… et ton bilan de la semaine t'attend."];
+    else if (wd === 5 && (prog().okRuns || 0) >= 6) msg = ['✨ Une rumeur court…', "On dit qu'une carte légendaire pourrait apparaître ce week-end. Garde l'œil ouvert !"];
+    if (!msg && !m.done && m.key === d.getFullYear() + '-' + (d.getMonth() + 1) && Math.round((new Date(d.getFullYear(), d.getMonth() + 1, 1) - d) / 864e5) === 3) {
+      const left = Math.max(1, m.target - monthlyProgress(m));
+      msg = ['🏅 Défi du mois', `Plus que ${left} pour le badge de ${MONTH_NAMES[d.getMonth()]} !`];
+    }
+    if (msg) out.push({ t: d.getTime(), title: msg[0], body: msg[1] });
+  }
+  return out;
+}
+const pushPost = (path, body) => fetch(STORY_API + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+let pushT = null;
+function pushSync() {
+  clearTimeout(pushT);
+  pushT = setTimeout(async () => {
+    if (!S.notif || !S.notif.on || !('serviceWorker' in navigator) || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if (sub) await pushPost('/push/plan', { sub: sub.toJSON(), plan: notifPlan() }); } catch (e) {}
+  }, 1500);
+}
+async function enablePush() {
+  if (isIOS() && !isStandalone()) {
+    sheet(`<h3>Installe l'appli d'abord</h3><p class="muted">Sur iPhone, les notifications ne marchent que depuis l'appli installée :</p>
+      <p>1. Touche <b>Partager</b> (le carré avec la flèche) en bas de Safari<br>2. Choisis <b>« Sur l'écran d'accueil »</b><br>3. Ouvre Quest Run depuis ton écran d'accueil et reviens ici.</p>
+      <div class="row"><button class="btn" id="okinst">Compris</button></div>`).querySelector('#okinst').onclick = closeSheet;
+    return false;
+  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') { toast('Ton téléphone ne gère pas les notifications web'); return false; }
+  const perm = await Notification.requestPermission();
+  if (perm !== 'granted') { toast('Notifications refusées : tu peux les autoriser dans Réglages → Quest Run'); return false; }
+  try {
+    const kj = await fetch(STORY_API + '/push/key').then(r => r.json());
+    if (!kj.key) throw new Error(kj.error || 'relais pas prêt');
+    const raw = Uint8Array.from(atob(kj.key.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((kj.key.length + 3) % 4)), c => c.charCodeAt(0));
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: raw });
+    const r = await pushPost('/push/plan', { sub: sub.toJSON(), plan: notifPlan() });
+    if (!r.ok) throw new Error(r.error || 'erreur');
+    S.notif = Object.assign(S.notif || {}, { on: true }); save();
+    pushPost('/push/test', { sub: sub.toJSON() }).catch(() => {});
+    track('notif_on', {});
+    toast('Notifications activées 🔔');
+    return true;
+  } catch (e) { toast('Notifications pas encore prêtes : ' + (e.message || e)); return false; }
+}
+async function disablePush() {
+  S.notif = Object.assign(S.notif || {}, { on: false }); save();
+  try { const reg = await navigator.serviceWorker.ready, sub = await reg.pushManager.getSubscription(); if (sub) { await pushPost('/push/off', { sub: sub.toJSON() }); await sub.unsubscribe(); } } catch (e) {}
+  toast('Notifications coupées');
+}
+
 /* ---------- mes préférences : changer sa semaine coûte 20 🪙 (28/10, choix de Bazil) ---------- */
 const PREF_COST = 20;
 let prefDraft = null;
@@ -2892,8 +2966,14 @@ function renderPref() {
   <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
     <p class="muted" style="font-size:13px;margin:12px 0 10px">Nouvelles quêtes tout de suite. Les quêtes déjà faites sont gardées. La distance monte aussi toute seule quand tu progresses (gratuit).</p>
     <button class="btn" id="papply" style="width:100%" disabled>Appliquer · ${PREF_COST} 🪙</button></div>
+  <div class="panel"><h4>Notifications</h4>
+    <div class="set"><span>🔔 Rappels du vieux sage<small class="muted" style="display:block;font-size:13px">1 par jour maximum · pause si tu ne réponds plus</small></span><button class="switch ${S.notif && S.notif.on ? 'on' : ''}" id="swnotif" role="switch"></button></div>
+    <div class="set"><span>Heure</span><select id="nhour" class="setbtn" style="background:none;border:0;font:inherit;color:var(--violet);font-weight:700">
+      <option value="auto">Auto (${notifHour()} h, ton heure habituelle)</option>${Array.from({ length: 16 }, (_, k) => k + 7).map(h => `<option value="${h}" ${S.notif && +S.notif.hour === h ? 'selected' : ''}>${h} h</option>`).join('')}</select></div></div>
   <div class="panel"><h4>Sport par défaut</h4><div class="chips" id="spdef">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${(S.sport || 'run') === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div>
     <p class="muted" style="font-size:13px;margin:10px 0 0">Gratuit : ne change pas tes quêtes.</p></div>`;
+  $('#swnotif').onclick = async () => { const on = S.notif && S.notif.on; if (on) await disablePush(); else await enablePush(); renderPref(); };
+  $('#nhour').onchange = e => { S.notif = Object.assign(S.notif || {}, { hour: e.target.value }); save(); pushSync(); toast(e.target.value === 'auto' ? 'Heure automatique' : `Rappels à ${e.target.value} h`); };
   const changed = () => prefDraft.km !== S.goal.km || prefDraft.days.join() !== S.goal.days.join();
   const upd = () => { $('#papply').disabled = !changed(); };
   goalPicker($('#pgoal'), upd, prefDraft);
@@ -2917,7 +2997,7 @@ function renderPref() {
       S.coins = have - PREF_COST; S.goal = { days: prefDraft.days.slice(), km: prefDraft.km }; save();
       const f = S.placesFor;
       if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) {} }
-      ensureWeek(true); toast(`Nouvelles quêtes prêtes ! −${PREF_COST} 🪙`); tab('quests');
+      ensureWeek(true); pushSync(); toast(`Nouvelles quêtes prêtes ! −${PREF_COST} 🪙`); tab('quests');
     };
   };
 }
@@ -3358,7 +3438,7 @@ if (typeof L === 'undefined') {
 } else if (!S.onboarded || !S.home) {
   onboarding(0);
 } else {
-  ensureWeek(); fixDays(); initProgress(); comeback();
+  ensureWeek(); fixDays(); initProgress(); comeback(); pushSync();
   tab('quests');
   setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else await maybeLegend(); }, 1200);
   upgradePlaces().catch(() => {});
