@@ -90,6 +90,33 @@ h2{font-size:22px;margin:4px 16px 12px}
 .quest .num.day{font-size:12px;letter-spacing:.02em}
 .pin.day{font-size:11px}
 .today-tag{color:var(--violet);font-weight:800}
+.chip.fire b{font-weight:800}
+.chip.fire.off{opacity:.45;filter:grayscale(1)}
+.chip.fire.pop{animation:pop .5s cubic-bezier(.2,1.6,.4,1)}
+.monthly{margin:0 16px 10px;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line);display:flex;gap:12px;align-items:center;text-align:left;width:calc(100% - 32px)}
+.monthly .ic{font-size:30px;flex:none}
+.monthly .t{flex:1;min-width:0}
+.monthly .t b{display:block;font-size:14px}
+.monthly .t span{font-size:13px;color:var(--muted)}
+.monthly .bar{height:7px;border-radius:9px;background:var(--line);margin-top:6px;overflow:hidden}
+.monthly .bar i{display:block;height:100%;background:linear-gradient(90deg,#FFB800,#FFD23F);border-radius:9px}
+.monthly em{font-style:normal;font-weight:800;font-size:13px;color:#D9A000;flex:none}
+.gift{font-size:110px;margin:20px 0 6px;cursor:pointer;animation:giftwob 1.2s ease-in-out infinite;display:inline-block}
+.gift.open{animation:giftopen .6s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes giftwob{0%,100%{transform:rotate(0)}20%{transform:rotate(-8deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-4deg)}}
+@keyframes giftopen{0%{transform:scale(1)}50%{transform:scale(1.4) rotate(10deg)}100%{transform:scale(1.15)}}
+.gdays{display:flex;gap:6px;justify-content:center;margin:14px 0 6px}
+.gdays i{width:38px;height:46px;border-radius:10px;background:rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal;font-size:11px;color:#b9b0d6;font-weight:700}
+.gdays i b{font-size:13px;color:#fff}
+.gdays i.on{background:linear-gradient(135deg,#FFB800,#FFD23F);color:#2a1d00}.gdays i.on b{color:#2a1d00}
+.gdays i.past{background:rgba(255,210,63,.25)}
+.recap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.recap div{background:rgba(255,255,255,.07);border-radius:14px;padding:12px}
+.recap b{display:block;font-size:26px;color:#fff}
+.recap span{font-size:12px;color:#b9b0d6;text-transform:uppercase;letter-spacing:.05em}
+.badges{display:flex;flex-wrap:wrap;gap:10px}
+.badges .bd{width:76px;text-align:center;font-size:11px;color:var(--muted);font-weight:700}
+.badges .bd span{display:grid;place-items:center;width:60px;height:60px;margin:0 auto 4px;border-radius:50%;font-size:28px;background:linear-gradient(135deg,#FFE27A,#D38E00);box-shadow:0 3px 10px rgba(211,142,0,.4)}
 /* le vieux sage (avatar provisoire en attendant les dessins de Bazil) */
 .sagebox{display:flex;gap:12px;align-items:flex-start;margin:2px 0 14px}
 .sage{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:34px;background:radial-gradient(circle at 35% 30%,#9B5CFF,#4E12B0);box-shadow:0 4px 14px rgba(123,47,247,.45);animation:sagebob 3s ease-in-out infinite}
@@ -513,11 +540,12 @@ button.chip{cursor:pointer}
 <section id="s-quests" class="screen">
   <div class="topbar">
     <div class="logo pixel">QUEST RUN <span id="testtag" class="hidden" style="color:#E0245E;font-size:9px">· TEST</span></div>
-    <div style="display:flex;gap:6px"><button class="chip" data-shop><span class="coin">🪙</span><span id="coins">0</span></button><div class="chip"><span class="star">★</span><span id="pts">0</span></div></div>
+    <div style="display:flex;gap:6px"><div class="chip fire" id="firechip"><span>🔥</span><b id="fire">0</b></div><button class="chip" data-shop><span class="coin">🪙</span><span id="coins">0</span></button><div class="chip"><span class="star">★</span><span id="pts">0</span></div></div>
   </div>
   <div id="map"></div>
   <div class="week"><b>Quêtes de la semaine</b><span class="muted" id="daysleft"></span></div>
   <div class="bonusbar"><div class="bar"><i id="bonusfill" style="width:0"></i></div><small id="bonustxt"></small></div>
+  <button class="monthly" id="monthly"></button>
   <div class="qlist" id="qlist"></div>
 </section>
 
@@ -601,7 +629,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v41';
+const VERSION = 'v42';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -655,10 +683,138 @@ const COIN_PLACE = 10, COIN_WEEK = 30, SWAP_COST = 10, COIN_DAY = 5;
 const PACKS = [{ id: 'p100', coins: 100, price: '0,99 €', ic: '🪙' }, { id: 'p550', coins: 550, price: '4,99 €', ic: '💰', tag: 'Populaire' }, { id: 'p1200', coins: 1200, price: '9,99 €', ic: '💎', tag: 'Meilleure offre' }];
 const today = () => new Date().toISOString().slice(0, 10);
 // +5 pièces par jour d'ouverture
-function dailyBonus() {
-  if (!S.onboarded || S.lastDaily === today()) return;
-  S.lastDaily = today(); S.coins = (S.coins || 0) + COIN_DAY; save();
-  setTimeout(() => { toast(`+${COIN_DAY} 🪙 · bonus du jour`); renderPoints(); }, 900);
+/* ---------- cadeau du jour : 7 jours d'ouverture d'affilée, ça monte (28/10) ---------- */
+const GIFT = [5, 5, 10, 10, 15, 15, 30];
+const dayKey = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const dayBefore = k => { const d = new Date(k + 'T12:00'); d.setDate(d.getDate() - 1); return dayKey(d); };
+function dailyGift() {
+  if (!S.onboarded) return Promise.resolve();
+  const k = dayKey(), g = S.gift || { n: 0, last: null };
+  if (g.last === k) return Promise.resolve();
+  const n = g.last && g.last === dayBefore(k) ? g.n % 7 + 1 : 1, amount = GIFT[n - 1];
+  S.gift = { n, last: k }; S.lastDaily = today(); save();
+  const pr = overlay(`<div class="v-title gold pixel">CADEAU<br>DU JOUR</div>
+    <div class="gift" id="giftbox">🎁</div><div class="v-sub" id="gtxt">Touche le cadeau pour l'ouvrir !</div>
+    <div class="gdays">${GIFT.map((a, i) => `<i class="${i + 1 === n ? 'on' : i + 1 < n ? 'past' : ''}">J${i + 1}<b>${a}</b></i>`).join('')}</div>
+    <div class="v-sub" style="font-size:13px">Reviens demain : ça monte jusqu'à <b style="color:#FFD23F">30 🪙</b> le 7e jour.</div>
+    <button class="btn gold hidden" data-close id="gok">Super !</button>`);
+  const open = () => {
+    const b = $('#giftbox'); if (!b || b.classList.contains('open')) return;
+    b.classList.add('open'); b.textContent = '🪙'; vibrate([30, 30, 60]);
+    S.coins = (S.coins || 0) + amount; save(); renderPoints();
+    $('#gtxt').innerHTML = `<b style="color:#FFD23F;font-size:28px">+${amount} 🪙</b><br>Jour ${n} sur 7`;
+    confetti(['#FFD23F', '#FFB800', '#fff']); $('#gok').classList.remove('hidden');
+  };
+  $('#giftbox').onclick = open;
+  return pr.then(() => { if (!$('#giftbox') || !$('#giftbox').classList.contains('open')) { S.coins = (S.coins || 0) + 0; } });
+}
+
+/* ---------- série 🔥 : jours de sortie prévus réussis d'affilée (les jours de repos ne comptent pas) ---------- */
+// on a droit de rattraper un jour prévu raté jusqu'au jour prévu suivant
+function plannedBetween(fromKey, toKey) {
+  let n = 0; const d = new Date(fromKey + 'T12:00'); d.setDate(d.getDate() + 1);
+  while (dayKey(d) < toKey) { if (S.goal.days.includes((d.getDay() + 6) % 7)) n++; d.setDate(d.getDate() + 1); }
+  return n;
+}
+function streakNow() {
+  const st = S.streak; if (!st || !st.n) return 0;
+  return plannedBetween(st.last, dayKey()) >= 2 ? 0 : st.n;
+}
+function checkStreakBreak() {
+  const st = S.streak; if (!st || !st.n) return;
+  if (plannedBetween(st.last, dayKey()) >= 2) { const was = st.n; st.n = 0; save(); setTimeout(() => toast(`Ta série s'est arrêtée à ${was} 🔥 · on repart !`), 1200); }
+}
+function bumpStreak() {
+  const k = dayKey(), st = S.streak = S.streak && streakNow() ? S.streak : { n: 0, best: (S.streak && S.streak.best) || 0, last: null };
+  if (st.last === k) return 0;
+  st.n++; st.last = k; st.best = Math.max(st.best || 0, st.n); save();
+  const c = $('#firechip'); if (c) { c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+  return st.n;
+}
+
+/* ---------- défi du mois + badge (28/10) ---------- */
+const MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const MONTH_IC = ['❄️', '💘', '🌱', '🌷', '🌸', '☀️', '🏖️', '🌻', '🍂', '🎃', '🍁', '🎄'];
+const MONTHLY = ['km', 'cards', 'dplus', 'rares', 'km', 'cards', 'hidden', 'km', 'rares', 'dplus', 'hidden', 'cards'];
+const MONTHLY_TXT = { km: n => `Cours ${n} km ce mois-ci`, cards: n => `Gagne ${n} cartes`, dplus: n => `Grimpe ${n} m de dénivelé`, rares: n => `Gagne ${n} cartes Rares ou mieux`, hidden: n => `Trouve ${n} trésors cachés` };
+function monthlyNow() {
+  const d = new Date(), key = d.getFullYear() + '-' + (d.getMonth() + 1);
+  if (!S.monthly || S.monthly.key !== key) {
+    const type = MONTHLY[d.getMonth()], perWeek = S.goal.days.length * S.goal.km;
+    const target = { km: Math.max(15, Math.round(perWeek * 3 / 5) * 5), cards: Math.max(4, S.goal.days.length * 3), dplus: Math.max(150, Math.round(perWeek * 12 / 50) * 50), rares: 3, hidden: 4 }[type];
+    S.monthly = { key, type, target, done: false }; save();
+  }
+  return S.monthly;
+}
+function monthlyProgress(m) {
+  const [y, mo] = m.key.split('-').map(Number), a = new Date(y, mo - 1, 1).getTime(), b = new Date(y, mo, 1).getTime();
+  const runs = (S.runs || []).filter(r => r.date >= a && r.date < b), cards = S.collection.filter(c => c.date >= a && c.date < b);
+  return { km: Math.floor(runs.reduce((x, r) => x + r.dist, 0) / 1000), cards: cards.length, dplus: runs.reduce((x, r) => x + (r.dplus || 0), 0), rares: cards.filter(c => c.rarity !== 'common').length, hidden: cards.filter(c => c.hidden).length }[m.type];
+}
+function renderMonthly() {
+  const el = $('#monthly'); if (!el) return;
+  const m = monthlyNow(), v = Math.min(m.target, monthlyProgress(m)), mo = +m.key.split('-')[1] - 1;
+  const left = Math.ceil((new Date(+m.key.split('-')[0], mo + 1, 1) - Date.now()) / 864e5);
+  el.innerHTML = `<span class="ic">${MONTH_IC[mo]}</span><div class="t"><b>Défi de ${MONTH_NAMES[mo]}${m.done ? ' · réussi ✓' : ''}</b><span>${MONTHLY_TXT[m.type](m.target)} · ${m.done ? 'badge gagné' : `encore ${left} j`}</span><div class="bar"><i style="width:${v / m.target * 100}%"></i></div></div><em>${v}/${m.target}</em>`;
+  el.onclick = () => toast(m.done ? 'Badge du mois gagné ! Il est dans tes trophées.' : `${MONTHLY_TXT[m.type](m.target)} avant la fin du mois : badge + 50 🪙`);
+}
+async function checkMonthly() {
+  const m = monthlyNow(); if (m.done || monthlyProgress(m) < m.target) return;
+  const mo = +m.key.split('-')[1] - 1, name = MONTH_NAMES[mo][0].toUpperCase() + MONTH_NAMES[mo].slice(1) + ' ' + m.key.split('-')[0];
+  m.done = true; (S.badges = S.badges || []).push({ key: m.key, name, ic: MONTH_IC[mo], date: Date.now() }); S.coins = (S.coins || 0) + 50; save();
+  await overlay(`<div class="v-title gold pixel">DÉFI<br>RÉUSSI !</div><div class="big-ic">${MONTH_IC[mo]}</div>
+    <div class="v-sub" style="font-size:22px;color:#fff;font-weight:900">Badge ${esc(name)}</div>
+    <div class="v-sub">${MONTHLY_TXT[m.type](m.target)} : c'est fait ! <b style="color:#FFD23F">+50 🪙</b></div><button class="btn gold" data-close>Génial</button>`);
+}
+
+/* ---------- bilan de la semaine (le lundi) ---------- */
+function weekRange(id) {
+  const [y, w] = id.split('-W').map(Number), d = new Date(y, 0, 4), mon = new Date(d); mon.setDate(d.getDate() - ((d.getDay() + 6) % 7) + (w - 1) * 7); mon.setHours(0, 0, 0, 0);
+  return [mon.getTime(), mon.getTime() + 7 * 864e5];
+}
+function recapOf(id) {
+  const [a, b] = weekRange(id);
+  const runs = (S.runs || []).filter(r => r.date >= a && r.date < b), cards = S.collection.filter(c => c.date >= a && c.date < b);
+  const best = cards.slice().sort((x, y) => (PTS[y.rarity] || 0) - (PTS[x.rarity] || 0))[0];
+  return { id, a, b, n: runs.length, km: runs.reduce((x, r) => x + r.dist, 0) / 1000, dplus: runs.reduce((x, r) => x + (r.dplus || 0), 0), time: runs.reduce((x, r) => x + r.time, 0), cards: cards.length, best, fire: streakNow() };
+}
+async function weeklyRecap(force) {
+  const prev = weekId(new Date(Date.now() - 7 * 864e5));
+  if (!force && (S.recapShown === prev || !S.onboarded)) return;
+  S.recapShown = prev; save();
+  const r = recapOf(prev);
+  if (!force && !r.n && !r.cards) return;
+  const fmtD = t => new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const pr = overlay(`<div class="fiche" style="text-align:center"><div class="v-title pixel">TA SEMAINE</div>
+    <div class="v-sub">${fmtD(r.a)} → ${fmtD(r.b - 1)}</div>
+    <div class="recap"><div><b>${r.n}</b><span>sorties</span></div><div><b>${r.km.toFixed(1).replace('.', ',')}</b><span>km</span></div>
+      <div><b>${r.cards}</b><span>cartes</span></div><div><b>${r.dplus}</b><span>m de D+</span></div></div>
+    ${r.best ? `<div class="v-sub">Ta plus belle carte</div><div class="flip small on" style="margin:8px auto 14px"><div class="fi"><div class="face front">${cardHtml(r.best)}</div></div></div>` : ''}
+    ${r.fire ? `<div class="v-sub" style="font-size:18px">🔥 Série de <b style="color:#FFD23F">${r.fire}</b></div>` : ''}
+    <div class="v-actions"><button class="sharebtn" id="rshare">📤 Partager ma semaine</button><button class="btn gold" data-close>C'est parti pour cette semaine !</button></div></div>`, true);
+  fillPhotos($('#vin'));
+  $('#rshare').onclick = () => shareRecap(r);
+  return pr;
+}
+async function shareRecap(r) {
+  const W = 1080, H = 1920, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), F = '-apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif';
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#2a1150'); bg.addColorStop(1, '#05040a'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  try { const logo = await loadImg('icon-512.png'); x.drawImage(logo, W / 2 - 70, 120, 140, 140); } catch (e) {}
+  x.textAlign = 'center'; x.textBaseline = 'top'; x.fillStyle = '#fff'; x.font = `900 92px ${F}`; x.fillText('Ma semaine', W / 2, 330);
+  x.fillStyle = '#c9c2e0'; x.font = `600 40px ${F}`;
+  x.fillText(new Date(r.a).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) + ' → ' + new Date(r.b - 1).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }), W / 2, 450);
+  const tiles = [[r.n, 'sorties'], [r.km.toFixed(1).replace('.', ','), 'km'], [r.cards, 'cartes'], [r.dplus, 'm de D+']];
+  tiles.forEach(([v, l], k) => { const cx = 150 + (k % 2) * 400, cy = 580 + Math.floor(k / 2) * 330;
+    rrect(x, cx, cy, 380, 300, 36); x.fillStyle = 'rgba(255,255,255,.08)'; x.fill();
+    x.fillStyle = '#fff'; x.font = `900 120px ${F}`; x.fillText(String(v), cx + 190, cy + 50); x.fillStyle = '#c9c2e0'; x.font = `700 38px ${F}`; x.fillText(l.toUpperCase(), cx + 190, cy + 210); });
+  if (r.best) { x.fillStyle = '#FFD23F'; x.font = `800 44px ${F}`; x.fillText('Plus belle carte : ' + (TIER_NAME[r.best.rarity] || ''), W / 2, 1320); x.fillStyle = '#fff'; x.font = `800 54px ${F}`; wrapLines(x, r.best.name, 900, 2).forEach((l, k) => x.fillText(l, W / 2, 1390 + k * 64)); }
+  if (r.fire) { x.fillStyle = '#fff'; x.font = `900 80px ${F}`; x.fillText(`🔥 ${r.fire}`, W / 2, 1600); x.fillStyle = '#c9c2e0'; x.font = `700 36px ${F}`; x.fillText('JOURS DE SÉRIE', W / 2, 1700); }
+  const blob = await new Promise(ok => cv.toBlob(ok, 'image/png'));
+  const file = new File([blob], 'quest-run-ma-semaine.png', { type: 'image/png' });
+  track('share_recap', {});
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  zoomImg(URL.createObjectURL(blob)); toast('Appui long sur l\'image pour l\'enregistrer');
 }
 
 function load() {
@@ -1305,6 +1461,7 @@ function renderMap() {
 /* ---------- écran quêtes ---------- */
 function renderPoints() {
   $('#pts').textContent = fmt(S.points);
+  const st = streakNow(); $('#fire').textContent = st; $('#firechip').classList.toggle('off', !st);
   $('#coins').textContent = fmt(S.coins || 0);
   document.querySelectorAll('.coinsmirror').forEach(e => e.textContent = fmt(S.coins || 0));
   document.querySelectorAll('.ptsmirror').forEach(e => e.textContent = fmt(S.points));
@@ -1317,6 +1474,7 @@ function renderQuests() {
   const dl = daysLeft();
   $('#daysleft').textContent = dl === 1 ? 'Nouvelles quêtes demain' : `Nouvelles dans ${dl} j`;
   $('#bonusfill').style.width = (norm.length ? done / norm.length * 100 : 0) + '%';
+  renderMonthly();
   $('#bonustxt').textContent = S.week.bonus ? 'Bonus gagné ✓' : `${done}/${norm.length} · bonus +${WEEK_BONUS} ★`;
   if (!qs.length) {
     $('#qlist').innerHTML = `<div class="empty">Aucun lieu trouvé à la bonne distance.<br>Essaie une autre distance dans le Profil.</div>`;
@@ -1479,6 +1637,10 @@ async function award(i, blob) {
   save();
   await victory(card, pts);
   if (bonus) await questClear();
+  const fire = bumpStreak();
+  if (fire > 1) toast(`🔥 Série de ${fire} ! Continue comme ça`);
+  renderPoints();
+  await checkMonthly();
   await celebrate();
   renderQuests();
   if (RUN) runBack();
@@ -1991,7 +2153,7 @@ function tstats() {
   for (const w of weeks) { const [y, n] = w.split('-W').map(Number); const cur = y * 53 + n; streak = prev != null && cur === prev + 1 ? streak + 1 : 1; best = Math.max(best, streak); prev = cur; }
   return { cards: col.length, rares: col.filter(c => c.rarity !== 'common').length, km: runs.reduce((a, r) => a + r.dist, 0) / 1000, maxRun: Math.max(0, ...runs.map(r => r.dist)) / 1000,
     weeks: S.weeksCleared || 0, streak: best, early: runs.some(r => new Date(r.date).getHours() < 8), night: runs.some(r => new Date(r.date).getHours() >= 21),
-    all4: has('culte') && has('vert') && has('statue') && has('musee'), bike: runs.some(r => r.sport === 'bike'), walk: runs.some(r => r.sport === 'walk'), maxDplus: Math.max(0, ...runs.map(r => r.dplus || 0)), dplus: runs.reduce((a, r) => a + (r.dplus || 0), 0) };
+    all4: has('culte') && has('vert') && has('statue') && has('musee'), bike: runs.some(r => r.sport === 'bike'), walk: runs.some(r => r.sport === 'walk'), maxDplus: Math.max(0, ...runs.map(r => r.dplus || 0)), dplus: runs.reduce((a, r) => a + (r.dplus || 0), 0), fire: (S.streak && S.streak.best) || 0 };
 }
 const TROPHIES = [
   ['card1', '🃏', 'Première carte', 'Trouver ton premier lieu', t => t.cards >= 1],
@@ -2016,7 +2178,10 @@ const TROPHIES = [
   ['bike', '🚴', 'En selle', 'Une sortie à vélo', t => t.bike],
   ['walk', '🚶', 'Flâneur', 'Une sortie en marchant', t => t.walk],
   ['hill100', '⛰️', 'Grimpeur', '100 m de D+ en une sortie', t => t.maxDplus >= 100],
-  ['hill1000', '🏔️', 'Montagnard', '1 000 m de D+ au total', t => t.dplus >= 1000]
+  ['hill1000', '🏔️', 'Montagnard', '1 000 m de D+ au total', t => t.dplus >= 1000],
+  ['fire5', '🔥', 'En feu', 'Série de 5 sorties prévues réussies', t => t.fire >= 5],
+  ['fire10', '☄️', 'Inarrêtable', 'Série de 10', t => t.fire >= 10],
+  ['fire30', '🌋', 'Volcan', 'Série de 30', t => t.fire >= 30]
 ];
 // au premier lancement de cette version : on note ce qui est déjà acquis, sans fête
 function initProgress() {
@@ -2534,6 +2699,7 @@ async function finishRun() {
   await celebrate();
   if (ad && ad.up) { vibrate([40, 40, 80]); toast(`💪 Tu progresses ! Tes prochaines quêtes : ${String(ad.up).replace('.', ',')} km`); }
   if (ad && ad.down) toast('On ajuste ta prochaine quête pour que tu la plies 💪');
+  await checkMonthly();
   maybeLegend();
   if (current === 'prof') renderProf(); else renderQuests();
 }
@@ -2763,7 +2929,7 @@ function renderShop() {
   <div class="wallet"><span>Ton solde</span><b>${fmt(S.coins || 0)} 🪙</b><span>Pour changer de mission (${SWAP_COST} 🪙), et bientôt des boosters de cartes</span></div>
   <div class="panel"><h4>Acheter des pièces</h4><div class="packs">${PACKS.map(p => `<button class="pack" data-pack="${p.id}">${p.tag ? `<span class="tag">${p.tag}</span>` : ''}<span class="ic">${p.ic}</span><b>${fmt(p.coins)}</b><span class="price">${p.price}</span></button>`).join('')}</div></div>
   <div class="panel earn"><h4>Gagner des pièces gratuitement</h4>
-    <div class="set"><span>Bonus du jour<small>${got ? 'Reçu aujourd\'hui ✓ · reviens demain' : 'Ouvre l\'appli chaque jour'}</small></span><b>+${COIN_DAY} 🪙</b></div>
+    <div class="set"><span>Cadeau du jour<small>${got ? 'Reçu aujourd\'hui ✓ · reviens demain' : 'Ouvre l\'appli chaque jour'} · ça monte sur 7 jours</small></span><b>5 → 30 🪙</b></div>
     <div class="set"><span>Trouver un lieu<small>À chaque quête réussie</small></span><b>+${COIN_PLACE} 🪙</b></div>
     <div class="set"><span>Semaine complète<small>Toutes tes quêtes de la semaine</small></span><b>+${COIN_WEEK} 🪙</b></div>
   </div>
@@ -2778,8 +2944,8 @@ function renderShop() {
 }
 
 function renderTro() {
-  const n = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).length;
-  $('#tro').innerHTML = `<h2>${n} / ${TROPHIES.length} <span class="muted" style="font-size:15px;font-weight:600">trophées gagnés</span></h2>
+  const n = TROPHIES.filter(t => S.trophies && S.trophies[t[0]]).length, bd = S.badges || [];
+  $('#tro').innerHTML = `${bd.length ? `<div class="panel"><h4>Badges du mois · ${bd.length}</h4><div class="badges">${bd.map(b => `<div class="bd"><span>${b.ic}</span>${esc(b.name)}</div>`).join('')}</div></div>` : ''}<h2>${n} / ${TROPHIES.length} <span class="muted" style="font-size:15px;font-weight:600">trophées gagnés</span></h2>
   <div class="panel"><div class="trophies">${TROPHIES.map(([id, ic, name, desc]) => { const on = S.trophies && S.trophies[id];
     return `<button class="tro ${on ? '' : 'off'}" data-d="${esc(desc)}${on ? ' · gagné le ' + new Date(on).toLocaleDateString('fr-FR') : ''}"><span class="ic">${on ? ic : '🔒'}</span><b>${esc(name)}</b></button>`; }).join('')}</div></div>
   <p class="muted" style="text-align:center;font-size:13px;margin:0 16px 24px">Touche un trophée pour savoir comment le gagner.</p>`;
@@ -2801,6 +2967,7 @@ function renderSet() {
   ${S.dev ? `<div class="panel"><h4>Développeur</h4>
     <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span>${sw('test', S.testMode)}</div>
     <div class="set"><span>Rejouer la semaine<small class="muted" style="display:block;font-size:13px">Nouvelles quêtes, bonus remis à zéro</small></span><button class="setbtn" id="replay">Rejouer</button></div>
+    <div class="set"><span>Bilan de la semaine<small class="muted" style="display:block;font-size:13px">Revoir l'écran du lundi</small></span><button class="setbtn" id="recapbtn">Voir</button></div>
     <div class="set"><span>Revoir l'accueil<small class="muted" style="display:block;font-size:13px">Tes cartes et tes points sont gardés</small></span><button class="setbtn" id="reonb">Revoir</button></div>
     ${(() => { const x = Metrics.summary(); const mm = s => `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`;
       return `<div class="set"><span>Statistiques d'usage<small class="muted" style="display:block;font-size:13px">${Metrics.consent ? 'Sur cet appareil depuis le ' + (x.first ? new Date(x.first).toLocaleDateString('fr-FR') : '–') : 'Pas encore de consentement'}</small></span><button class="setbtn" id="mexp">Exporter JSON</button></div>
@@ -2832,6 +2999,7 @@ function renderSet() {
   if (S.dev) {
     $('#mexp').onclick = () => Metrics.exportJSON();
     $('#give').onclick = () => { S.coins = (S.coins || 0) + 100; save(); renderPoints(); toast('+100 🪙'); };
+    $('#recapbtn').onclick = () => weeklyRecap(true);
     $('#lock').onclick = () => { S.dev = false; S.testMode = false; save(); renderSet(); toast('Mode développeur verrouillé'); };
     $('#reonb').onclick = () => { S.onboarded = false; save(); onboarding(0); };
     $('#test').onclick = () => { S.testMode = !S.testMode; save(); renderSet(); toast(S.testMode ? 'Mode test activé' : 'Mode test désactivé'); };
@@ -3192,9 +3360,9 @@ if (typeof L === 'undefined') {
 } else {
   ensureWeek(); fixDays(); initProgress(); comeback();
   tab('quests');
-  setTimeout(() => S.pendingFriend ? addFriendQuest() : maybeLegend(), 1500);
+  setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else await maybeLegend(); }, 1200);
   upgradePlaces().catch(() => {});
-  dailyBonus();
+  checkStreakBreak();
   loadElevations().then(() => current === 'quests' && renderQuests()).catch(() => {});
   track('session_start'); Metrics.askConsent();
   try { const r = JSON.parse(localStorage.getItem(RUN_KEY)); if (r && Date.now() - r.start < 6 * 3600e3) { RUN = r; openRun(); toast('Course reprise'); } else localStorage.removeItem(RUN_KEY); } catch (e) {}
