@@ -419,6 +419,8 @@ button.chip{cursor:pointer}
 #run .rrow{display:flex;align-items:center;gap:10px}
 #run .rrow .rbtns{flex:1}
 #run .vbtn{display:none}
+#run:not(.compact) .stats3,#run:not(.compact) .rcard .ttl{display:none}
+#run:not(.compact) .rbtns{margin-top:0}
 /* HUD compact pendant la sortie : la carte prend la place */
 #run.compact .rcard{padding:10px 12px}
 #run.compact .rcard .ttl,#run.compact .splits{display:none}
@@ -485,6 +487,10 @@ button.chip{cursor:pointer}
   <div class="topbar"><button class="backbtn" data-back>‹ Profil</button><div class="logo pixel">PARAMÈTRES</div></div>
   <div id="set"></div>
 </section>
+<section id="s-pref" class="screen hidden">
+  <div class="topbar"><button class="backbtn" data-back="set">‹ Paramètres</button><div class="logo pixel">PRÉFÉRENCES</div></div>
+  <div id="pref"></div>
+</section>
 <section id="s-shop" class="screen hidden">
   <div class="topbar"><button class="backbtn" data-back="shop">‹ Retour</button><div class="logo pixel">BOUTIQUE</div></div>
   <div id="shop"></div>
@@ -532,7 +538,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v38';
+const VERSION = 'v39';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -877,7 +883,7 @@ function hintFor(p) {
   const h = [`<b>${esc(article(p.label))}</b> se cache dans cette zone de 100 m.`];
   if (p.name) h.push(`Son nom commence par « <b>${esc(p.name.slice(0, 3))}…</b> ».`);
   if (p.artist) h.push(`Œuvre de ${esc(p.artist)}.`);
-  h.push('Le bouton « J\'y suis » te dit si tu chauffes.');
+  h.push('Pendant ta sortie, « J\'y suis » te dit à combien tu es.');
   return h.join(' ');
 }
 
@@ -1198,11 +1204,7 @@ function openQuest(i) {
     <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
     ${rare ? `<div class="hint">${hintFor(p)}</div>` : `<p>Cours jusqu'au lieu, valide ton arrivée, prends ta photo et rentre.</p>`}
     <div class="row"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
-    <div class="row">
-      <a class="btn ghost small" href="${mapsLink(tlat, tlng)}" target="_blank" rel="noopener">Itinéraire</a>
-      <button class="btn ghost small" id="here">J'y suis</button>
-    </div>
-    <div class="feedback" id="fb"></div>
+    ${S.testMode ? '<button class="link" id="here" style="margin:4px auto 0">✅ J\'y suis (test)</button>' : ''}
     ${q.easy ? `<div class="row"><button class="btn swap easybtn" id="easy">🎯 Une plus proche · gratuit</button></div>` : ''}
     ${q.legend ? '' : `<div class="row"><button class="btn swap" id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button></div>`}
     <button class="link" id="lost">Je ne trouve pas</button>`);
@@ -1210,7 +1212,7 @@ function openQuest(i) {
   if (sh.querySelector('#easy')) sh.querySelector('#easy').onclick = () => easierQuest(i);
   wikiFor(p).then(w => { const bg = sh.querySelector('#lbg'); if (w && w.img && bg) bg.style.backgroundImage = `url("${w.img}")`; });
   sh.querySelector('#gorun').onclick = () => { closeSheet(); startRun(i); };
-  sh.querySelector('#here').onclick = () => checkIn(i, sh);
+  if (sh.querySelector('#here')) sh.querySelector('#here').onclick = () => { closeSheet(); takePhoto(i); };
   sh.querySelector('#lost').onclick = () => report(i);
 }
 
@@ -1941,7 +1943,7 @@ function goRun() {
 }
 function openRun() {
   $('#run').classList.remove('hidden');
-  $('#rsim').classList.toggle('hidden', !S.testMode);
+  $('#rsim').classList.add('hidden');
   $('#rvoice').textContent = S.voice ? '🔊' : '🔇';
   keepAwake();
   if (!runMap) {
@@ -2117,8 +2119,9 @@ function drawRun() {
   const tg = runTarget(), here = lastPos;
   const R = RUN.route;
   if (RUN.ready) {
-    $('#rttl').innerHTML = R ? `${sportOf(RUN).ic} Itinéraire <b style="color:#fff">${fmtKm(R.dist)}</b> · aller-retour ≈ <b style="color:#fff">${fmtKm(R.dist * 2)}</b>${R.real ? '' : ' (ligne droite)'}${S.dev && R.engine ? ` · <span style="font-weight:600">${R.engine}</span>` : ''}${R.up != null ? `<br>${hillBadge(R.up + R.down)} <span style="font-weight:600">aller ↗${R.up} m ↘${R.down} m</span>` : ''}` : 'Calcul de l\'itinéraire…';
-    $('#rleft').innerHTML = here ? `<span class="gps ${here.acc <= 30 ? 'ok' : ''}">GPS ${here.acc <= 30 ? 'prêt ✓' : 'en recherche… (±' + Math.round(here.acc) + ' m)'}</span>` : '<span class="gps">Recherche du GPS…</span>';
+    $('#rttl').innerHTML = '';
+    const gps = here ? `<span class="gps ${here.acc <= 30 ? 'ok' : ''}">GPS ${here.acc <= 30 ? 'prêt ✓' : 'en recherche… (±' + Math.round(here.acc) + ' m)'}</span>` : '<span class="gps">Recherche du GPS…</span>';
+    $('#rleft').innerHTML = (R ? `${fmtKm(R.dist * 2)} aller-retour${R.up ? ` · ↗ ${R.up} m` : ''}${R.real ? '' : ' (ligne droite)'}${S.dev && R.engine ? ' · ' + R.engine : ''}` : 'Calcul de l\'itinéraire…') + ' · ' + gps;
   } else {
     $('#rttl').textContent = (RUN.paused ? '⏸ En pause' : `${sportOf(RUN).ic} ${RUN.phase === 'back' ? 'Retour maison' : sportOf(RUN).name}`) + (RUN.dplus ? ` · ↗ ${Math.round(RUN.dplus)} m` : '');
     const left = here ? (leftOnRoute(here) ?? (tg ? dist(here, tg) : null)) : null;
@@ -2144,6 +2147,7 @@ function drawRun() {
   }
   $('#rhere').classList.toggle('hidden', RUN.ready);
   $('#run').classList.toggle('compact', !RUN.ready);
+  if (RUN.ready) $('#rsim').classList.add('hidden');
   // prochaine indication
   const banner = $('#rturn');
   if (!RUN.ready && R && R.real && here) {
@@ -2287,9 +2291,9 @@ async function sha256(t) {
 }
 
 /* ---------- choix des jours + distance ---------- */
-function goalPicker(el, onChange) {
+function goalPicker(el, onChange, goal) {
   const draw = () => {
-    const g = S.goal, tot = g.days.length * g.km, sp = S.sport || 'run', mx = KM_MAX[sp] || 30;
+    const g = goal || S.goal, tot = g.days.length * g.km, sp = S.sport || 'run', mx = KM_MAX[sp] || 30;
     if (g.km > mx) g.km = mx;
     el.innerHTML = `<div class="picklabel">Quels jours tu ${VERB[sp] || 'cours'} ?</div>
       <div class="days">${DAYS_1.map((d, i) => `<button data-d="${i}" class="${g.days.includes(i) ? 'on' : ''}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>
@@ -2343,9 +2347,7 @@ function renderProf() {
     <span class="ttl">Niveau ${lv.n}</span><b style="font-size:20px">${esc(lv.name)}</b>
     <div class="muted" style="font-size:13px;margin-top:2px">${lv.to ? `${fmt(lv.to - S.points)} ★ avant <b>${esc(lv.nextName)}</b>` : 'Titre suprême atteint !'}</div>
     <div class="xp"><i style="width:${pct}%"></i></div></div></div></div>
-  <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
-    <div class="set" style="margin-top:12px"><span class="muted" style="font-size:14px">Les quêtes déjà faites sont gardées.</span><button class="setbtn" id="regen">Appliquer</button></div>
-  </div>
+  <div class="panel"><button class="trorow" id="prefbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Ma semaine</h4><b style="font-size:16px">${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} · ${String(S.goal.km).replace('.', ',')} km</b></div><span style="flex:1"></span><span class="setbtn">Modifier ›</span></button></div>
   <div class="panel"><h4>Mes stats</h4><div class="sgrid">
     ${tile(S.collection.length, 'lieux trouvés')}${tile(S.collection.filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}
     ${tile(st.n, 'sorties')}${tile(kmTxt(st.km), 'km au total')}${tile(st.n ? hm(st.time) : '0 min', 'de sport')}
@@ -2358,13 +2360,48 @@ function renderProf() {
     <span style="flex:1"></span><span class="setbtn">Voir tout ›</span></button></div>
   <div class="panel"><h4>Dernières sorties</h4>${S.runs.length ? `<div class="runlist">${S.runs.slice(-5).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km${r.dplus ? ' · ↗' + r.dplus + ' m' : ''} · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première sortie.</p>'}</div>
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION}</p>`;
-  goalPicker($('#pgoal'));
+  $('#prefbtn').onclick = () => tab('pref');
   $('#trobtn').onclick = () => tab('tro');
   $('#shopbtn').onclick = () => tab('shop');
-  $('#regen').onclick = async () => {
-    const f = S.placesFor;
-    if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) { return; } }
-    ensureWeek(true); toast('Nouvelles quêtes prêtes !'); tab('quests');
+}
+
+/* ---------- mes préférences : changer sa semaine coûte 20 🪙 (28/10, choix de Bazil) ---------- */
+const PREF_COST = 20;
+let prefDraft = null;
+function renderPref() {
+  renderPoints();
+  prefDraft = { days: S.goal.days.slice(), km: S.goal.km };
+  $('#pref').innerHTML = `
+  <div class="panel"><h4>Ma semaine</h4><div id="pgoal" style="margin-top:-14px"></div>
+    <p class="muted" style="font-size:13px;margin:12px 0 10px">Nouvelles quêtes tout de suite. Les quêtes déjà faites sont gardées. La distance monte aussi toute seule quand tu progresses (gratuit).</p>
+    <button class="btn" id="papply" style="width:100%" disabled>Appliquer · ${PREF_COST} 🪙</button></div>
+  <div class="panel"><h4>Sport par défaut</h4><div class="chips" id="spdef">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${(S.sport || 'run') === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div>
+    <p class="muted" style="font-size:13px;margin:10px 0 0">Gratuit : ne change pas tes quêtes.</p></div>`;
+  const changed = () => prefDraft.km !== S.goal.km || prefDraft.days.join() !== S.goal.days.join();
+  const upd = () => { $('#papply').disabled = !changed(); };
+  goalPicker($('#pgoal'), upd, prefDraft);
+  document.querySelectorAll('#spdef [data-sp]').forEach(b => b.onclick = () => { S.sport = b.dataset.sp; save(); document.querySelectorAll('#spdef [data-sp]').forEach(x => x.classList.toggle('on', x === b)); toast('Sport par défaut changé'); });
+  $('#papply').onclick = () => {
+    if (!changed()) return;
+    const have = S.coins || 0;
+    if (have < PREF_COST) {
+      const sh = sheet(`<h3>Il te faut ${PREF_COST} 🪙</h3><p class="muted">Tu en as ${have}. Trouve des lieux pour en gagner (+${COIN_PLACE} 🪙 chacun).</p>
+        <div class="row"><button class="btn" id="pshop">Boutique</button></div><button class="link" id="pno">Plus tard</button>`);
+      sh.querySelector('#pshop').onclick = () => { closeSheet(); tab('shop'); };
+      sh.querySelector('#pno').onclick = closeSheet;
+      return;
+    }
+    const sh = sheet(`<h3>Changer ta semaine ?</h3>
+      <p class="muted"><b>${prefDraft.days.length} sortie${prefDraft.days.length > 1 ? 's' : ''} de ${String(prefDraft.km).replace('.', ',')} km</b>. Tes quêtes à faire seront remplacées, celles déjà faites sont gardées.</p>
+      <div class="row"><button class="btn gold" id="ppay">Payer ${PREF_COST} 🪙</button></div><button class="link" id="pno">Annuler</button>`);
+    sh.querySelector('#pno').onclick = closeSheet;
+    sh.querySelector('#ppay').onclick = async () => {
+      closeSheet();
+      S.coins = have - PREF_COST; S.goal = { days: prefDraft.days.slice(), km: prefDraft.km }; save();
+      const f = S.placesFor;
+      if (f && f.km !== S.goal.km) { try { await loadPlaces(); } catch (e) {} }
+      ensureWeek(true); toast(`Nouvelles quêtes prêtes ! −${PREF_COST} 🪙`); tab('quests');
+    };
   };
 }
 
@@ -2401,10 +2438,10 @@ function renderTro() {
 function renderSet() {
   const sw = (id, on) => `<button class="switch ${on ? 'on' : ''}" id="${id}" role="switch" aria-checked="${!!on}"></button>`;
   $('#set').innerHTML = `
+  <div class="panel"><button class="trorow" id="gopref"><div style="flex:none"><h4 style="margin:0 0 4px">Mes préférences</h4><span class="muted" style="font-size:14px">Jours, distance, sport</span></div><span style="flex:1"></span><span class="setbtn">Ouvrir ›</span></button></div>
   <div class="panel"><h4>Apparence</h4>
     <div class="set"><span>Mode sombre</span>${sw('swdark', S.theme === 'dark')}</div></div>
   <div class="panel"><h4>Sorties</h4>
-    <div class="set"><span>Sport par défaut</span><div class="chips" id="spdef">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${(S.sport || 'run') === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div></div>
     <div class="set"><span>Voix pendant la sortie<small class="muted" style="display:block;font-size:13px">Annonce chaque kilomètre</small></span>${sw('swvoice', S.voice)}</div></div>
   <div class="panel"><h4>Lieux</h4>
     <div class="set"><span>Point de départ</span><button class="setbtn" id="home">Changer</button></div>
@@ -2432,7 +2469,7 @@ function renderSet() {
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
   $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
-  document.querySelectorAll('#spdef [data-sp]').forEach(b => b.onclick = () => { S.sport = b.dataset.sp; save(); renderSet(); });
+  $('#gopref').onclick = () => tab('pref');
   $('#home').onclick = () => onboarding(7);
   $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
   if ($('#devbtn')) $('#devbtn').onclick = async () => {
@@ -2471,8 +2508,8 @@ let current = 'quests', shopFrom = 'quests';
 function tab(name) {
   current = name;
   if (name === 'shop' && current !== 'shop') shopFrom = current;
-  ['quests', 'coll', 'prof', 'set', 'tro', 'shop'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
-  const tb = name === 'set' || name === 'tro' ? 'prof' : name === 'shop' ? shopFrom : name;
+  ['quests', 'coll', 'prof', 'set', 'tro', 'shop', 'pref'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
+  const tb = name === 'set' || name === 'tro' || name === 'pref' ? 'prof' : name === 'shop' ? shopFrom : name;
   document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tb));
   $('#s-' + name).scrollTop = 0;
   if (name === 'quests') { initMap(); renderQuests(); setTimeout(() => map && map.invalidateSize(), 50); }
@@ -2481,9 +2518,10 @@ function tab(name) {
   if (name === 'set') renderSet();
   if (name === 'tro') renderTro();
   if (name === 'shop') renderShop();
+  if (name === 'pref') renderPref();
 }
 $('#gear').onclick = () => tab('set');
-document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => tab(b.dataset.back === 'shop' ? shopFrom : 'prof'));
+document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => tab(b.dataset.back === 'shop' ? shopFrom : b.dataset.back === 'set' ? 'set' : 'prof'));
 document.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => tab('shop'));
 document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 

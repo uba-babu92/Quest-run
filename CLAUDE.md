@@ -61,7 +61,7 @@
 - **Mode course** (« 🏃 J'y vais ! ») : chrono, km, allure actuelle (≈250 derniers m) et moyenne, tracé, « Plus que X km », voix à chaque km, pause, écran gardé allumé (Wake Lock). Arrivée détectée toute seule → photo → victoire → « Retour maison » → résumé.
 - **Limite iPhone** : pas de GPS écran éteint pour une page web. La course reprend au retour (sauvegardée dans `questrun.run`). **Trou comblé** (27/10) : si l'ancienne et la nouvelle position sont sur l'itinéraire (< 80 m), la distance et le tracé suivent l'itinéraire entre les deux (`fillGap`).
 - La **course est collée à la carte** : km, temps, allure, tracé au dos (fiche). Historique dans le Profil.
-- Mode test : bouton « ▶ Simuler » dans l'écran de course (25 m/s, chrono accéléré ≈ 4:40/km).
+- Mode test : bouton « ▶ Simuler » retiré le 28/10 (code gardé, `#rsim` toujours caché).
 
 ## Lieux vérifiables + IA sourcée (27/10, demande de Bazil)
 - **Seulement des lieux nommés** ; graffitis et installations exclus (souvent effacés). `PARSE_V` force un nouveau tri ; les quêtes à faire sur un lieu retiré sont remplacées.
@@ -110,12 +110,15 @@
 - **+5 🪙 par jour** d'ouverture (`dailyBonus`). Mode dév : bouton +100 🪙.
 
 ## Profil / Paramètres / Trophées (27/10, choix de Bazil)
-- **Profil** = niveau + titre, Ma semaine, **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
-- **Paramètres** : roue ⚙️ en haut à droite du Profil. Mode sombre, sport par défaut, voix, lieux, mode développeur, tout effacer.
+- **Profil** = niveau + titre, ligne **Ma semaine** (« 3 sorties · 7 km · Modifier › »), **Mes stats** (lieux, rares, semaines complètes, sorties, km, temps de sport, allure course, vitesse vélo, plus longue sortie), ligne **Trophées** (3 derniers + « Voir tout › », page à part), dernières sorties.
+- **Paramètres** : roue ⚙️ en haut à droite du Profil. Mes préférences ›, mode sombre, voix, lieux, mode développeur, tout effacer.
+- **Mes préférences** (28/10, `renderPref`, page `pref`) : jours + distance (brouillon, rien ne change avant de payer) → **« Appliquer · 20 🪙 »** (`PREF_COST`) avec confirmation, nouvelles quêtes (les faites sont gardées). Pas assez de 🪙 → lien Boutique. Sport par défaut : gratuit. Progression auto et accueil : gratuits.
 - **Accueil** : 1er écran « Tu fais plutôt… » course / vélo / marche-rando (distance proposée 7 / 20 / 5 km).
 - **Niveau** (27/10) juste après le sport : Débutant / Intermédiaire / Confirmé → distance de départ (`KM_LVL`) : course et marche 3/5/8 km, vélo 10/15/20 km (puis progression). Curseur : 1-30 km (course, marche), 1-20 km (vélo, limite de la zone de 10 km). Dans `S.skill` et `S.quiz.niveau`. Repères : course 3-5 / 6-10 / 10-20 km, rando 3-5 / 6-12 / 15-25 km, vélo 10-20 / 25-50 / 60-100 km. Vélo au-delà de 20 km : pas prioritaire (Bazil ne roule pas).
 - **Questions adaptées au sport** (27/10, `quizFor(sport)`) : textes « courir / marcher / sortir le vélo », « balade » pour la marche (frein « Je ne trouve pas le temps » au lieu de « je lâche »).
 - **3 questions sur les freins des coureurs** (27/10, `QUIZ`), juste après le sport : ce qui freine (motivation / ennui / où aller / je lâche), même parcours ?, objectif tenu ? Chaque réponse affiche ~2 s une phrase « Quest Run résout ça ». Réponses dans `S.quiz` et dans les métriques (`onboarding_answers`). Étapes de l'accueil : 0 bienvenue, 1 sport, 2 niveau, 3-5 questions, 6 semaine, 7 départ, 8 **« Quest Run, c'est quoi ? »** (🎮 quête / 📚 quartier / 🏆 carte la plus rare), 9 chargement.
+- **Fiche d'une quête** (28/10) : plus de boutons « Itinéraire » ni « J'y suis » (seulement « J'y vais ! », changer de mission, je ne trouve pas) ; en mode test : « ✅ J'y suis (test) ».
+- **Écran prêt** (28/10) : plus de chiffres ni de « Simuler » ; distance A/R + D+ + GPS en petit sous le nom du lieu ; en bas seulement Course/Marche/Vélo + Démarrer.
 - Écran de course : **HUD compact pendant la sortie** (28/10, `#run.compact`) : chiffres seuls, puis une ligne ⏸ / **« 📍 J'y suis »** (« 🏠 Rentré » au retour) / 🔊 ; sans titre ni barres des km (visibles au résumé). La carte prend ~75 % de l'écran. L'écran prêt garde le grand bouton Démarrer.
 
 ## Métriques d'usage (27/10)
