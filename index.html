@@ -89,6 +89,14 @@ h2{font-size:22px;margin:4px 16px 12px}
 .quest.today{border:2px solid var(--violet)}
 .quest .num.day{font-size:12px;letter-spacing:.02em}
 .pin.day{font-size:11px}
+/* « ? » de quête façon jeu vidéo, couleur = rareté de la carte (28/10) */
+.quest .num.qm,.pin.qm{font-size:21px;font-weight:900;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+.pin.qm{font-size:18px}
+.t-common{background:linear-gradient(135deg,#D9DDE4,#8A93A3)!important;color:#fff!important}
+.t-rare{background:linear-gradient(135deg,#B07BFF,#5A12D6)!important;color:#fff!important}
+.t-epic{background:linear-gradient(135deg,#8EC5FF,#1559C9)!important;color:#fff!important}
+.t-legend{background:linear-gradient(135deg,#FFE27A,#D38E00)!important;color:#2a1d00!important;text-shadow:none!important}
+.t-mythic{background:linear-gradient(135deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff)!important;color:#1a0b2e!important;text-shadow:none!important}
 .today-tag{color:var(--violet);font-weight:800}
 .chip.fire b{font-weight:800}
 .chip.fire.off{opacity:.45;filter:grayscale(1)}
@@ -160,7 +168,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .sagehead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sagehead b{font-size:14px;color:#FFD23F}
 .quest .num{position:relative}
-.quest .num.new::after{content:"!";position:absolute;top:-9px;right:-7px;width:18px;height:18px;border-radius:50%;background:#FFD23F;color:#2a1d00;font-size:12px;font-weight:900;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card);animation:sagebob 1.4s ease-in-out infinite}
+.quest .num.new::after{content:"!";position:absolute;top:-9px;right:-7px;width:18px;height:18px;border-radius:50%;background:#FF3B4E;color:#fff;font-size:12px;font-weight:900;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card);animation:sagebob 1.4s ease-in-out infinite}
 .quest.friendq{border:1.5px solid #3BB273}
 .quest.friendq .num{background:linear-gradient(135deg,#3BB273,#1F7A4D)}
 .sharebtn{display:block;margin:0 auto 12px;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-weight:800;font-size:15px}
@@ -259,6 +267,9 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card.mys .ph i{position:absolute;inset:-14px;background-size:cover;background-position:center;filter:blur(9px) saturate(.7) brightness(.75)}
 .card.mys .ph .q{position:relative;font-size:46px;font-weight:900;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
 .tro small{font-size:11px;color:var(--muted);line-height:1.2}
+.buyw{display:flex;flex-direction:column;gap:8px;width:150px}
+.buyb{align-self:center;padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:800;font-size:14px}
+.mythhero .st-buy{width:100%;margin-top:14px;font-size:15px}
 .mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:6px;margin:0 auto}
 .vcard .in{border-radius:11px}
@@ -652,7 +663,7 @@ button.chip{cursor:pointer}
   <div id="set"></div>
 </section>
 <section id="s-vit" class="screen hidden">
-  <div class="topbar"><div class="logo pixel">VITRINE</div><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div></div>
+  <div class="topbar"><div class="logo pixel">VITRINE</div><div style="display:flex;gap:8px;align-items:center"><button class="chip" data-shop><span class="coin">🪙</span><span class="coinsmirror">0</span></button><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div></div></div>
   <div id="vit" class="vit"></div>
 </section>
 <section id="s-pref" class="screen hidden">
@@ -707,7 +718,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v58';
+const VERSION = 'v59';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1542,10 +1553,21 @@ async function maybeMythic() {
   if (current === 'quests') renderQuests();
   return true;
 }
-function legendQuest() { return S.week && S.week.quests.find(q => q.legend && !q.star && q.status === 'todo'); }
+function legendQuest() { return S.week && S.week.quests.find(q => q.legend && !q.star && !q.bought && q.status === 'todo'); }
 /* ---------- la carte vedette de la Vitrine (28/10) : le lieu le plus prestigieux de la zone, nom caché,
    confié par le sage comme quête Mythique après 6 sorties réussies ---------- */
-const mysteryName = p => p.label === 'Ruines' ? 'Les Mystérieuses Ruines' : `${FEM.has(p.label) ? 'La Mystérieuse' : 'Le Mystérieux'} ${p.label === "Œuvre d'art" ? 'Œuvre' : p.label}`;
+// noms de lieux secrets variés (28/10, Bazil : pas que « Le Mystérieux… »), toujours le même pour un lieu donné
+const NOUN = { "Œuvre d'art": 'Œuvre', 'Borne ancienne': 'Borne', 'Monument aux morts': 'Monument', 'Point de vue': 'Belvédère', 'Lieu de culte': 'Sanctuaire' };
+function mysteryName(p) {
+  const n = NOUN[p.label] || p.label, f = (FEM.has(p.label) && !['Point de vue', 'Lieu de culte', 'Monument aux morts'].includes(p.label)), v = /^[AEIOUYÉÈÊŒ]/i.test(n);
+  const k = [...(p.id || n)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+  if (p.label === 'Ruines') return ['Les Ruines oubliées', 'La Légende des Ruines', 'Le Secret des Ruines', 'Les Mystérieuses Ruines', 'La Rumeur des Ruines', "L'Énigme des Ruines"][k % 6];
+  const de = v ? "de l'" : f ? 'de la ' : 'du ', le = v ? "L'" : f ? 'La ' : 'Le ', e = f ? 'e' : '';
+  const T = [`${f ? 'La Mystérieuse' : 'Le Mystérieux'} ${n}`, `La Légende ${de}${n}`, `La Rumeur ${de}${n}`, `${f ? "L'Intrigante" : "L'Intrigant"} ${n}`, `Le Secret ${de}${n}`, `L'Énigme ${de}${n}`, `${le}${n} oublié${e}`, `Le Murmure ${de}${n}`, `${le}${n} des ombres`, `${f ? 'La Fabuleuse' : 'Le Fabuleux'} ${n}`];
+  // lieux de culte : seulement des formules respectueuses
+  const L = ['Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Temple', 'Lieu de culte'].includes(p.label) ? T.filter((_, j) => j !== 6 && j !== 8) : T;
+  return L[k % L.length];
+}
 const STAR_W = { 'Château': 6, 'Manoir': 5, 'Ruines': 5, 'Monument': 4, 'Musée': 4, 'Obélisque': 3, 'Point de vue': 3, 'Église': 2, 'Chapelle': 2, 'Mairie': 1, 'Monument aux morts': 1 };
 function starPlace() {
   const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
@@ -1650,10 +1672,10 @@ function renderMap() {
     const done = q.status === 'done';
     if (p.rarity === 'rare' && !done) {
       L.circle([p.zlat, p.zlng], { radius: 100, color: '#7B2FF7', weight: 2, dashArray: '6 6', fillColor: '#9B5CFF', fillOpacity: .15 }).addTo(layer).on('click', () => openQuest(i));
-      L.marker([p.zlat, p.zlng], { icon: pinIcon(q.legend ? 'legend day' : 'rare day', q.legend ? '✨' : DAYS_S[q.day] || '?') }).addTo(layer).on('click', () => openQuest(i));
+      L.marker([p.zlat, p.zlng], { icon: pinIcon('qm t-' + qTier(q), '?') }).addTo(layer).on('click', () => openQuest(i));
       pts.push([p.zlat, p.zlng]);
     } else {
-      L.marker([p.lat, p.lng], { icon: pinIcon((q.legend && !done ? 'legend ' : p.rarity === 'rare' ? 'rare ' : '') + (done ? 'done' : 'day'), done ? '✓' : q.legend ? '✨' : DAYS_S[q.day] || i + 1) }).addTo(layer).on('click', () => openQuest(i));
+      L.marker([p.lat, p.lng], { icon: pinIcon(done ? 'done' : 'qm t-' + qTier(q), done ? '✓' : '?') }).addTo(layer).on('click', () => openQuest(i));
       pts.push([p.lat, p.lng]);
     }
   });
@@ -1690,15 +1712,14 @@ function renderQuests() {
         <div class="num ${q.seen ? '' : 'new'}">👥</div>
         <div class="t"><b>${esc(questLine(p)[0])}</b><span>Quête de ${esc(q.friend)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
         ${tierBadge(t)}</button>`;
-      if (q.legend && !done) return `<button class="quest legendq ${q.mythic || q.star ? 'mythq' : ''}" data-i="${i}">
+      if (q.legend && !done && !q.bought) return `<button class="quest legendq ${q.mythic || q.star ? 'mythq' : ''}" data-i="${i}">
         <div class="num ${q.seen ? '' : 'new'}">${q.star ? '🌈' : q.mythic ? (evOf(q.mythic) || {}).ic || '✨' : '✨'}</div>
         <div class="t"><b>${esc(q.mythName || shownName(p, false))}</b><span><span class="legtime">${q.star ? 'Quête du sage' : `⏳ encore ${hoursLeft(q)} h`}</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
         ${tierBadge(q.mythic || q.star ? 'mythic' : 'legend')}</button>`;
-      const isToday = !done && q.day === td, late = !done && q.day < td;
-      const when = isToday ? `<span class="today-tag">Aujourd'hui</span>` : `${DAYS[q.day] || ''}${late ? ' · rattrapable' : ''}`;
-      return `<button class="quest ${p.rarity} ${done ? 'done' : ''} ${isToday ? 'today' : ''}" data-i="${i}">
-        <div class="num ${done ? '' : 'day'} ${!done && !q.seen ? 'new' : ''}">${done ? '✓' : DAYS_S[q.day] || i + 1}</div>
-        <div class="t"><b>${esc(done ? shownName(p, true) : questLine(p)[0])}</b><span>${when} · ${esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
+      // plus de jours (28/10) : on fait ses quêtes dans l'ordre qu'on veut ; un « ? » de la couleur de la rareté
+      return `<button class="quest ${p.rarity} ${done ? 'done' : ''}" data-i="${i}">
+        <div class="num ${done ? '' : 'qm t-' + t} ${!done && !q.seen ? 'new' : ''}">${done ? '✓' : '?'}</div>
+        <div class="t"><b>${esc(done ? shownName(p, true) : q.bought ? q.mythName : questLine(p)[0])}</b><span>${q.bought && !done ? '🪙 Achetée' : esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
         ${done ? `<span class="badge b-done">+${PTS[t]}</span>` : tierBadge(t)}
       </button>`;
     }).join('');
@@ -1737,14 +1758,14 @@ function openQuest(i) {
   }
   const [qt, qtxt0] = questLine(p);
   const qtxt = S.name ? qtxt0.replace(/^Hé, toi !( Oui, toi, le coureur !)?/, `Hé, ${S.name} !`) : qtxt0;
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.star ? `Enfin… tu es prêt. Voici mon plus grand secret : ${q.mythName.replace(/^L/, 'l')}. Personne ne sait vraiment ce qu'il cache… Rapporte-moi sa carte MYTHIQUE, Élu !` : q.mythic ? `${(evOf(q.mythic) || {}).line || 'Par ma barbe ! Une carte MYTHIQUE !'} Une carte MYTHIQUE t'y attend… mais seulement 72 h !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.star ? `Enfin… tu es prêt. Voici mon plus grand secret : ${q.mythName.replace(/^L/, 'l')}. Personne ne sait vraiment ce qu'il cache… Rapporte-moi sa carte MYTHIQUE, Élu !` : q.mythic ? `${(evOf(q.mythic) || {}).line || 'Par ma barbe ! Une carte MYTHIQUE !'} Une carte MYTHIQUE t'y attend… mais seulement 72 h !` : q.bought ? `Ah ! Tu m'as acheté ce secret… ${q.mythName.replace(/^L/, 'l')} t'attend. Mais il faudra courir pour gagner sa carte !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   // trésor caché : les indices sont donnés par le sage, dans sa bulle (29/10)
   const say = rare && !q.legend && !q.friend ? `Psst… ${article(p.label).replace(/^./, c => c.toLowerCase())} se cache dans cette zone.${p.name ? ` Son nom commence par « ${p.name.slice(0, 3)}… ».` : ''}${p.artist ? ` Une œuvre de ${p.artist}.` : ''} Trouve-la, jeune coureur !` : intro;
   const sh = sheet(`<div class="lockimg sm ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer sa carte</span></div>
       <button class="qsharei" id="qshare" aria-label="Partager la quête avec un ami"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
-    ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend && !q.star ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
-    <h3 style="margin:8px 0 2px">${esc(q.star ? q.mythName : shownName(p, false))}</h3>
+    ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend && !q.star && !q.bought ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
+    <h3 style="margin:8px 0 2px">${esc(q.star || q.bought ? q.mythName : shownName(p, false))}</h3>
     <p class="muted" style="margin:0 0 12px">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
     ${sageBox(qt, 'qsay')}
     <div class="row" style="margin-top:0"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
@@ -3180,19 +3201,39 @@ function tierOdds() {
   return { common: pc(n.common), rare: pc(n.rare), epic: pc(n.epic), legend: pc(n.legend) };
 }
 const MYTH_PCT = Math.round(MYTHS.length * 3 / 365 * 1000) / 10; // 36 jours sur 365 ≈ 9,9 %
+// acheter une quête de la Vitrine (28/10, prix de Bazil : 1 € / 5 € / 15 €, 100 🪙 ≈ 1 €) : on achète la quête, jamais la carte
+const BUY_PRICE = { rare: 100, legend: 500, mythic: 1500 };
+function buyQuest(p, t, star) {
+  const price = BUY_PRICE[t], coins = S.coins || 0, ok = coins >= price;
+  const sh = sheet(`<div style="text-align:center"><div class="starcard" style="width:132px;margin:0 auto 12px">${mysCard(p, t)}</div>
+    <h3 style="margin:0 0 4px">${esc(mysteryName(p))}</h3>
+    <p class="muted" style="margin:0 0 14px">Une quête ${TIER_NAME[t]} vers un lieu secret. Tu devras quand même courir jusque-là pour gagner sa carte !</p></div>
+    <div class="row" style="margin-top:0"><button class="btn ${ok ? 'gold' : ''}" id="buyq" ${ok ? '' : 'disabled'}>Débloquer la quête · ${fmt(price)} 🪙</button></div>
+    ${ok ? `<p class="muted" style="text-align:center;font-size:13px;margin:8px 0 0">Tu as ${fmt(coins)} 🪙</p>` : `<p class="muted" style="text-align:center;font-size:13px;margin:8px 0 0">Il te manque ${fmt(price - coins)} 🪙</p><button class="link" id="buyshop" style="margin:6px auto 0">Voir la boutique</button>`}`);
+  if (!ok) { sh.querySelector('#buyshop').onclick = () => { closeSheet(); tab('shop'); }; return; }
+  sh.querySelector('#buyq').onclick = () => {
+    if ((S.coins || 0) < price || !S.week) return;
+    S.coins -= price;
+    S.week.quests.unshift({ pid: p.id, status: 'todo', day: todayIdx(), legend: true, bought: !star, star: !!star, tier: t, mythName: mysteryName(p), until: Date.now() + 400 * 864e5, km: Math.round(roundTripKm(p) * 2) / 2 });
+    save(); track('buy_quest', { tier: t }); closeSheet(); sfx('coin'); vibrate([30, 30, 60]);
+    toast(`🧙 « ${mysteryName(p)} » t'attend dans tes Quêtes !`); renderPoints(); renderVit();
+  };
+}
 function mysCard(p, t) {
   const w = S.wiki[p.id], img = (w && w.img) || p.img;
-  return `<div class="card ${t} mys ${t === 'legend' || t === 'mythic' ? 'holo' : ''}" data-mys="${esc(p.id)}"><div class="in">
+  return `<div class="card ${t} mys ${t === 'legend' || t === 'mythic' ? 'holo' : ''}" data-mys="${esc(p.id)}" data-t="${t}"><div class="in">
     <div class="ph"><i style="${img && /^https?:/.test(img) ? `background-image:url('${esc(img)}')` : ''}"></i><span class="q">?</span></div>
     <div class="cap"><b>${esc(mysteryName(p))}</b><span>Lieu secret</span></div>
     <span class="badge b-${t} r">${TIER_NAME[t]}</span></div></div>`;
 }
+let starOwned = false;
 function renderVit() {
   renderPoints();
   const ok = (S.prog && S.prog.okRuns) || 0, need = TIER_UNLOCK.mythic, star = starPlace();
-  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
+  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist), inWeek = new Set((S.week ? S.week.quests : []).map(q => q.pid));
+  starOwned = !!(star && S.week && S.week.quests.some(q => q.star && q.pid === star.id));
   // cartes Légendaires et Rares à faire saliver (lieux secrets, nom caché)
-  const pool = (S.places || []).filter(p => p.name && p.id !== (star && star.id) && !found.has(p.id) && !black.has(p.id));
+  const pool = (S.places || []).filter(p => p.name && p.id !== (star && star.id) && !found.has(p.id) && !black.has(p.id) && !inWeek.has(p.id));
   const legs = pool.filter(p => tierOf(p) === 'legend' || tierOf(p) === 'epic').sort((a, b) => effortM(b) - effortM(a)).slice(0, 4).map(p => [p, 'legend']);
   const rares = pool.filter(p => p.rarity === 'rare' && !legs.some(([x]) => x.id === p.id)).sort((a, b) => (b.wp ? 1 : 0) - (a.wp ? 1 : 0) || effortM(b) - effortM(a)).slice(0, 4).map(p => [p, 'rare']);
   const tease = []; for (let i = 0; i < 4; i++) { if (legs[i]) tease.push(legs[i]); if (rares[i]) tease.push(rares[i]); }
@@ -3200,14 +3241,15 @@ function renderVit() {
   const evWon = id => S.collection.filter(c => c.myth && c.myth.replace(/\d+$/, '') === id);
   const nEv = MYTHS.filter(m => evWon(m.id).length).length;
   $('#vit').innerHTML = `
-  <h2>Les cartes les plus rares</h2><p class="lead">Elles ne s'achètent pas : elles se gagnent en courant.</p>
+  <h2>Les cartes les plus rares</h2><p class="lead">Tu peux débloquer leur quête… mais il faudra toujours courir pour gagner la carte.</p>
   ${star ? `<div class="mythhero">
     <div class="starcard">${mysCard(star, 'mythic')}</div>
     <div class="st-t">La carte la plus rare de ta ville</div>
-    <div class="st-s">${ok >= need ? 'Le vieux sage te l’a confiée : elle t’attend dans tes Quêtes !' : 'Oseras-tu aller la chercher ?'}</div>
-    ${ok >= need ? '' : `<div class="st-bar"><i style="width:${ok / need * 100}%"></i></div><div class="st-k">🔒 ${ok} / ${need} sorties réussies pour la débloquer</div>`}
+    <div class="st-s">${starOwned ? 'Le vieux sage te l’a confiée : elle t’attend dans tes Quêtes !' : 'Oseras-tu aller la chercher ?'}</div>
+    ${starOwned ? '' : `<div class="st-bar"><i style="width:${ok / need * 100}%"></i></div><div class="st-k">🔒 ${ok} / ${need} sorties réussies pour la débloquer</div>
+    <button class="btn gold st-buy" data-buy="${esc(star.id)}" data-t="mythic" data-star="1">Ou débloque-la tout de suite · 🪙 ${fmt(BUY_PRICE.mythic)}</button>`}
   </div>` : ''}
-  ${tease.length ? `<h4 class="vh">Cartes à gagner près de chez toi</h4><div class="vrow">${tease.map(([p, t]) => mysCard(p, t)).join('')}</div>` : ''}
+  ${tease.length ? `<h4 class="vh">Cartes à gagner près de chez toi</h4><div class="vrow">${tease.map(([p, t]) => `<div class="buyw">${mysCard(p, t)}<button class="buyb" data-buy="${esc(p.id)}" data-t="${t}">🪙 ${fmt(BUY_PRICE[t])}</button></div>`).join('')}</div>` : ''}
   <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Tirées au sort à chaque quête. Plus tu réussis de sorties, plus les cartes rares se débloquent (${ok} pour l'instant).</p>
     ${(() => { const od = Object.fromEntries(oddsNow()), D = { common: 'Ta distance habituelle', rare: 'Un peu plus loin (+15 %)', epic: 'Plus loin (+30 %)', legend: 'Bien plus loin (+50 %) · et parfois le week-end', mythic: 'Le défi ultime (+60 %) · et pendant les événements' };
       return ['common', 'rare', 'epic', 'legend', 'mythic'].map(t => { const lock = TIER_UNLOCK[t] > ok, left = TIER_UNLOCK[t] - ok;
@@ -3221,11 +3263,12 @@ function renderVit() {
   <div class="panel" style="text-align:center"><div style="font-size:40px">📦</div><h4 style="margin:6px 0">Reçois tes cartes en vrai</h4>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Un booster imprimé avec ta photo, ton run, la date et l'histoire de chaque lieu.</p>
     <button class="btn" id="boost" style="width:100%">Je veux être prévenu</button></div>
-  <p class="muted" style="text-align:center;font-size:12px;margin:0 16px 24px">Aucun achat de cartes : chaque carte prouve que tu y as couru.</p>`;
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 16px 24px">On n'achète jamais une carte : chaque carte prouve que tu y as couru.</p>`;
   fillPhotos($('#vit'));
   holoTilt($('#vit'));
   $('#vit').querySelectorAll('.vrow .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
-  $('#vit').querySelectorAll('[data-mys]').forEach(el => el.onclick = () => toast(el.closest('.starcard') ? '🔒 Le vieux sage garde ce secret… Réussis tes sorties pour le découvrir !' : '✨ Ce lieu secret apparaîtra peut-être dans tes prochaines quêtes…'));
+  $('#vit').querySelectorAll('[data-mys]').forEach(el => el.onclick = () => { const p = placeById(el.dataset.mys); if (!p) return; const isStar = !!el.closest('.mythhero'); if (isStar && starOwned) return toast('Elle t’attend dans tes Quêtes !'); buyQuest(p, isStar ? 'mythic' : el.dataset.t, isStar); });
+  $('#vit').querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { const p = placeById(b.dataset.buy); if (p) buyQuest(p, b.dataset.t, !!b.dataset.star); });
   $('#vit').querySelectorAll('[data-ev]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.ev)));
   $('#vit').querySelectorAll('.tro[data-d]').forEach(el => el.onclick = () => toast('🔒 ' + el.dataset.d));
   // photos floues des lieux secrets (chargées une fois, gardées)
