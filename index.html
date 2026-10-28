@@ -360,7 +360,11 @@ h2{font-size:22px;margin:4px 16px 12px}
 @keyframes wobble{50%{transform:scale(1.03) rotate(-1deg)}}
 @keyframes pop{from{transform:scale(.3);opacity:0}}
 #victory .btn{flex:none;width:min(80vw,320px);position:relative;z-index:2}
-.flip.small{width:min(48vw,200px);margin:6px auto 16px}
+.flip.small{width:min(48vw,200px);margin:0 auto}
+.vcardwrap{position:relative;width:min(48vw,200px);margin:10px auto 22px}
+.vcardwrap .vshare{top:0;right:-54px}
+#victory .fiche .vstory{margin:0 0 24px}
+#victory .fiche .v-actions{margin-top:0}
 .flip.small .card{width:100%;margin:0}
 .vstory{opacity:0;transform:translateY(12px);animation:storyIn .5s ease 1.6s forwards}
 @keyframes storyIn{to{opacity:1;transform:none}}
@@ -679,7 +683,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v51';
+const VERSION = 'v52';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1085,7 +1089,8 @@ async function upgradePlaces() {
   if (!S.home || !S.places.length) return;
   const local = await fetchLocal(S.home, Math.min(9000, Math.round(Math.max(S.goal.km, 6) * 900)));
   if (!local || !local.els.length) return;
-  if (S.placesFor && S.placesFor.localCount === local.els.length && S.placesFor.parse === PARSE_V) return;
+  const storyCount = local.els.filter(e => e.st).length;
+  if (S.placesFor && S.placesFor.localCount === local.els.length && S.placesFor.parse === PARSE_V && (S.placesFor.storyCount || 0) === storyCount) return;
   const fresh = parsePlaces(local.els, S.home).concat(nearBoulogne(S.home) ? curatedPlaces(S.home) : []);
   const oldEle = new Map(S.places.filter(p => p.ele != null).map(p => [p.id, p.ele]));
   fresh.forEach(p => { if (oldEle.has(p.id)) p.ele = oldEle.get(p.id); });
@@ -1094,7 +1099,7 @@ async function upgradePlaces() {
   for (const p of S.places) if (done.has(p.id) && !fresh.some(f => f.id === p.id)) fresh.push(p);
   const added = fresh.length - S.places.length;
   S.places = fresh;
-  S.placesFor = Object.assign({}, S.placesFor, { localCount: local.els.length, parse: PARSE_V });
+  S.placesFor = Object.assign({}, S.placesFor, { localCount: local.els.length, parse: PARSE_V, storyCount });
   let swapped = 0;
   if (S.week) S.week.quests.forEach((q, i) => {
     if (q.status === 'done' || placeById(q.pid)) return;
@@ -1148,6 +1153,10 @@ function parsePlaces(els, home) {
     if (t.image || t.wikimedia_commons) p.img = t.image || t.wikimedia_commons;
     if (t.start_date) p.date = t.start_date;
     if (t.inscription) p.insc = t.inscription.slice(0, 220);
+    if (t.material) p.mat = t.material;
+    if (el.st) p.st = el.st;                 // note d'histoire du robot : 3 article, 2 faits, 1 rien
+    if (el.sw && !p.wp) p.wp = el.sw;        // article Wikipédia trouvé par le robot
+    if (el.fx) p.fx = el.fx;                 // faits sur l'objet (artiste, date, matière, sujet…)
     p.dist = Math.round(dist(home, p));
     if (p.rarity === 'rare') { // zone de 100 m : le vrai point est dedans, mais pas au centre
       const r = rng(id), ang = r() * 2 * Math.PI, off = 25 + r() * 45;
@@ -1303,8 +1312,11 @@ function pickQuests(n, seed, exclude, o = {}) {
   let pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.28);
   if (pool.length < n * 3) pool = S.places.filter(p => ok(p) && Math.abs(effortM(p) - target) <= target * 0.5);
   if (pool.length < n) pool = S.places.filter(ok);
+  // priorité aux lieux qui ont une histoire vérifiable (article Wikipédia, puis faits sur l'objet)
+  const told = pool.filter(p => (p.st || 0) >= 2);
+  if (told.length >= Math.max(n * 2, 3)) pool = told;
   const r = rng(seed);
-  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6;
+  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0);
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const wantRare = o.hidden === true ? n : o.hidden === false ? 0 : n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
@@ -1798,19 +1810,55 @@ async function storyFor(p) {
 }
 // Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
 const STORY_API = 'https://questrun-histoires.v5nhskv7zy.workers.dev'; // relais Cloudflare (garde la clé Mistral)
-const AI_V = 4; // version des consignes : les anciens textes sont réécrits (4 = voix du vieux sage, 28/10)
+const AI_V = 5; // version des consignes : les anciens textes sont réécrits (5 = anecdote sur l'objet lui-même, 29/10)
 // consignes pour l'IA (envoyées au relais, modifiables ici sans toucher à Cloudflare)
-const STORY_RULES = `Tu es le vieux sage de Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville. Tu parles comme un vieux sage malicieux et chaleureux d'un jeu Zelda : tu racontes au joueur l'histoire du lieu qu'il vient de trouver en courant. Commence par une courte exclamation (« Ha ! », « Oh oh ! », « Hé hé… »).
-On te donne le nom et le type du lieu, puis des EXTRAITS D'ARTICLES WIKIPÉDIA sur des lieux proches.
-But : un texte PRÉCIS et VRAIMENT INTÉRESSANT, comme une anecdote qu'on a envie de raconter à un ami.
-Règles absolues :
-- Cite les faits précis présents dans les extraits : noms (rois, artistes, architectes, personnages), dates, événements, chiffres. Par exemple « En 1589, le roi Henri III y est assassiné par le moine Jacques Clément » plutôt que « un assassinat royal ».
-- Utilise UNIQUEMENT ce qui est écrit dans les extraits. Aucune connaissance extérieure. Aucune date, aucun nom, aucun chiffre qui n'y figure pas.
-- Choisis l'histoire la plus marquante. Si un extrait parle du lieu lui-même, commence par lui. Sinon, raconte l'histoire d'un lieu voisin en le disant clairement (« À deux pas d'ici, … »).
-- Pas de phrase vague du type « un lieu chargé d'histoire » ou « théâtre d'événements ».
-- Si les extraits ne permettent rien de précis et de sûr, réponds exactement : AUCUNE
+const STORY_RULES = `Tu es le vieux sage de Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville. Tu parles comme un vieux sage malicieux et chaleureux d'un jeu Zelda. Le joueur vient de trouver ce lieu en courant et le prend en photo : tu lui racontes SON histoire. Commence par une courte exclamation (« Ha ! », « Oh oh ! », « Hé hé… »).
+On te donne des SOURCES : la fiche du lieu (type, artiste, date, matière, personne représentée, protection…), parfois son article Wikipédia, parfois l'article de son artiste, de la personne représentée ou de celle qui a donné son nom, et en dernier recours l'article de la ville.
+Règles :
+- Parle UNIQUEMENT de ce lieu, de cet objet, de cette œuvre. Jamais d'un autre lieu à côté.
+- Commence par l'anecdote la plus croustillante que donnent les sources : un scandale, un record, un prix, une rivalité, un détail étonnant de la vie de l'artiste ou de la personne représentée, pourquoi l'œuvre a été faite.
+- Donne des faits précis tirés des sources : noms, dates, chiffres, matière.
+- Si un détail manque, tu peux faire une ESTIMATION prudente fondée sur le type d'objet, son style, sa matière ou son époque, en le disant clairement (« sûrement », « sans doute », « comme beaucoup de… »). Jamais de faux nom, de fausse date ou de faux chiffre présenté comme sûr.
+- Si seule la ville est connue, parle de l'objet en général (à quoi servaient ces statues, fontaines, croix… à son époque probable) puis glisse un fait marquant de la ville.
+- Pas de phrase vague du type « un lieu chargé d'histoire ».
 - Français, tutoiement, 3 ou 4 phrases, 550 caractères maximum. Réponds uniquement par le texte.`;
-// Extraits Wikipédia des articles proches du lieu : la seule matière que l'IA a le droit d'utiliser.
+// Sources sur l'objet lui-même (29/10) : fiche, son article, son artiste, son sujet, son nom… puis la ville.
+const wpExtract = async (title, n = 1500) => {
+  if (!title) return null;
+  const m = /^([a-z-]{2,12}):(.+)$/.exec(title), lang = m ? m[1] : 'fr', t = m ? m[2] : title;
+  const e = await getJSON(`https://${lang}.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&exchars=${n}&redirects=1&format=json&origin=*&titles=${encodeURIComponent(t)}`);
+  const pg = Object.values(e.query?.pages || {})[0];
+  return pg && pg.extract && pg.extract.length > 60 && !/homonymie/i.test(pg.extract) ? { title: pg.title, text: pg.extract.slice(0, n) } : null;
+};
+function factSheet(p) {
+  const fx = p.fx || {}, f = [`Type : ${p.label}`, `Nom : ${p.name}`];
+  const by = fx.by ? fx.by[0] : p.artist; if (by) f.push(`Artiste ou créateur : ${by}`);
+  if (fx.arch) f.push(`Architecte : ${fx.arch[0]}`);
+  const date = fx.date || p.date; if (date) f.push(`Date : ${date}`);
+  const mat = fx.mat || p.mat; if (mat) f.push(`Matière : ${mat}`);
+  if (fx.dep) f.push(`Représente : ${fx.dep.map(d => d[0]).join(', ')}`);
+  if (fx.named) f.push(`Nommé d'après : ${fx.named[0]}`);
+  if (fx.her) f.push(`Protection : ${fx.her}`);
+  const insc = fx.insc || p.insc; if (insc) f.push(`Inscription : « ${insc} »`);
+  return f.join('. ') + '.';
+}
+async function objectSources(p) {
+  const fx = p.fx || {}, out = [{ title: 'Fiche du lieu', text: factSheet(p) }];
+  const own = await wpExtract(p.wp, 1500).catch(() => null);
+  if (own) out.push({ title: own.title, text: own.text });
+  const linked = [['Artiste', fx.by], ['Architecte', fx.arch], ...(fx.dep || []).map(d => ['Personne ou sujet représenté', d]), ['Nommé d\'après', fx.named]].filter(([, r]) => r && r[1]);
+  for (const [k, r] of linked.slice(0, 2)) { const x = await wpExtract('fr:' + r[1], 1000).catch(() => null); if (x) out.push({ title: `${k} : ${x.title}`, text: x.text }); }
+  if (out.length === 1) { // rien sur l'objet : la ville, en dernier recours
+    try {
+      const g = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=fr&lat=${p.lat}&lon=${p.lng}`);
+      const city = g.address && (g.address.city || g.address.town || g.address.village || g.address.municipality);
+      const x = city && await wpExtract('fr:' + city, 1200);
+      if (x) out.push({ title: `La ville : ${x.title}`, text: x.text });
+    } catch (e) {}
+  }
+  return out.slice(0, 3);
+}
+// (ancien) Extraits Wikipédia des articles proches du lieu
 async function nearbySources(p) {
   const g = await getJSON(`https://fr.wikipedia.org/w/api.php?action=query&list=geosearch&gscoord=${p.lat}|${p.lng}&gsradius=600&gslimit=10&format=json&origin=*`);
   const titles = (g.query?.geosearch || []).map(x => x.title).slice(0, 5);
@@ -1830,19 +1878,34 @@ async function aiStory(p) {
   if (!p.name) { aiError = 'lieu sans nom'; return null; }
   const mark = o => { S.wiki[p.id] = Object.assign(S.wiki[p.id] || { none: true, t: Date.now() }, { aiV: AI_V, ai: null, aiNone: false, aiT: Date.now() }, o); save(); };
   try {
-    const sources = await nearbySources(p);
-    if (!sources.length) { mark({ aiNone: true }); return null; }
+    const sources = await objectSources(p);
     const r = await fetch(api, { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: AbortSignal.timeout ? AbortSignal.timeout(25000) : undefined,
       body: JSON.stringify({ name: p.name, kind: p.label, lat: p.lat, lng: p.lng, artist: p.artist, date: p.date, insc: p.insc, sources, rules: STORY_RULES }) });
     if (!r.ok) { aiError = `relais ${r.status} : ${(await r.text()).slice(0, 120)}`; return null; }
     const j = await r.json();
     if (!j.text || j.text.length < 20) { mark({ aiNone: true }); return null; }
-    const src = sources.map(x => x.title);
+    const src = sources.map(x => x.title).filter(t => t !== 'Fiche du lieu').map(t => t.replace(/^[^:]+ : /, ''));
     mark({ ai: j.text, aiSrc: src });
     return { text: j.text, src };
   } catch (e) { aiError = 'relais injoignable (' + (e.name === 'TimeoutError' ? 'trop long' : e.message) + ')'; return null; }
 }
 let aiError = '';
+// dernier recours, sans IA : le sage parle de ce type d'objet (jamais « pas d'histoire »)
+const KIND_LORE = {
+  statue: "Les statues comme celle-ci sont souvent en bronze ou en pierre ; beaucoup ont été posées entre 1870 et 1930, quand chaque ville voulait honorer ses héros.",
+  memorial: "Ces monuments ont souvent été élevés après une guerre ou un grand événement, pour que personne n'oublie.",
+  eglise: "Les églises de quartier ont souvent été agrandies ou reconstruites plusieurs fois au fil des siècles ; leurs vitraux et leurs cloches racontent chacun une époque.",
+  chateau: "Les châteaux autour de Paris servaient souvent de résidence d'été aux nobles et aux rois, loin de l'agitation de la capitale.",
+  parc: "Beaucoup de parcs de la région sont d'anciens domaines privés, ouverts au public au XIXe ou au XXe siècle.",
+  fontaine: "Avant l'eau courante dans les maisons, les fontaines étaient le cœur du quartier : on venait y chercher l'eau et les nouvelles.",
+  musee: "Chaque musée est né d'une passion : un collectionneur, une ville ou un artiste qui voulait partager ses trésors.",
+  mairie: "Beaucoup de mairies ont été construites à la fin du XIXe siècle, quand chaque commune voulait un bel hôtel de ville.",
+  croix: "Ces croix et bornes marquaient les chemins d'autrefois : limites de paroisse, carrefours, ou lieux de prière pour les voyageurs.",
+  ancien: "Ce qui reste d'un lieu ancien raconte souvent plusieurs vies : construit, abandonné, puis redécouvert.",
+  vue: "Les points de vue comme celui-ci attiraient déjà les promeneurs et les peintres il y a plus de cent ans.",
+  autre: "Chaque recoin de la ville cache une histoire, et celui-ci a choisi de garder la sienne pour toi."
+};
+function sageFallback(p) { return `Hé hé… ce lieu garde bien ses secrets ! ${KIND_LORE[questKind(p)] || KIND_LORE.autre} Regarde-le bien : à toi de percer son mystère.`; }
 function osmFacts(p) {
   const f = [];
   if (p.artist) f.push(`Œuvre de <b>${esc(p.artist)}</b>.`);
@@ -2003,9 +2066,10 @@ async function victory(card, pts) {
     <div class="v-title pixel">LIEU TROUVÉ !</div>
     ${card.rarity !== 'common' ? `<div class="pixel" style="font-size:12px;margin-top:8px;color:${{ rare: '#B07BFF', epic: '#8EC5FF', legend: '#FFD23F', mythic: '#FF8FE0' }[card.rarity]}">CARTE ${(TIER_NAME[card.rarity] || '').toUpperCase()} !</div>` : ''}
     <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_PLACE} 🪙</div>
-    <div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
-    <div class="box vstory" id="vstory" style="text-align:left"><span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On déverrouille l'histoire…</p></div>
-    <div class="v-actions"><button class="sharebtn" id="vshare">📤 Partager ma carte</button><button class="btn gold" data-close>Continuer</button></div></div>`, true);
+    <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
+      <button class="qsharei vshare" id="vshare" aria-label="Partager ma carte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
+    <div class="box vstory" id="vstory" style="text-align:left"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p style="color:#b9b0d6">Hmm… je feuillette mon grimoire…</p></div>
+    <div class="v-actions"><button class="btn gold" data-close>Continuer</button></div></div>`, true);
   $('#vshare').onclick = () => shareCard(card);
   fillPhotos($('#vin'));
   fillStory($('#vstory'), place, card);
@@ -2031,18 +2095,17 @@ async function questClear() {
 async function fillStory(box, p, c, retry) {
   if (!box) return;
   if (c && c.welcome) { box.innerHTML = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>Ce grimoire, je l'écris depuis des siècles. Chaque page garde l'histoire d'un lieu de la ville. Mais les pages se sont envolées… À toi de les retrouver, Élu Runner. Chaque carte que tu gagnes en est une !</p>`; return; }
+  const head = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div>`;
+  if (!(S.wiki[p.id] && S.wiki[p.id].aiV === AI_V && S.wiki[p.id].ai)) box.innerHTML = head + '<p style="color:#b9b0d6">Hmm… je feuillette mon grimoire…</p>';
   const w = await wikiFor(p);
-  let ai = null;
-  if (!(w && w.text)) {
-    if (!(S.wiki[p.id] && S.wiki[p.id].ai)) box.innerHTML = '<span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On écrit l\'histoire de ce lieu…</p>';
-    ai = await aiStory(p);
-  }
+  const ai = await aiStory(p);
   if (!box.isConnected) return;
   const facts = osmFacts(p);
-  let h = `<div class="sagehead"><span class="sage sm">🧙</span><b>${w && w.text ? 'Ha ! Tu l\'as trouvée ! Laisse-moi te raconter…' : 'Le vieux sage raconte…'}</b></div>`;
-  if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
-  else if (ai) h += `<p>${esc(ai.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">📚 D'après Wikipédia (${ai.src.map(t => `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, '_'))}" target="_blank" rel="noopener" style="color:#C9A6FF;margin:0;display:inline">${esc(t)}</a>`).join(', ')}), résumé par IA.</p>`;
-  else h += `<p>${facts || "Pas d'histoire connue pour ce lieu : aucune source fiable à proximité. À toi de raconter la tienne !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
+  let h = head;
+  if (ai) h += `<p>${esc(ai.text)}</p>${ai.src.length ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">📚 D'après Wikipédia (${ai.src.map(t => `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, '_'))}" target="_blank" rel="noopener" style="color:#C9A6FF;margin:0;display:inline">${esc(t)}</a>`).join(', ')}) et la fiche du lieu, raconté par IA.</p>` : ''}`;
+  else if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
+  else h += `<p>${esc(sageFallback(p))}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Demander au sage de chercher encore</button>' : ''}`;
+  if (S.dev && aiError) h += `<p style="margin-top:8px;font-size:12px;color:#8f86ad">Mode dév · IA : ${esc(aiError)}</p>`;
   box.innerHTML = h;
   const rb = box.querySelector('#aiRetry'); if (rb) rb.onclick = retry;
 }
