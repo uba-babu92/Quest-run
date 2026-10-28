@@ -267,9 +267,6 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card.mys .ph i{position:absolute;inset:-14px;background-size:cover;background-position:center;filter:blur(9px) saturate(.7) brightness(.75)}
 .card.mys .ph .q{position:relative;font-size:46px;font-weight:900;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
 .tro small{font-size:11px;color:var(--muted);line-height:1.2}
-.buyw{display:flex;flex-direction:column;gap:8px;width:150px}
-.buyb{align-self:center;padding:6px 14px;border-radius:99px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font-weight:800;font-size:14px}
-.mythhero .st-buy{width:100%;margin-top:14px;font-size:15px}
 .mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:6px;margin:0 auto}
 .vcard .in{border-radius:11px}
@@ -482,15 +479,13 @@ h2{font-size:22px;margin:4px 16px 12px}
 .favbtn{display:flex;align-items:center;gap:6px;margin:0 auto 14px;padding:9px 16px;border-radius:99px;border:2px solid rgba(255,255,255,.18);color:#fff;font-weight:800;font-size:14px}
 .favbtn.on{border-color:#FFD23F;color:#FFD23F}
 .card .fav{position:absolute;bottom:52px;right:8px;font-size:15px;color:#FFD23F;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.collbar{display:flex;flex-direction:column;gap:12px;margin:0 16px 16px}
-.colltabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:var(--card);border:1.5px solid var(--line)}
-.colltabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;font-weight:800;font-size:12.5px;line-height:1.2;color:var(--muted);background:none;border:0}
-.colltabs button span{font-size:18px}
-.colltabs button em{font-style:normal;font-size:11px;font-weight:700;opacity:.8}
-.colltabs button.on{background:var(--violet);color:#fff}
-.collfav{display:flex;gap:8px}
-.collfav button{padding:6px 12px;border-radius:99px;border:1.5px solid var(--line);font-weight:800;font-size:13px;background:none;color:var(--text)}
-.collfav button.on{background:var(--text);border-color:var(--text);color:var(--bg)}
+.collbar{display:none}
+.collsec.first{justify-content:space-between}
+.favtog{padding:4px 2px;border:0;background:none;color:var(--muted);font-weight:700;font-size:13px;letter-spacing:0;text-transform:none}
+.favtog.on{color:#FF4D6D}
+.collsec{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:2px 0 -2px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.collsec.line{margin-top:14px}
+.collsec.line::before,.collsec.line::after{content:"";flex:1;height:1px;background:var(--line)}
 
 /* ---------- dénivelé ---------- */
 .hill{display:flex;margin-top:3px;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:-2px}
@@ -718,7 +713,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v59';
+const VERSION = 'v60';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1425,14 +1420,20 @@ function ensureWeek(force) {
   const fac = weekFactors(n), nh = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
   const hid = new Set(); while (hid.size < nh) hid.add(Math.floor(r() * n));
   const fresh = [], others = [];
+  // plus une carte est rare, plus sa quête est dure (28/10) : la rareté la plus haute prend la sortie la plus longue
+  const RANK = { common: 0, rare: 1, epic: 2, legend: 3, mythic: 4 };
+  const tiers = fac.map(() => rollTier(r)).sort((a, b) => RANK[a] - RANK[b]);
   fac.forEach((f, k) => {
-    const tier = rollTier(r);
+    const tier = tiers[k];
     const qkm = Math.round(S.goal.km * f * TIER_KM[tier] * 2) / 2;
     const [p] = pickQuests(1, seed + k, exclude, { km: qkm, others, hidden: hid.has(k) });
     if (!p) return;
     exclude.add(p.id); others.push(p);
     fresh.push({ pid: p.id, status: 'todo', km: qkm, tier });
   });
+  // le lieu réellement le plus dur (km + dénivelé) va toujours à la rareté la plus haute
+  const byEffort = fresh.map(q => q.pid).sort((a, b) => effortM(placeById(a)) - effortM(placeById(b)));
+  fresh.sort((a, b) => RANK[a.tier] - RANK[b.tier] || a.km - b.km).forEach((q, i) => q.pid = byEffort[i]);
   const used = new Set(keep.map(q => q.day));
   const free = S.goal.days.filter(d => !used.has(d));
   fresh.forEach((q, i) => q.day = free[i] ?? S.goal.days[i % S.goal.days.length]);
@@ -2143,22 +2144,26 @@ function fillPhotos(root) {
     if (u) { el.style.backgroundImage = `url("${u}")`; el.innerHTML = ''; }
   });
 }
-let collFilter = 'all', collTab = 'lieux';
-const COLL_TABS = [['lieux', '📍', 'Lieux', c => !isBonus(c) && !c.myth], ['events', '🎃', 'Événements', c => !!c.myth], ['mois', '🏆', 'Défis du mois', isBonus]];
-const COLL_EMPTY = { lieux: ['AUCUNE CARTE', 'Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.'], events: ['AUCUN ÉVÉNEMENT', "Halloween, Saint-Valentin, 14 juillet… Pendant un événement, une quête Mythique apparaît dans tes Quêtes."], mois: ['AUCUN DÉFI', 'Réussis le défi du mois pour gagner sa carte Rare.'] };
+let collFilter = 'all';
+// cartes rangées par catégorie sur une seule page (28/10, Bazil : plus d'onglets), séparées par un filet discret
+const COLL_CATS = [['Lieux', c => !isBonus(c) && !c.myth], ['Événements', c => !!c.myth], ['Défis du mois', isBonus]];
 function renderColl() {
   renderPoints();
-  const n = placeCards().length, r = placeCards().filter(c => c.rarity !== 'common').length;
+  const n = placeCards().length, r = placeCards().filter(c => c.rarity !== 'common').length, nf = S.collection.filter(c => c.fav).length;
   $('#colltitle').innerHTML = `Ma collection <span class="muted" style="font-size:15px;font-weight:600">· ${n} lieu${n > 1 ? 'x' : ''} · ${r} rare${r > 1 ? 's' : ''}</span>`;
-  const T = COLL_TABS.find(t => t[0] === collTab) || COLL_TABS[0], inTab = S.collection.filter(T[3]), nf = inTab.filter(c => c.fav).length;
-  $('#collbar').innerHTML = `<div class="colltabs">${COLL_TABS.map(([k, ic, name, f]) => `<button data-t="${k}" class="${k === T[0] ? 'on' : ''}"><span>${ic}</span>${name}<em>${S.collection.filter(f).length}</em></button>`).join('')}</div>
-    ${inTab.length ? `<div class="collfav"><button data-f="all" class="${collFilter === 'all' ? 'on' : ''}">Toutes · ${inTab.length}</button><button data-f="fav" class="${collFilter === 'fav' ? 'on' : ''}">♥ Favoris · ${nf}</button></div>` : ''}`;
-  $('#collbar').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { collTab = b.dataset.t; collFilter = 'all'; renderColl(); });
-  $('#collbar').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { collFilter = b.dataset.f; renderColl(); });
-  const list = inTab.slice().reverse().filter(c => collFilter !== 'fav' || c.fav).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0));
-  const E = collFilter === 'fav' ? ['AUCUN FAVORI', 'Ouvre une carte et touche ♡ pour la mettre en favori.'] : COLL_EMPTY[T[0]];
-  $('#grid').innerHTML = list.length ? list.map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('')
-    : `<div class="empty" style="grid-column:1/-1"><span class="pixel">${E[0]}</span>${E[1]}</div>`;
+  $('#collbar').innerHTML = '';
+  const fav = S.collection.length ? `<button class="favtog ${collFilter === 'fav' ? 'on' : ''}" id="favtog">${collFilter === 'fav' ? '♥' : '♡'} Favoris${nf ? ' · ' + nf : ''}</button>` : '';
+  const all = S.collection.slice().reverse().filter(c => collFilter !== 'fav' || c.fav);
+  const btn = c => `<button style="padding:0">${cardHtml(c)}</button>`;
+  let html = '';
+  COLL_CATS.forEach(([name, f], k) => {
+    const list = all.filter(f);
+    if (!list.length && k) return;
+    html += `<div class="collsec ${k ? 'line' : 'first'}"><span>${name} · ${list.length}</span>${k ? '' : fav}</div>`;
+    html += list.length ? list.map(btn).join('') : `<div class="empty" style="grid-column:1/-1;padding:18px 0 6px"><span class="pixel">${collFilter === 'fav' ? 'AUCUN FAVORI' : 'AUCUNE CARTE'}</span>${collFilter === 'fav' ? 'Ouvre une carte et touche ♡ pour la mettre en favori.' : 'Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.'}</div>`;
+  });
+  $('#grid').innerHTML = html;
+  if ($('#favtog')) $('#favtog').onclick = () => { collFilter = collFilter === 'fav' ? 'all' : 'fav'; renderColl(); };
   fillPhotos($('#grid'));
   $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)).then(() => current === 'coll' && renderColl()));
 }
@@ -3208,9 +3213,10 @@ function buyQuest(p, t, star) {
   const sh = sheet(`<div style="text-align:center"><div class="starcard" style="width:132px;margin:0 auto 12px">${mysCard(p, t)}</div>
     <h3 style="margin:0 0 4px">${esc(mysteryName(p))}</h3>
     <p class="muted" style="margin:0 0 14px">Une quête ${TIER_NAME[t]} vers un lieu secret. Tu devras quand même courir jusque-là pour gagner sa carte !</p></div>
-    <div class="row" style="margin-top:0"><button class="btn ${ok ? 'gold' : ''}" id="buyq" ${ok ? '' : 'disabled'}>Débloquer la quête · ${fmt(price)} 🪙</button></div>
-    ${ok ? `<p class="muted" style="text-align:center;font-size:13px;margin:8px 0 0">Tu as ${fmt(coins)} 🪙</p>` : `<p class="muted" style="text-align:center;font-size:13px;margin:8px 0 0">Il te manque ${fmt(price - coins)} 🪙</p><button class="link" id="buyshop" style="margin:6px auto 0">Voir la boutique</button>`}`);
-  if (!ok) { sh.querySelector('#buyshop').onclick = () => { closeSheet(); tab('shop'); }; return; }
+    <div class="row" style="margin-top:0"><button class="btn gold" id="buyq">Débloquer la quête · ${fmt(price)} 🪙</button></div>
+    <p class="muted" style="text-align:center;font-size:13px;margin:8px 0 0">${ok ? `Tu as ${fmt(coins)} 🪙` : `Tu as ${fmt(coins)} 🪙 · il t'en manque ${fmt(price - coins)}`}</p>`);
+  // pas assez de pièces : le bouton reste normal et mène à la boutique de pièces
+  if (!ok) { sh.querySelector('#buyq').onclick = () => { closeSheet(); tab('shop'); toast(`Il te manque ${fmt(price - coins)} 🪙`); }; return; }
   sh.querySelector('#buyq').onclick = () => {
     if ((S.coins || 0) < price || !S.week) return;
     S.coins -= price;
@@ -3246,10 +3252,9 @@ function renderVit() {
     <div class="starcard">${mysCard(star, 'mythic')}</div>
     <div class="st-t">La carte la plus rare de ta ville</div>
     <div class="st-s">${starOwned ? 'Le vieux sage te l’a confiée : elle t’attend dans tes Quêtes !' : 'Oseras-tu aller la chercher ?'}</div>
-    ${starOwned ? '' : `<div class="st-bar"><i style="width:${ok / need * 100}%"></i></div><div class="st-k">🔒 ${ok} / ${need} sorties réussies pour la débloquer</div>
-    <button class="btn gold st-buy" data-buy="${esc(star.id)}" data-t="mythic" data-star="1">Ou débloque-la tout de suite · 🪙 ${fmt(BUY_PRICE.mythic)}</button>`}
+    ${starOwned ? '' : `<div class="st-bar"><i style="width:${ok / need * 100}%"></i></div><div class="st-k">🔒 ${ok} / ${need} sorties réussies pour la débloquer</div>`}
   </div>` : ''}
-  ${tease.length ? `<h4 class="vh">Cartes à gagner près de chez toi</h4><div class="vrow">${tease.map(([p, t]) => `<div class="buyw">${mysCard(p, t)}<button class="buyb" data-buy="${esc(p.id)}" data-t="${t}">🪙 ${fmt(BUY_PRICE[t])}</button></div>`).join('')}</div>` : ''}
+  ${tease.length ? `<h4 class="vh">Cartes à gagner près de chez toi</h4><div class="vrow">${tease.map(([p, t]) => mysCard(p, t)).join('')}</div>` : ''}
   <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Tirées au sort à chaque quête. Plus tu réussis de sorties, plus les cartes rares se débloquent (${ok} pour l'instant).</p>
     ${(() => { const od = Object.fromEntries(oddsNow()), D = { common: 'Ta distance habituelle', rare: 'Un peu plus loin (+15 %)', epic: 'Plus loin (+30 %)', legend: 'Bien plus loin (+50 %) · et parfois le week-end', mythic: 'Le défi ultime (+60 %) · et pendant les événements' };
       return ['common', 'rare', 'epic', 'legend', 'mythic'].map(t => { const lock = TIER_UNLOCK[t] > ok, left = TIER_UNLOCK[t] - ok;
@@ -3268,7 +3273,6 @@ function renderVit() {
   holoTilt($('#vit'));
   $('#vit').querySelectorAll('.vrow .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
   $('#vit').querySelectorAll('[data-mys]').forEach(el => el.onclick = () => { const p = placeById(el.dataset.mys); if (!p) return; const isStar = !!el.closest('.mythhero'); if (isStar && starOwned) return toast('Elle t’attend dans tes Quêtes !'); buyQuest(p, isStar ? 'mythic' : el.dataset.t, isStar); });
-  $('#vit').querySelectorAll('[data-buy]').forEach(b => b.onclick = () => { const p = placeById(b.dataset.buy); if (p) buyQuest(p, b.dataset.t, !!b.dataset.star); });
   $('#vit').querySelectorAll('[data-ev]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.ev)));
   $('#vit').querySelectorAll('.tro[data-d]').forEach(el => el.onclick = () => toast('🔒 ' + el.dataset.d));
   // photos floues des lieux secrets (chargées une fois, gardées)
