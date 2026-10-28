@@ -120,6 +120,16 @@ h2{font-size:22px;margin:4px 16px 12px}
 /* le vieux sage (avatar provisoire en attendant les dessins de Bazil) */
 .sagebox{display:flex;gap:12px;align-items:flex-start;margin:2px 0 14px}
 .sage{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:34px;background:radial-gradient(circle at 35% 30%,#9B5CFF,#4E12B0);box-shadow:0 4px 14px rgba(123,47,247,.45);animation:sagebob 3s ease-in-out infinite}
+.sage.big{width:120px;height:120px;font-size:72px;margin:18px auto 14px}
+#onb .intro{text-align:center;justify-content:center}
+#onb .intro .hero{margin-bottom:4px}
+#onb .intro .hero .logo{font-size:16px}
+#onb .intro .bubble{flex:none;text-align:left;min-height:96px}
+#onb .intro .bubble::before{left:50%;top:-8px;border:8px solid transparent;border-bottom-color:var(--line);border-top:0;transform:translateX(-50%)}
+#onb .intro .bubble p{font-size:18px}
+.idots{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.idots i{width:7px;height:7px;border-radius:9px;background:var(--line)}
+.idots i.on{background:var(--violet);width:18px}
 .sage.sm{width:34px;height:34px;font-size:20px;animation:none;box-shadow:none}
 @keyframes sagebob{50%{transform:translateY(-3px)}}
 .bubble{position:relative;flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;min-height:58px}
@@ -629,7 +639,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v44';
+const VERSION = 'v45';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -642,6 +652,10 @@ function tierOf(p, sport) {
   return TIERS[t];
 }
 const qTier = q => q.tier || tierOf(placeById(q.pid));
+// chaque quête tire sa rareté ; plus elle est rare, plus elle est loin (29/10, chiffres de Bazil)
+const TIER_ODDS = [['mythic', 1], ['legend', 10], ['epic', 18], ['rare', 35], ['common', 36]];
+const TIER_KM = { common: 1, rare: 1.15, epic: 1.3, legend: 1.5, mythic: 1.6 };
+function rollTier(r = Math.random) { let x = r() * 100; for (const [t, w] of TIER_ODDS) { if (x < w) return t; x -= w; } return 'common'; }
 const tierBadge = (t, extra = '') => `<span class="badge b-${t}">${TIER_NAME[t] || 'Commune'}${extra}</span>`;
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
@@ -695,8 +709,8 @@ function dailyGift() {
   S.gift = { n, last: k }; S.lastDaily = today(); save();
   const pr = overlay(`<div class="v-title gold pixel">CADEAU<br>DU JOUR</div>
     <div class="gift" id="giftbox">🎁</div><div class="v-sub" id="gtxt">Touche le cadeau pour l'ouvrir !</div>
-    <div class="gdays">${GIFT.map((a, i) => `<i class="${i + 1 === n ? 'on' : i + 1 < n ? 'past' : ''}">J${i + 1}<b>${a}</b></i>`).join('')}</div>
-    <div class="v-sub" style="font-size:13px">Reviens demain : ça monte jusqu'à <b style="color:#FFD23F">30 🪙</b> le 7e jour.</div>
+    <div class="gdays">${GIFT.map((a, i) => `<i class="${i + 1 === n ? 'on' : i + 1 < n ? 'past' : ''}">J${i + 1}<b>${i + 1 < n ? '✓' : i === 6 ? '🎁' : ''}</b></i>`).join('')}</div>
+    <div class="v-sub" style="font-size:13px">Reviens demain : ton cadeau grossit chaque jour !</div>
     <button class="btn gold hidden" data-close id="gok">Super !</button>`);
   const open = () => {
     const b = $('#giftbox'); if (!b || b.classList.contains('open')) return;
@@ -1030,7 +1044,7 @@ async function upgradePlaces() {
   if (S.week) S.week.quests.forEach((q, i) => {
     if (q.status === 'done' || placeById(q.pid)) return;
     const [np] = pickQuests(1, 'tri|' + q.pid, new Set(S.week.quests.map(x => x.pid)));
-    if (np) { S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: q.km, tier: tierOf(np) }; swapped++; }
+    if (np) { S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: q.km, tier: q.tier || tierOf(np) }; swapped++; }
   });
   save();
   if (swapped) { toast(`${swapped} quête${swapped > 1 ? 's' : ''} remplacée${swapped > 1 ? 's' : ''} par des lieux plus sûrs`); if (current === 'quests') renderQuests(); }
@@ -1264,11 +1278,12 @@ function ensureWeek(force) {
   const hid = new Set(); while (hid.size < nh) hid.add(Math.floor(r() * n));
   const fresh = [], others = [];
   fac.forEach((f, k) => {
-    const qkm = Math.round(S.goal.km * f * 2) / 2;
+    const tier = rollTier(r);
+    const qkm = Math.round(S.goal.km * f * TIER_KM[tier] * 2) / 2;
     const [p] = pickQuests(1, seed + k, exclude, { km: qkm, others, hidden: hid.has(k) });
     if (!p) return;
     exclude.add(p.id); others.push(p);
-    fresh.push({ pid: p.id, status: 'todo', km: qkm, tier: tierOf(p) });
+    fresh.push({ pid: p.id, status: 'todo', km: qkm, tier });
   });
   const used = new Set(keep.map(q => q.day));
   const free = S.goal.days.filter(d => !used.has(d));
@@ -1358,7 +1373,7 @@ async function maybeMythic() {
   save(); wikiFor(p);
   await overlay(`<div class="v-title gold pixel">APPARITION<br>MYTHIQUE !</div>
     <div class="vcard card mythic holo" style="margin:16px auto"><div class="in"><span class="ic">${w.ic}</span><b>${esc(w.name)}</b><small>${esc(w.when)}</small></div></div>
-    <div class="v-sub">Seulement <b style="color:#FFD23F">${String(MYTH_PCT).replace('.', ',')} % de chance</b> de la voir ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
+    <div class="v-sub">Seulement <b style="color:#FFD23F">1 % de chance</b> de la voir ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
     <button class="btn gold" data-close>Voir la quête</button>`);
   if (current === 'quests') renderQuests();
   return true;
@@ -1534,7 +1549,7 @@ function openQuest(i) {
     return;
   }
   const [qt, qtxt] = questLine(p);
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'a que ${String(MYTH_PCT).replace('.', ',')} % de chance d'apparaître. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'a que 1 % de chance d'apparaître. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   const sh = sheet(`${sageBox(qt, 'qsay')}
     <div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
@@ -1793,13 +1808,13 @@ function swapQuest(i) {
     <p class="muted">${price ? `Ça coûte <b>${price} 🪙</b> (tu en as ${S.coins || 0}).` : 'Ton changement <b>gratuit</b> de la semaine.'} Choisis ta nouvelle quête :</p>
     <div class="swaps">${opts.map((o, k) => `<button data-k="${k}" class="${o.rarity}"><div class="num">${o.rarity === 'rare' ? '?' : '★'}</div>
       <div style="flex:1;min-width:0"><b>${esc(shownName(o, false))}</b><span>${esc(o.label)} · ${roundTripKm(o).toFixed(1).replace('.', ',')} km A/R ${hillBadge(questDplus(o))}</span></div>
-      ${tierBadge(tierOf(o))}</button>`).join('')}</div>
+      ${tierBadge(qTier(q))}</button>`).join('')}</div>
     <button class="link" id="keep">Garder ma mission</button>`);
   sh.querySelector('#keep').onclick = () => { closeSheet(); openQuest(i); };
   sh.querySelectorAll('[data-k]').forEach(b => b.onclick = () => {
     const o = opts[+b.dataset.k];
     if (price) S.coins -= price; else S.week.freeSwap = true;
-    S.week.quests[i] = { pid: o.id, status: 'todo', day: q.day, km: q.km, tier: tierOf(o) };
+    S.week.quests[i] = { pid: o.id, status: 'todo', day: q.day, km: q.km, tier: q.tier || tierOf(o) };
     save(); closeSheet(); renderQuests();
     toast(price ? `Mission changée · −${price} 🪙` : 'Mission changée !');
     wikiFor(o);
@@ -1811,7 +1826,7 @@ function easierQuest(i) {
   const q = S.week.quests[i];
   const [np] = pickQuests(1, 'easy|' + q.pid + '|' + Date.now(), new Set(S.week.quests.map(x => x.pid)), { km: S.goal.km });
   if (!np) { toast('Pas d\'autre lieu plus proche pour l\'instant'); return; }
-  S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: S.goal.km, tier: tierOf(np) };
+  S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: S.goal.km, tier: q.tier || tierOf(np) };
   save(); closeSheet(); renderQuests(); wikiFor(np);
   toast(`Nouvelle quête à ${roundTripKm(np).toFixed(1).replace('.', ',')} km 💪`);
 }
@@ -1829,7 +1844,7 @@ function report(i) {
     S.blacklist.push(p.id);
     const exclude = new Set(S.week.quests.map(x => x.pid));
     const [np] = q.legend ? [] : pickQuests(1, 'swap|' + p.id + '|' + Date.now(), exclude, { km: q.km }).filter(x => x.rarity === p.rarity).concat(pickQuests(1, 'swap2|' + p.id, exclude, { km: q.km }));
-    if (np) S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: q.km, tier: tierOf(np) }; else S.week.quests.splice(i, 1);
+    if (np) S.week.quests[i] = { pid: np.id, status: 'todo', day: q.day, km: q.km, tier: q.tier || tierOf(np) }; else S.week.quests.splice(i, 1);
     save(); closeSheet(); renderQuests();
     toast(np ? 'Merci ! Nouvelle quête ajoutée.' : 'Merci ! Plus de lieux dispo à cette distance.');
   });
@@ -2040,7 +2055,7 @@ const b64e = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(
 const b64d = t => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, '+').replace(/_/g, '/')))));
 async function shareQuest(q, p) {
   if (!S.name) { const n = (prompt('Ton prénom (pour que ton ami sache qui l\'invite) :') || '').trim().slice(0, 20); if (!n) return; S.name = n; save(); }
-  const d = { i: p.id, n: p.name, l: p.label, r: p.rarity, a: +p.lat.toFixed(6), o: +p.lng.toFixed(6), f: S.name };
+  const d = { i: p.id, n: p.name, l: p.label, r: p.rarity, a: +p.lat.toFixed(6), o: +p.lng.toFixed(6), f: S.name, t: qTier(q) };
   if (p.area) d.ar = 1; if (p.r) d.rr = p.r;
   if (p.zlat) { d.za = +p.zlat.toFixed(6); d.zo = +p.zlng.toFixed(6); }
   const url = location.origin + location.pathname + '#q=' + b64e(d);
@@ -2068,7 +2083,7 @@ async function addFriendQuest() {
     S.places.push(p);
   }
   let i = S.week.quests.findIndex(q => q.pid === p.id && q.status === 'todo');
-  if (i < 0) { S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), friend: d.f, until: Date.now() + 7 * 864e5, tier: tierOf(p) }); i = S.week.quests.length - 1; }
+  if (i < 0) { S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), friend: d.f, until: Date.now() + 7 * 864e5, tier: TIERS.includes(d.t) || d.t === 'mythic' ? d.t : tierOf(p) }); i = S.week.quests.length - 1; }
   save(); wikiFor(p);
   await overlay(`<div class="v-title pixel" style="color:#7CE0A8">QUÊTE<br>ENTRE AMIS !</div>
     <div style="font-size:60px;margin:14px 0">👥</div>
@@ -2870,16 +2885,14 @@ function renderVit() {
     ${now ? `<div class="when">${esc(now.when)} · c'est maintenant !</div><div class="count">Encore ${Math.ceil((now.b - Date.now()) / 3600e3)} h</div><div style="font-size:13px;color:#c9c2e0">Ouvre l'onglet Quêtes pour la chercher</div>`
       : `<div class="when">Prochaine apparition mythique · ${esc(nx.when)}</div><div class="count">Dans ${days} jour${days > 1 ? 's' : ''}</div><div style="font-size:13px;color:#c9c2e0">${new Date(nx.a).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · 72 h seulement</div>`}
   </div>
-  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Pour chaque quête, à ta distance actuelle. Plus tu progresses, plus elles montent.</p>
-    <div class="o">${tierBadge('common')}<span><b>Commune</b>Moins de 6 km aller-retour</span><em>${pct(od.common)}</em></div>
-    <div class="o">${tierBadge('rare')}<span><b>Rare</b>6 à 12 km, ou un trésor caché</span><em>${pct(od.rare)}</em></div>
-    <div class="o">${tierBadge('epic')}<span><b>Épique</b>12 à 20 km, ou un trésor caché loin</span><em>${pct(od.epic)}</em></div>
-    <div class="o">${tierBadge('legend')}<span><b>Légendaire</b>Chaque week-end, pendant 48 h${(P.okRuns || 0) < 6 ? ` · dans ${6 - (P.okRuns || 0)} sortie${6 - (P.okRuns || 0) > 1 ? 's' : ''}` : ''}</span><em>${Math.round(LEG_CHANCE * 100)} %</em></div>
-    <div class="o">${tierBadge('mythic')}<span><b>Mythique</b>Chaque jour</span><em>${String(MYTH_PCT).replace('.', ',')} %</em></div>
+  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">La rareté de chaque quête est tirée au sort. Plus elle est rare, plus le lieu est loin.</p>
+    <div class="o">${tierBadge('common')}<span><b>Commune</b>Ta distance habituelle</span><em>36 %</em></div>
+    <div class="o">${tierBadge('rare')}<span><b>Rare</b>Un peu plus loin (+15 %)</span><em>35 %</em></div>
+    <div class="o">${tierBadge('epic')}<span><b>Épique</b>Plus loin (+30 %)</span><em>18 %</em></div>
+    <div class="o">${tierBadge('legend')}<span><b>Légendaire</b>Bien plus loin (+50 %) · et parfois le week-end</span><em>10 %</em></div>
+    <div class="o">${tierBadge('mythic')}<span><b>Mythique</b>Le défi ultime (+60 %) · et pendant les grands événements</span><em>1 %</em></div>
   </div>
   <div class="panel"><h4>Les 4 cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
-  ${far.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">À aller chercher près de chez toi</h4>
-  <div class="vrow">${far.map(([t, p]) => `<div class="vcard card ${t} ${t === 'legend' ? 'holo' : ''}"><div class="in"><span class="ic">❓</span><b>${esc(p.rarity === 'rare' ? p.label + ' mystère' : p.name)}</b><small>${TIER_NAME[t]} · ${roundTripKm(p).toFixed(0)} km</small></div></div>`).join('')}</div>` : ''}
   ${mine.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
   <div class="panel" style="text-align:center"><div style="font-size:40px">📦</div><h4 style="margin:6px 0">Reçois tes cartes en vrai</h4>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Un booster imprimé avec ta photo, ton run, la date et l'histoire de chaque lieu.</p>
@@ -2890,8 +2903,23 @@ function renderVit() {
   $('#vit').querySelectorAll('.vrow .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
   $('#boost').onclick = () => {
     S.boosterTaps = (S.boosterTaps || 0) + 1; save(); track('booster_interest', {});
-    sheet(`<div style="text-align:center"><div style="font-size:54px">📦</div><h3>Bientôt disponible !</h3><p class="muted">Les boosters de cartes imprimées arrivent bientôt. On te prévient dès que c'est prêt.</p></div>
-      <div class="row"><button class="btn" id="okb">Super !</button></div>`).querySelector('#okb').onclick = closeSheet;
+    if (S.boosterMail) { toast('C\'est noté : on te prévient dès que c\'est prêt 📦'); return; }
+    const sh = sheet(`<div style="text-align:center"><div style="font-size:54px">📦</div><h3>Bientôt disponible !</h3><p class="muted">Laisse ton e-mail : tu seras le premier prévenu.</p></div>
+      <input type="email" id="bmail" placeholder="ton@email.fr" autocomplete="email" style="width:100%;padding:14px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:16px;margin:4px 0 10px">
+      <label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;color:var(--muted);margin-bottom:6px"><input type="checkbox" id="bnews" style="margin-top:3px;width:18px;height:18px">M'inscrire à la newsletter Quest Run (désinscription en un clic, à tout moment)</label>
+      <div class="row"><button class="btn" id="okb">Me prévenir</button></div><button class="link" id="nob">Plus tard</button>`);
+    sh.querySelector('#nob').onclick = closeSheet;
+    sh.querySelector('#okb').onclick = async () => {
+      const email = sh.querySelector('#bmail').value.trim(), news = sh.querySelector('#bnews').checked;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) { toast('Cet e-mail n\'a pas l\'air valide'); return; }
+      if (!news) { toast('Coche la case pour être prévenu'); return; }
+      sh.querySelector('#okb').disabled = true;
+      try {
+        const r = await fetch(STORY_API + '/mail', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, news, src: 'booster' }) }).then(x => x.json());
+        if (!r.ok) throw new Error(r.error || 'erreur');
+        S.boosterMail = true; save(); track('booster_mail', {}); closeSheet(); toast('C\'est noté ! On te prévient dès que c\'est prêt 📦');
+      } catch (e) { sh.querySelector('#okb').disabled = false; toast('Oups, réessaie dans un moment'); }
+    };
   };
 }
 
@@ -2913,7 +2941,7 @@ function notifPlan() {
     const tail = fire ? ` 🔥 Série de ${fire}` : '';
     let msg = null;
     const myth = mythWindows().find(w => d.getTime() >= w.a && d.getTime() < w.b && !(S.mythSeen || {})[w.key]);
-    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'a que ${String(MYTH_PCT).replace('.', ',')} % de chance d'apparaître… Le vieux sage t'attend !`];
+    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'a que 1 % de chance d'apparaître… Le vieux sage t'attend !`];
     else if (S.goal.days.includes(wd) && !(S.streak && S.streak.last === key)) {
       const q = S.week && weekId(d) === S.week.id && S.week.quests.find(x => x.status === 'todo' && x.day === wd && !x.friend && !x.legend);
       const pl = q && placeById(q.pid);
@@ -3022,7 +3050,7 @@ function renderShop() {
   <div class="wallet"><span>Ton solde</span><b>${fmt(S.coins || 0)} 🪙</b><span>Pour changer de mission (${SWAP_COST} 🪙), et bientôt des boosters de cartes</span></div>
   <div class="panel"><h4>Acheter des pièces</h4><div class="packs">${PACKS.map(p => `<button class="pack" data-pack="${p.id}">${p.tag ? `<span class="tag">${p.tag}</span>` : ''}<span class="ic">${p.ic}</span><b>${fmt(p.coins)}</b><span class="price">${p.price}</span></button>`).join('')}</div></div>
   <div class="panel earn"><h4>Gagner des pièces gratuitement</h4>
-    <div class="set"><span>Cadeau du jour<small>${got ? 'Reçu aujourd\'hui ✓ · reviens demain' : 'Ouvre l\'appli chaque jour'} · ça monte sur 7 jours</small></span><b>5 → 30 🪙</b></div>
+    <div class="set"><span>Cadeau du jour<small>${got ? 'Reçu aujourd\'hui ✓ · reviens demain' : 'Ouvre l\'appli chaque jour'} · il grossit chaque jour</small></span><b>🎁</b></div>
     <div class="set"><span>Trouver un lieu<small>À chaque quête réussie</small></span><b>+${COIN_PLACE} 🪙</b></div>
     <div class="set"><span>Semaine complète<small>Toutes tes quêtes de la semaine</small></span><b>+${COIN_WEEK} 🪙</b></div>
   </div>
@@ -3072,7 +3100,7 @@ function renderSet() {
         <div><b>${x.days}</b><span>jours actifs</span></div>
         <div><b>${x.worst ? x.worst[0].replace('niveau_', 'Niv. ') : '–'}</b><span>niveau le plus bloquant${x.worst ? ' (' + x.worst[1] + ' échecs)' : ''}</span></div>
       </div>`; })()}
-    <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0} · intérêt booster : ${S.boosterTaps || 0}</small></span><button class="setbtn" id="give">+100 🪙</button></div>
+    <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0} · intérêt booster : ${S.boosterTaps || 0}${S.boosterMail ? ' (e-mail laissé)' : ''} · e-mails : Cloudflare → KV → clés « mail: »</small></span><button class="setbtn" id="give">+100 🪙</button></div>
     <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
   </div>` : ''}
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
@@ -3176,13 +3204,20 @@ function onboarding(step = 0) {
   const dots = n => `<div class="onbhead">${step >= 1 && step <= 8 ? '<button class="onbback" id="onbback">‹ Retour</button>' : ''}<div class="dots">${[0, 1, 2, 3, 4, 5, 6, 7, 8].map(i => `<i class="${i === n ? 'on' : ''}"></i>`).join('')}</div></div>`;
   const bindBack = () => { const b = $('#onbback'); if (b) b.onclick = () => onboarding(step - 1); };
   if (step === 0) {
-    o.innerHTML = `<div class="body"><div class="hero">
-        <img src="icon.svg" width="112" height="112" alt="">
-        <div class="logo pixel">QUEST RUN</div>
-        <div class="tag">Cours. Explore. Collectionne.</div></div>
-      <p style="text-align:center">Chaque semaine, des quêtes t'envoient vers de vrais lieux de ta ville. Trouve-les, gagne des points et collectionne leurs cartes.</p></div>
-      <button class="btn" id="go">Commencer</button>`;
-    $('#go').onclick = () => onboarding(1);
+    // le vieux sage présente le jeu, une bulle à la fois (on touche pour passer)
+    const LINES = ["Ah, te voilà enfin, jeune coureur !", "Je suis le vieux sage. Chaque lieu de ta ville cache une carte… et une histoire.",
+      "Une prophétie annonce l'Élu Runner : celui qui les retrouvera toutes. Hé hé… c'est toi !",
+      "Je te donne des quêtes. Tu cours jusqu'au lieu, tu gagnes sa carte, et je te raconte son histoire.",
+      "Plus tu cours loin, plus la carte est rare. Alors, Élu… tu es prêt ?"];
+    let k = 0;
+    o.innerHTML = `<div class="body intro"><div class="hero"><img src="icon.svg" width="76" height="76" alt=""><div class="logo pixel">QUEST RUN</div></div>
+      <div class="sage big">🧙</div><div class="bubble" id="ib"><p id="it"></p><span class="more">▼</span></div>
+      <div class="idots">${LINES.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div></div>
+      <button class="btn" id="go">Suivant</button>`;
+    const show = () => { typeText($("#it"), LINES[k], $("#ib")); o.querySelectorAll('.idots i').forEach((d, j) => d.classList.toggle('on', j === k)); $('#go').textContent = k === LINES.length - 1 ? 'Je suis prêt !' : 'Suivant'; };
+    const next = () => { if (k === LINES.length - 1) return onboarding(1); k++; show(); };
+    $('#go').onclick = next;
+    show();
   }
   if (step === 1) {
     o.innerHTML = `${dots(0)}<div class="body"><h1>Tu fais plutôt…</h1>
@@ -3263,15 +3298,15 @@ function onboarding(step = 0) {
   }
   if (step === 8) {
     const sp = S.sport || 'run', go = sp === 'walk' ? 'balade' : 'sortie';
-    o.innerHTML = `${dots(7)}<div class="body scrolly"><h1>Quest Run, c'est quoi ?</h1>
-      <p>${sp === 'walk' ? 'Tes balades' : sp === 'bike' ? 'Tes sorties vélo' : 'Tes footings'} deviennent un jeu.</p>
+    o.innerHTML = `${dots(7)}<div class="body scrolly">${sageBox('', 'osay')}
       <div class="explain">
         <div><span class="ic">🎮</span><div><b>Chaque ${go} devient une quête</b><p>Un vrai lieu à trouver, des cartes à gagner, des niveaux et des trophées.</p></div></div>
         <div><span class="ic">📚</span><div><b>Découvre ton quartier</b><p>Statues cachées, châteaux, fontaines : chaque lieu trouvé te raconte son histoire.</p></div></div>
         <div><span class="ic">🏆</span><div><b>Qui aura la carte la plus rare ?</b><p>Plus tu vas loin, plus la carte est rare. Compare ta collection et tes ${go}s les plus folles avec tes potes.</p></div></div>
       </div></div>
-      <button class="btn" id="go" style="margin-top:16px">C'est parti !</button>`;
+      <button class="btn" id="go" style="margin-top:16px">En route, Élu !</button>`;
     $('#go').onclick = () => onboarding(9);
+    typeText($('#osay'), "Dernière chose, Élu. Retiens bien ces trois secrets :", $('#osayb'));
   }
   if (step === 9) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
@@ -3315,7 +3350,7 @@ function onboarding(step = 0) {
       S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
       mark(4); await wait(1200);
       mark(5);
-      $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span>`;
+      $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span><div style="font-size:15px;color:var(--muted);margin-top:10px">🧙 « Va, Élu Runner. La ville compte sur toi ! »</div>`;
       o.querySelector('.scan .ic').textContent = '🗺️';
       vibrate([40, 40, 80]);
       $('#go').classList.remove('hidden');

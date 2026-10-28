@@ -38,6 +38,7 @@ export default {
     if (!ok) return new Response('Interdit', { status: 403, headers: cors });
     const path = new URL(req.url).pathname;
     if (path.startsWith('/push/')) return pushRoute(req, env, path, cors);
+    if (path === '/mail') return mailRoute(req, env, cors);
     if (req.method !== 'POST') return new Response('Interdit', { status: 403, headers: cors });
     let b;
     try { b = await req.json(); } catch (e) { return new Response('JSON invalide', { status: 400, headers: cors }); }
@@ -157,4 +158,19 @@ async function sendDue(env) {
     }
     cursor = page.list_complete ? null : page.cursor;
   } while (cursor);
+}
+
+/* ---------- e-mails « Me prévenir » du booster (29/10) : rangés dans PUSH sous « mail:… » ---------- */
+async function mailRoute(req, env, cors) {
+  const json = (o, st = 200) => new Response(JSON.stringify(o), { status: st, headers: { ...cors, 'Content-Type': 'application/json' } });
+  if (!env.PUSH) return json({ error: 'Espace KV manquant (nom : PUSH)' }, 500);
+  if (req.method !== 'POST') return json({ error: 'POST attendu' }, 405);
+  let b; try { b = await req.json(); } catch (e) { return json({ error: 'JSON invalide' }, 400); }
+  const email = String(b && b.email || '').trim().toLowerCase().slice(0, 120);
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return json({ error: 'e-mail invalide' }, 400);
+  if (b.news !== true) return json({ error: 'consentement manquant' }, 400);
+  const key = 'mail:' + b64u(await crypto.subtle.digest('SHA-256', enc(email))).slice(0, 24);
+  const old = await env.PUSH.get(key, 'json');
+  await env.PUSH.put(key, JSON.stringify({ email, news: true, src: String(b.src || '').slice(0, 20), t: old ? old.t : new Date().toISOString() }));
+  return json({ ok: true });
 }
