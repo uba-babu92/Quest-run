@@ -730,7 +730,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v64';
+const VERSION = 'v65';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1435,6 +1435,49 @@ function greenAt(lat, lng) {
 }
 // vert à ~110 m près (l'itinéraire se décale vers les parcs et les quais)
 const nearGreenAt = (lat, lng) => { for (let a = -2; a <= 2; a++) for (let b = -2; b <= 2; b++) if (a * a + b * b <= 5 && greenAt(lat + a * GREEN.dlat, lng + b * GREEN.dlng)) return true; return false; };
+/* ---------- parcours de runners (28/10) : berges de Seine, halage, sentiers balisés, allées des bois et des parcs
+   (robot data/trails/). Grille « sur un parcours » gardée sur le téléphone ; lignes chargées en mémoire pour l'itinéraire. ---------- */
+let TRAIL = null, TRAIL_PTS = null;
+const TRAIL_KEY = 'questrun.trails';
+try { const g = JSON.parse(localStorage.getItem(TRAIL_KEY) || 'null'); if (g) TRAIL = greenDecode(g); } catch (e) {}
+async function loadTrails() {
+  if (!S.home) return false;
+  const idx = await fetch('data/trails/index.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+  if (!idx || !idx.tiles) return false;
+  const d = 0.1, need = [];
+  for (let i = Math.floor((S.home.lat - d) / TILE_STEP); i <= Math.floor((S.home.lat + d) / TILE_STEP); i++)
+    for (let j = Math.floor((S.home.lng - d * 1.5) / TILE_STEP); j <= Math.floor((S.home.lng + d * 1.5) / TILE_STEP); j++) if (`${i}_${j}` in idx.tiles) need.push(`${i}_${j}`);
+  if (!need.length) return false;
+  const parts = await Promise.all(need.map(k => fetch(`data/trails/${k}.json`).then(r => r.ok ? r.json() : null).catch(() => null)));
+  const raw = { updated: idx.updated, dlat: idx.dlat, dlng: idx.dlng, nr: idx.nr, nc: idx.nc, tiles: {} };
+  const pts = [];
+  need.forEach((k, i) => { const t = parts[i]; if (!t) return; raw.tiles[k] = { s: t.s, w: t.w, b: t.b }; (t.l || []).forEach(l => l.forEach(([a, b]) => pts.push({ lat: a, lng: b }))); });
+  const fresh = !TRAIL || TRAIL.updated !== idx.updated;
+  try { localStorage.setItem(TRAIL_KEY, JSON.stringify(raw)); } catch (e) {}
+  TRAIL = greenDecode(raw); TRAIL_PTS = pts; for (const k in greenPathCache) delete greenPathCache[k];
+  return fresh;
+}
+function trailAt(lat, lng) {
+  const t = TRAIL && TRAIL.tiles[tileKey(lat, lng)]; if (!t) return 0;
+  const r = Math.floor((lat - t.s) / TRAIL.dlat), c = Math.floor((lng - t.w) / TRAIL.dlng);
+  if (r < 0 || c < 0 || r >= TRAIL.nr || c >= TRAIL.nc) return 0;
+  const x = r * TRAIL.nc + c; return (t.u[x >> 3] >> (x & 7)) & 1;
+}
+// lieu à moins de ~150 m d'un parcours de runners
+const nearTrail = p => { if (!TRAIL) return false; for (let a = -3; a <= 3; a++) for (let b = -3; b <= 3; b++) if (a * a + b * b <= 10 && trailAt(p.lat + a * TRAIL.dlat, p.lng + b * TRAIL.dlng)) return true; return false; };
+// points de passage pour suivre les parcours : on rejoint le parcours le plus proche, on le suit, on en sort au lieu
+function trailVia(from, to) {
+  if (!TRAIL_PTS || !TRAIL_PTS.length) return null;
+  const D = dist(from, to); if (D < 500) return null;
+  const near = (q, max) => { let best = null, bd = max; for (const t of TRAIL_PTS) { if (Math.abs(t.lat - q.lat) > 0.006) continue; const d = dist(q, t); if (d < bd) { bd = d; best = t; } } return best; };
+  const X = near(to, 220); if (!X) return null;
+  // entrée : le point de parcours le plus proche de chez toi qui ne fait pas un trop grand détour
+  let E = null, be = Infinity;
+  for (const t of TRAIL_PTS) { if (Math.abs(t.lat - from.lat) > 0.03) continue; const a = dist(from, t); if (a < be && a + dist(t, to) <= D * 1.35) { be = a; E = t; } }
+  if (!E || dist(E, X) < 300) return [X];
+  const mids = [0.25, 0.5, 0.75].map(f => near({ lat: E.lat + (X.lat - E.lat) * f, lng: E.lng + (X.lng - E.lng) * f }, 250)).filter(Boolean);
+  return [E, ...mids, X];
+}
 const greenPathCache = {};
 // part du trajet maison → lieu qui passe dans le vert ou au bord de l'eau (0 à 1), null sans données
 function pathGreen(p) {
@@ -1455,9 +1498,12 @@ function pickQuests(n, seed, exclude, o = {}) {
   if (pool.length < n) pool = S.places.filter(ok);
   // un trajet agréable passe avant la distance exacte (28/10, Bazil : 80 % dans le vert ou au bord de l'eau) :
   // on prend les lieux au trajet vert, quitte à aller un peu moins loin ou à rester dans la même zone verte
-  if (GREEN) {
+  if (GREEN || TRAIL) {
     const wide = S.places.filter(p => ok(p) && effortM(p) >= target * 0.5 && effortM(p) <= target * 1.3);
-    for (const lim of [0.8, 0.65, 0.5]) {
+    // d'abord les lieux au bord d'un parcours de runners (quais, halage, sentiers, bois)
+    const tr = pool.concat(wide.filter(p => !pool.includes(p))).filter(nearTrail);
+    if (TRAIL && tr.length >= Math.max(n * 2, 3)) pool = tr;
+    else if (GREEN) for (const lim of [0.8, 0.65, 0.5]) {
       const g = pool.filter(p => (pathGreen(p) ?? 0) >= lim), gw = wide.filter(p => (pathGreen(p) ?? 0) >= lim && !g.includes(p));
       const all = g.concat(gw);
       if (all.length >= Math.max(n * 2, 3)) { pool = all; break; }
@@ -1467,7 +1513,7 @@ function pickQuests(n, seed, exclude, o = {}) {
   const told = pool.filter(p => (p.st || 0) >= 2);
   if (told.length >= Math.max(n * 2, 3)) pool = told;
   const r = rng(seed);
-  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0) - (pathGreen(p) ?? 0) * 0.8;
+  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0) - (pathGreen(p) ?? 0) * 0.8 - (nearTrail(p) ? 0.4 : 0);
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const wantRare = o.hidden === true ? n : o.hidden === false ? 0 : n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
@@ -2775,7 +2821,13 @@ function overlap(a, b) {
 }
 async function makeRoute(from, to, avoid, prof) {
   try {
-    let cands = await routeVia([from, to], prof);
+    // suivre les parcours de runners quand il y en a (sinon itinéraire agréable direct)
+    let cands = null;
+    const via = trailVia(from, to);
+    if (via) {
+      try { const t = await routeVia([from, ...via, to], prof); if (t.length && t[0].dist <= dist(from, to) * 1.3 * 1.6) { cands = t; t.forEach(c => c.engine += ' + parcours'); } } catch (e) {}
+    }
+    if (!cands) cands = await routeVia([from, to], prof);
     if (avoid && avoid.length > 4) {
       // détour par un point du côté opposé à l'aller, pour faire une boucle
       const mid = avoid[Math.floor(avoid.length / 2)], cx = (from.lat + to.lat) / 2, cy = (from.lng + to.lng) / 2;
@@ -3968,7 +4020,7 @@ function onboarding(step = 0) {
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
       S.homeEle = null;
       try { await Promise.race([loadElevations(), wait(6000)]); } catch (e) {}
-      try { await Promise.race([loadGreen(), wait(6000)]); } catch (e) {}
+      try { await Promise.race([Promise.all([loadGreen(), loadTrails()]), wait(7000)]); } catch (e) {}
       S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
       mark(4); await wait(1200);
       mark(5);
@@ -4110,7 +4162,10 @@ if (typeof L === 'undefined') {
 } else {
   ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
   // 1re fois avec les zones vertes : les quêtes pas encore faites sont refaites, plus vertes
-  loadGreen().then(() => { if (GREEN && !S.greenV && S.week) { S.greenV = 1; ensureWeek(true); save(); if (current === 'quests') renderQuests(); toast('🌳 Nouvelles quêtes : plus de parcs et de bords de Seine !'); } }).catch(() => {});
+  Promise.all([loadGreen().catch(() => false), loadTrails().catch(() => false)]).then(() => {
+    const v = TRAIL ? 2 : GREEN ? 1 : 0;
+    if (v > (S.greenV || 0) && S.week) { S.greenV = v; ensureWeek(true); save(); if (current === 'quests') renderQuests(); toast(TRAIL ? '🌳 Nouvelles quêtes le long des quais, des bois et des sentiers !' : '🌳 Nouvelles quêtes : plus de parcs et de bords de Seine !'); }
+  });
   S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'rare') c.rarity = 'rare'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');

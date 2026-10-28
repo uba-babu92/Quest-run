@@ -1,10 +1,10 @@
-name: Robot des zones vertes
+name: Robot des zones vertes et des parcours
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['data/areas.json', 'tools/build-green.mjs', '.github/workflows/green.yml']
+    paths: ['data/areas.json', 'tools/build-green.mjs', 'tools/build-trails.mjs', '.github/workflows/green.yml']
   schedule:
     - cron: '43 4 1 * *'   # le 1er de chaque mois à 4 h 43 (UTC)
 
@@ -29,12 +29,17 @@ jobs:
           git config user.name "Robot des lieux"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node tools/build-green.mjs
+      - name: Télécharger les parcours de runners
+        run: |
+          git config user.name "Robot des lieux"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node tools/build-trails.mjs
       - name: Enregistrer
         run: |
           git config user.name "Robot des lieux"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/green
+          git add data/green data/trails
           if git diff --cached --quiet; then echo "Rien de nouveau"; exit 0; fi
-          git commit -m "Zones vertes mises à jour"
+          git commit -m "Zones vertes et parcours mis à jour"
           git pull --rebase origin main
           git push origin HEAD:main
