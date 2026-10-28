@@ -7,6 +7,15 @@
 // Sources : tags OpenStreetMap, Wikidata (créateur, date, matériau, sujet, protection…), Wikipédia.
 // Usage : node tools/enrich-places.mjs
 import fs from 'node:fs';
+import { execSync } from 'node:child_process';
+// sur GitHub, chaque case est enregistrée dès qu'elle est prête (le robot peut être coupé au bout de quelques heures)
+function publish(msg) {
+  if (!process.env.GITHUB_ACTIONS) return;
+  try {
+    execSync('git add data/places', { stdio: 'inherit' });
+    execSync('git diff --cached --quiet || (git commit -q -m "' + msg + '" && git pull -q --rebase origin main && git push -q origin HEAD:main)', { stdio: 'inherit', shell: '/bin/bash' });
+  } catch (e) { console.log('  enregistrement raté, on continue'); }
+}
 
 const UA = { 'User-Agent': 'QuestRun/1.0 (github.com/uba-babu92/Quest-run)' };
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -56,6 +65,7 @@ for (const f of files) {
   const els = JSON.parse(fs.readFileSync(path, 'utf8'));
   const named = els.filter(e => e.tags?.name);
   console.log(`${f} : ${named.length} lieux nommés`);
+  if (!process.env.FORCE && named.length && named.every(e => e.st)) { console.log('  déjà vérifiée, on passe'); continue; }
   // 1) les éléments Wikidata du lieu, puis ceux qu'il cite (artiste, sujet, matière…)
   const own = named.map(e => e.tags.wikidata).filter(Boolean);
   const side = named.flatMap(e => [e.tags['artist:wikidata'], e.tags['subject:wikidata'], e.tags['name:etymology:wikidata']]).filter(Boolean).flatMap(x => x.split(';'));
@@ -102,5 +112,6 @@ for (const f of files) {
     if (st === 3) n3++; else if (st === 2) n2++; else n1++;
   }
   fs.writeFileSync(path, JSON.stringify(els));
+  publish(`Lieux : histoires vérifiées (${f})`);
 }
 console.log(`Terminé : ${n3} avec article, ${n2} avec des faits, ${n1} sans histoire vérifiable`);

@@ -65,11 +65,13 @@ for (const a of areas) {
 }
 let old = { tiles: {} };
 try { old = JSON.parse(fs.readFileSync('data/trails/index.json', 'utf8')); } catch (e) {}
-const index = { updated: new Date().toISOString(), step: STEP, dlat: DLAT, dlng: DLNG, nr: NR, nc: NC, tiles: { ...old.tiles } };
+const index = { updated: new Date().toISOString(), step: STEP, dlat: DLAT, dlng: DLNG, nr: NR, nc: NC, tiles: { ...old.tiles }, done: { ...(old.done || {}) } };
 console.log(`${tiles.size} case(s) de parcours`);
 for (const [k, [i, j]] of tiles) {
   const s = i * STEP, w = j * STEP;
   console.log(`Case ${k}`);
+  // déjà faite il y a moins de 25 jours : on passe (le robot peut être coupé, il reprend où il en était)
+  try { if (!process.env.FORCE && k in old.tiles && fs.existsSync(`data/trails/${k}.json`) && Date.now() - fs.statSync(`data/trails/${k}.json`).mtimeMs < 25 * 864e5 && old.done && old.done[k] && Date.now() - old.done[k] < 25 * 864e5) { console.log('  déjà faite, on passe'); continue; } } catch (e) {}
   const els = await overpass(query(s.toFixed(1), w.toFixed(1), ((i + 1) * STEP).toFixed(1), ((j + 1) * STEP).toFixed(1)));
   if (!els) { console.log('  sautée'); continue; }
   const marked = new Set();
@@ -93,6 +95,7 @@ for (const [k, [i, j]] of tiles) {
   }
   const bytes = new Uint8Array(Math.ceil(grid.length / 8)); grid.forEach((v, x) => { if (v) bytes[x >> 3] |= 1 << (x & 7); });
   fs.writeFileSync(`data/trails/${k}.json`, JSON.stringify({ s: +s.toFixed(1), w: +w.toFixed(1), b: Buffer.from(bytes).toString('base64'), l: kept }));
+  (index.done = index.done || {})[k] = Date.now();
   index.tiles[k] = kept.length;
   fs.writeFileSync('data/trails/index.json', JSON.stringify(index, null, 1));
   console.log(`  ${kept.length} chemins de runners (${Math.round(kept.reduce((a, l) => a + len(l), 0) / 1000)} km)`);

@@ -136,11 +136,13 @@ for (const a of areas) {
 }
 let old = { tiles: {} };
 try { old = JSON.parse(fs.readFileSync('data/green/index.json', 'utf8')); } catch (e) {}
-const index = { updated: new Date().toISOString(), step: STEP, dlat: DLAT, dlng: DLNG, nr: NR, nc: NC, tiles: { ...old.tiles } };
+const index = { updated: new Date().toISOString(), step: STEP, dlat: DLAT, dlng: DLNG, nr: NR, nc: NC, tiles: { ...old.tiles }, done: { ...(old.done || {}) } };
 console.log(`${tiles.size} case(s) de zones vertes`);
 for (const [k, [i, j]] of tiles) {
   const s = (i * STEP).toFixed(1), w = (j * STEP).toFixed(1), n = ((i + 1) * STEP).toFixed(1), e = ((j + 1) * STEP).toFixed(1);
   console.log(`Case ${k}`);
+  // déjà faite il y a moins de 25 jours : on passe (le robot peut être coupé, il reprend où il en était)
+  try { if (!process.env.FORCE && k in old.tiles && fs.existsSync(`data/green/${k}.json`) && Date.now() - fs.statSync(`data/green/${k}.json`).mtimeMs < 25 * 864e5 && old.done && old.done[k] && Date.now() - old.done[k] < 25 * 864e5) { console.log('  déjà faite, on passe'); continue; } } catch (e) {}
   const els = await overpass(query(s, w, n, e));
   if (!els) { console.log('  sautée'); continue; }
   const grid = rasterTile(i, j, els), share = grid.reduce((a, b) => a + b, 0) / grid.length;
@@ -148,6 +150,7 @@ for (const [k, [i, j]] of tiles) {
   const bytes = new Uint8Array(Math.ceil(grid.length / 8));
   grid.forEach((v, x) => { if (v) bytes[x >> 3] |= 1 << (x & 7); });
   fs.writeFileSync(`data/green/${k}.json`, JSON.stringify({ s: +s, w: +w, b: Buffer.from(bytes).toString('base64') }));
+  (index.done = index.done || {})[k] = Date.now();
   index.tiles[k] = Math.round(share * 100);
   fs.writeFileSync('data/green/index.json', JSON.stringify(index, null, 1));
   console.log(`  ${els.length} zones, ${Math.round(share * 100)} % de la case agréable`);
