@@ -167,6 +167,8 @@ h2{font-size:22px;margin:4px 16px 12px}
 .qshare{display:block;margin:6px auto 0;color:var(--violet);font-weight:700;font-size:15px;padding:8px}
 .quest.legendq{border:1.5px solid #FFB800;background:linear-gradient(120deg,rgba(255,184,0,.16),var(--card) 60%)}
 .quest.legendq .num{background:linear-gradient(135deg,#FFE27A,#D38E00);color:#2a1d00}
+.quest.legendq.mythq{border-color:transparent;background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(120deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff) border-box}
+.quest.legendq.mythq .num{background:linear-gradient(135deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);color:#1a0b2e}
 .legtime{color:#D9A000;font-weight:800}
 .explain{display:flex;flex-direction:column;gap:10px}
 .explain>div{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
@@ -231,11 +233,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .b-mythic{background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);color:#1a0b2e}
 /* cartes bonus (28/10) : à part des cartes de lieu, comme les cartes promo */
 .b-bonus{background:#24211F;color:#F3ECDF;letter-spacing:.08em}
-.card.bonus{background:#E6DCC9;box-shadow:inset 0 0 0 2px #24211F22}
 .card.bonus .in{background:#F3ECDF}
-.card.bonus .cap{background:#FBF7F0}
-.card.bonus .pts{background:#24211F}
-.bonushead{grid-column:1/-1;margin:14px 0 2px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}
 /* effet holographique : reflet arc-en-ciel qui suit l'inclinaison */
 .holo{position:relative;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s;-webkit-backface-visibility:hidden;backface-visibility:hidden;will-change:transform;isolation:isolate}
 .holo .in{-webkit-mask-image:-webkit-radial-gradient(white,black)}
@@ -249,6 +247,18 @@ h2{font-size:22px;margin:4px 16px 12px}
 .vit .lead{margin:0 16px 14px;color:var(--muted);font-size:14px}
 .mythhero{margin:0 16px 16px;border-radius:22px;padding:18px;background:radial-gradient(circle at 50% 0%,#3b1a6e,#120d1e 70%);color:#fff;text-align:center;border:1px solid rgba(255,255,255,.12)}
 .mythhero .when{font-size:13px;color:#c9c2e0;margin-top:10px}
+.mythhero{padding:22px 18px 20px}
+.starcard{width:168px;margin:0 auto}
+.mythhero .st-t{font-size:19px;font-weight:900;margin:16px 0 4px}
+.mythhero .st-s{font-size:14px;color:#c9c2e0;line-height:1.4}
+.mythhero .st-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.12);margin:14px 8px 8px;overflow:hidden}
+.mythhero .st-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff)}
+.mythhero .st-k{font-size:13px;font-weight:700;color:#e8e3f6}
+.vh{margin:8px 16px 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.card.mys .ph{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 40%,#3b2a63,#140f22)}
+.card.mys .ph i{position:absolute;inset:-14px;background-size:cover;background-position:center;filter:blur(9px) saturate(.7) brightness(.75)}
+.card.mys .ph .q{position:relative;font-size:46px;font-weight:900;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
+.tro small{font-size:11px;color:var(--muted);line-height:1.2}
 .mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:6px;margin:0 auto}
 .vcard .in{border-radius:11px}
@@ -281,7 +291,8 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card .ph svg{width:38%;opacity:.85}
 .card .cap{padding:8px 9px 9px;background:#fff;color:#16131F}
 .card .cap b{display:block;font-size:13px;line-height:1.2;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.card .cap span{font-size:11px;color:#6E6982}
+.card .cap span{display:block;margin-top:2px;font-size:11px;line-height:1.3;color:#6E6982;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.vrow .card .pts{display:none}
 .card .r{position:absolute;top:8px;left:8px}
 .card .pts{position:absolute;top:8px;right:8px;font-size:11px;font-weight:800;background:rgba(0,0,0,.6);color:var(--gold);padding:4px 7px;border-radius:99px}
 .card.rare .in::after,.card.epic .in::after,.card.legend .in::after{content:"";position:absolute;inset:0;pointer-events:none;
@@ -460,9 +471,15 @@ h2{font-size:22px;margin:4px 16px 12px}
 .favbtn{display:flex;align-items:center;gap:6px;margin:0 auto 14px;padding:9px 16px;border-radius:99px;border:2px solid rgba(255,255,255,.18);color:#fff;font-weight:800;font-size:14px}
 .favbtn.on{border-color:#FFD23F;color:#FFD23F}
 .card .fav{position:absolute;bottom:52px;right:8px;font-size:15px;color:#FFD23F;text-shadow:0 1px 4px rgba(0,0,0,.6)}
-.collbar{display:flex;gap:8px;margin:0 16px 12px}
-.collbar button{padding:7px 14px;border-radius:99px;border:2px solid var(--line);font-weight:800;font-size:14px;background:var(--card);color:var(--text)}
-.collbar button.on{background:var(--violet);border-color:var(--violet);color:#fff}
+.collbar{display:flex;flex-direction:column;gap:12px;margin:0 16px 16px}
+.colltabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:16px;background:var(--card);border:1.5px solid var(--line)}
+.colltabs button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border-radius:12px;font-weight:800;font-size:12.5px;line-height:1.2;color:var(--muted);background:none;border:0}
+.colltabs button span{font-size:18px}
+.colltabs button em{font-style:normal;font-size:11px;font-weight:700;opacity:.8}
+.colltabs button.on{background:var(--violet);color:#fff}
+.collfav{display:flex;gap:8px}
+.collfav button{padding:6px 12px;border-radius:99px;border:1.5px solid var(--line);font-weight:800;font-size:13px;background:none;color:var(--text)}
+.collfav button.on{background:var(--text);border-color:var(--text);color:var(--bg)}
 
 /* ---------- dénivelé ---------- */
 .hill{display:flex;margin-top:3px;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap;vertical-align:-2px}
@@ -690,12 +707,14 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v56';
+const VERSION = 'v57';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
 const TIER_NAME = { common: 'Commune', rare: 'Rare', epic: 'Épique', legend: 'Légendaire', mythic: 'Mythique', bonus: 'Bonus' };
-const isBonus = c => !!(c && (c.welcome || c.month || c.rarity === 'bonus'));
+const isBonus = c => !!(c && (c.welcome || c.month));
+// ce qu'on lit sous le nom de la carte : l'objectif réussi (carte du mois), l'événement, sinon le type de lieu
+const cardSub = c => c.month ? '✓ ' + (c.goal || 'Défi du mois réussi') : c.myth ? evTag(c) || c.label : c.label;
 const placeCards = () => S.collection.filter(c => !isBonus(c));
 function tierOf(p, sport) {
   if (!p) return 'common';
@@ -828,6 +847,8 @@ const MONTH_NAMES = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'jui
 const MONTH_IC = ['👑', '🕯️', '🌧️', '🐟', '🍒', '🍓', '🌊', '🌻', '🎒', '🌰', '🍁', '🎄'];
 // carte du mois (28/10) : offerte quand le défi du mois est réussi, Épique, illustrée, sans lieu
 const MONTH_PTS = 300;
+const deM = m => (/^[aeiou]/.test(m) ? "d'" : 'de ') + m;
+const MONTHLY_DONE = { km: n => `${n} km courus`, cards: n => `${n} cartes gagnées`, dplus: n => `${n} m de D+ grimpés`, rares: n => `${n} cartes Rares ou mieux`, hidden: n => `${n} trésors cachés trouvés` };
 const MONTH_CARDS = [
   ['La Galette de Janvier', "Chaque janvier, les rois de la ville se disputaient la fève… Moi, je l'ai gardée dans ma poche pendant trois cents ans. Cette carte, c'est ta couronne, Élu : tu as tenu ton défi quand tous les autres rangeaient leurs baskets !"],
   ['La Chandelle de Février', "À la Chandeleur, on dit que la lumière revient. Cette chandelle ne s'éteint jamais : elle brûle pour ceux qui courent même quand il fait nuit à 18 h. Comme toi."],
@@ -862,25 +883,26 @@ function renderMonthly() {
   const el = $('#monthly'); if (!el) return;
   const m = monthlyNow(), v = Math.min(m.target, monthlyProgress(m)), mo = +m.key.split('-')[1] - 1;
   const left = Math.ceil((new Date(+m.key.split('-')[0], mo + 1, 1) - Date.now()) / 864e5);
-  el.innerHTML = `<span class="ic">${MONTH_IC[mo]}</span><div class="t"><b>Défi de ${MONTH_NAMES[mo]}${m.done ? ' · réussi ✓' : ''}</b><span>${MONTHLY_TXT[m.type](m.target)} · ${m.done ? 'carte gagnée' : `encore ${left} j`}</span><div class="bar"><i style="width:${v / m.target * 100}%"></i></div></div><em>${v}/${m.target}</em>`;
+  el.innerHTML = `<span class="ic">${MONTH_IC[mo]}</span><div class="t"><b>Défi ${deM(MONTH_NAMES[mo])}${m.done ? ' · réussi ✓' : ''}</b><span>${MONTHLY_TXT[m.type](m.target)} · ${m.done ? 'carte gagnée' : `encore ${left} j`}</span><div class="bar"><i style="width:${v / m.target * 100}%"></i></div></div><em>${v}/${m.target}</em>`;
   el.onclick = () => toast(m.done ? 'Défi réussi ! La carte est dans ta collection, le trophée dans tes trophées.' : `${MONTHLY_TXT[m.type](m.target)} avant la fin du mois : une carte Épique + un trophée`);
 }
 async function checkMonthly() {
   const m = monthlyNow(); if (m.done || monthlyProgress(m) < m.target) return;
   const mo = +m.key.split('-')[1] - 1, name = MONTH_NAMES[mo][0].toUpperCase() + MONTH_NAMES[mo].slice(1) + ' ' + m.key.split('-')[0];
   m.done = true; (S.badges = S.badges || []).push({ key: m.key, name, ic: MONTH_IC[mo], date: Date.now() });
-  const card = { pid: 'month-' + m.key, month: m.key, name: MONTH_CARDS[mo][0], label: 'Carte du mois', rarity: 'bonus', pts: MONTH_PTS, date: Date.now(), img: `month/${mo + 1}.svg`, photo: false };
+  const card = { pid: 'month-' + m.key, month: m.key, name: MONTH_CARDS[mo][0], label: 'Carte du mois', goal: MONTHLY_DONE[m.type](m.target), rarity: 'rare', pts: MONTH_PTS, date: Date.now(), img: `month/${mo + 1}.svg`, photo: false };
   if (!S.collection.some(c => c.pid === card.pid)) { S.collection.push(card); S.points += MONTH_PTS; }
   save();
   const p = overlay(`<div class="fiche" style="text-align:center"><div class="v-title gold pixel">DÉFI<br>RÉUSSI !</div>
-    <div class="pixel" style="font-size:12px;margin-top:8px;color:#F3ECDF">CARTE BONUS DU MOIS !</div>
+    <div class="pixel" style="font-size:12px;margin-top:8px;color:#B07BFF">CARTE RARE DU MOIS !</div>
     <div class="v-pts pixel" id="vp">+0 ★</div>
-    <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div></div>
+    <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
+      <button class="qsharei vshare" id="vshare" aria-label="Partager ma carte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
     <div class="v-sub">${MONTHLY_TXT[m.type](m.target)} : c'est fait !<br>${MONTH_IC[mo]} Trophée <b style="color:#FFD23F">${esc(name)}</b> gagné</div>
     <div class="box vstory" style="text-align:left"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Génial</button></div></div>`, true);
-  fillPhotos($('#vin')); countUp($('#vp'), MONTH_PTS); vibrate([30, 40, 30]); sfx('trophy');
-  setTimeout(() => { const f = $('#flip'); if (f) { f.classList.add('on'); vibrate(60); sfx('flip'); confetti(['#D9622B', '#E8B53A', '#6E9B68', '#3E73B9']); } }, 900);
+  $('#vshare').onclick = () => shareCard(card); fillPhotos($('#vin')); countUp($('#vp'), MONTH_PTS); vibrate([30, 40, 30]); sfx('trophy');
+  setTimeout(() => { const f = $('#flip'); if (f) { f.classList.add('on'); vibrate(60); sfx('flip'); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
   await p; renderPoints();
 }
 
@@ -1461,22 +1483,38 @@ function comeback() {
 
 /* ---------- apparition légendaire : 48 h, le week-end, après 3 sorties réussies ---------- */
 const LEG_MS = 48 * 3600e3, LEG_CHANCE = 1 / 3;
-/* ---------- cartes mythiques : une par mois (28/10, avant 4 par an), 72 h, aux moments où l'on court ---------- */
+/* ---------- événements de l'année (28/10) : une quête Mythique de 72 h vers un lieu EN RAPPORT avec l'événement,
+   aux moments où l'on court le plus. Affichée dans les Quêtes, jamais dans la Vitrine. ---------- */
 const nthDay = (y, mo, wd, n) => { const d = new Date(y, mo, 1); while (d.getDay() !== wd) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 7 * (n - 1)); return d; };
+const lbl = (...l) => p => l.includes(p.label);
+const nm = re => p => re.test(p.name || '');
 const MYTHS = [
-  { id: 'jan', ic: '🔥', name: 'La Flamme des Résolutions', when: '2e week-end de janvier', start: y => nthDay(y, 0, 5, 2) },
-  { id: 'fev', ic: '💘', name: 'Le Cœur de Sprinter', when: 'Saint-Valentin', start: y => new Date(y, 1, 13) },
-  { id: 'mars', ic: '🌱', name: 'La Pousse de Printemps', when: 'Début mars · semi-marathon de Paris', start: y => { const d = nthDay(y, 2, 6, 1); d.setDate(d.getDate() - 1); return d; } },
-  { id: 'avr', ic: '🏅', name: 'Le Laurier du Marathon', when: 'Week-end du marathon de Paris', start: y => { const d = nthDay(y, 3, 0, 2); d.setDate(d.getDate() - 2); return d; } },
-  { id: 'mai', ic: '🌸', name: 'Le Muguet d\'Or', when: 'Week-end du 1er mai', start: y => new Date(y, 4, 1) },
-  { id: 'juin', ic: '🏃', name: 'La Foulée d\'Or', when: 'Journée mondiale de la course', start: y => nthDay(y, 5, 3, 1) },
-  { id: 'juil', ic: '🎆', name: 'L\'Étoile de Juillet', when: '14 juillet', start: y => new Date(y, 6, 13) },
-  { id: 'aout', ic: '☀️', name: 'Le Soleil d\'Août', when: '15 août', start: y => new Date(y, 7, 14) },
-  { id: 'sept', ic: '🏛️', name: 'Le Gardien du Patrimoine', when: 'Journées du patrimoine', start: y => { const d = nthDay(y, 8, 6, 1); d.setDate(d.getDate() + 13); return d; } },
-  { id: 'oct', ic: '🎃', name: 'La Citrouille Spectrale', when: 'Halloween', start: y => new Date(y, 9, 30) },
-  { id: 'nov', ic: '💙', name: 'Le Bleuet', when: '11 novembre', start: y => new Date(y, 10, 10) },
-  { id: 'dec', ic: '❄️', name: 'Le Flocon d\'Argent', when: 'Week-end avant Noël', start: y => { const d = new Date(y, 11, 24); while (d.getDay() !== 5) d.setDate(d.getDate() - 1); return d; } }
+  { id: 'jan', short: 'Résolutions', day: 'Janvier', ic: '🔥', name: 'Résolutions', when: '2e week-end de janvier', start: y => nthDay(y, 0, 5, 2), line: "C'est le moment où tout le monde abandonne ses bonnes résolutions… mais pas toi ! Grimpe là-haut et regarde la ville d'un œil neuf.", theme: [[nm(/horizon|panorama|aurore|soleil|levant|espoir/i), 3], [lbl('Point de vue'), 2], [lbl('Monument'), 1]] },
+  { id: 'fev', short: 'Saint-Valentin', day: '14 février', ic: '💘', name: 'Saint-Valentin', when: '13-15 février', start: y => new Date(y, 1, 13), line: "On murmure qu'un lieu de la ville rend les cœurs tout mous… Cours-y avant que Cupidon ne te voie !", theme: [[nm(/amour|amoureu|baiser|couple|v[ée]nus|cupidon|[ée]ros|psych[ée]|c(œ|oe)ur|tendresse|[ée]treinte|rom[ée]o|juliette|nymphe|mariage|danse/i), 3], [lbl('Fontaine', 'Jardin'), 2], [lbl('Parc'), 1]] },
+  { id: 'mars', short: 'Printemps', day: 'Début mars', ic: '🌱', name: 'Printemps', when: 'Début mars · semi-marathon de Paris', start: y => { const d = nthDay(y, 2, 6, 1); d.setDate(d.getDate() - 1); return d; }, line: "Le printemps se réveille… et les coureurs avec ! Un jardin de la ville cache une carte qui vient d'éclore.", theme: [[nm(/fleur|printemps|rose|lilas|arbre|for[êe]t|bois/i), 3], [lbl('Jardin', 'Parc'), 2]] },
+  { id: 'avr', short: 'Marathon', day: 'Avril', ic: '🏅', name: 'Marathon de Paris', when: '2e week-end d’avril', start: y => { const d = nthDay(y, 3, 0, 2); d.setDate(d.getDate() - 2); return d; }, line: "Pendant que 50 000 coureurs filent dans Paris, une carte attend un vrai champion… Prouve-le !", theme: [[nm(/course|coureur|athl|marath|sport|olymp|stade|champion/i), 3], [lbl('Point de vue'), 2], [lbl('Parc'), 1]] },
+  { id: 'mai', short: '1er mai', day: '1er mai', ic: '🌸', name: '1er mai', when: 'Week-end du 1er mai', start: y => new Date(y, 4, 1), line: "Le muguet sort de terre… et une carte avec lui ! Elle pousse dans un jardin de la ville.", theme: [[nm(/fleur|muguet|travail|ouvrier|printemps/i), 3], [lbl('Jardin', 'Parc'), 2]] },
+  { id: 'juin', short: 'Course', day: 'Juin', ic: '🏃', name: 'Journée de la course', when: '1er mercredi de juin', start: y => nthDay(y, 5, 3, 1), line: "Aujourd'hui, le monde entier court ! Montre au monde que l'Élu Runner est le plus rapide.", theme: [[nm(/course|coureur|athl|sport|olymp|stade|champion/i), 3], [lbl('Parc', 'Point de vue'), 2]] },
+  { id: 'juil', short: '14 juillet', day: '14 juillet', ic: '🎆', name: '14 juillet', when: '13-15 juillet', start: y => new Date(y, 6, 13), line: "Les feux d'artifice se préparent… et la République a caché une carte quelque part. Liberté, égalité, foulées !", theme: [[nm(/r[ée]publique|marianne|libert[ée]|bastille|r[ée]volution|\bnation\b|patrie/i), 3], [lbl('Mairie', 'Monument'), 2]] },
+  { id: 'aout', short: '15 août', day: '15 août', ic: '☀️', name: '15 août', when: '14-16 août', start: y => new Date(y, 7, 14), line: "La ville est vide, il fait chaud… parfait pour une quête ! Une carte t'attend près d'un lieu bien frais.", theme: [[lbl('Fontaine'), 3], [lbl('Église', 'Chapelle', 'Parc'), 1]] },
+  { id: 'sept', short: 'Patrimoine', day: 'Septembre', ic: '🏛️', name: 'Journées du patrimoine', when: '3e week-end de septembre', start: y => { const d = nthDay(y, 8, 6, 1); d.setDate(d.getDate() + 13); return d; }, line: "Les portes des vieux monuments s'ouvrent ! L'un d'eux garde une carte depuis des siècles…", theme: [[lbl('Château', 'Manoir'), 3], [lbl('Monument', 'Musée', 'Ruines'), 2], [p => !!p.wp, 1]] },
+  { id: 'oct', short: 'Halloween', day: '31 octobre', ic: '🎃', name: 'Halloween', when: '30 oct. - 1er nov.', start: y => new Date(y, 9, 30), line: "Brrr… on raconte que, la nuit d'Halloween, un lieu de la ville se réveille. Va voir… si tu l'oses !", theme: [[nm(/diable|d[ée]mon|dragon|sorci|cr[âa]ne|squelette|fant[ôo]me|spectre|\bloups?\b|gargouille|monstre|enfer|sphinx|minotaure|m[ée]duse|gorgone|chim[èe]re|serpent|corbeau|vampire|\bogre/i), 4], [lbl('Ruines', 'Croix'), 3], [lbl('Chapelle', 'Manoir', 'Château'), 2], [lbl('Statue', 'Sculpture', 'Buste'), 1]] },
+  { id: 'nov', short: '11 novembre', day: '11 novembre', ic: '💙', name: '11 novembre', when: '10-12 novembre', start: y => new Date(y, 10, 10), line: "Un jour pour se souvenir… Va rendre hommage à ceux qui ont marqué la ville. Une carte rare y veille.", theme: [[lbl('Monument aux morts'), 3], [lbl('Stèle', 'Mémorial', 'Obélisque'), 2]] },
+  { id: 'dec', short: 'Noël', day: 'Décembre', ic: '🎄', name: 'Noël', when: 'Week-end avant Noël', start: y => { const d = new Date(y, 11, 24); while (d.getDay() !== 5) d.setDate(d.getDate() - 1); return d; }, line: "Ho ho… euh, pardon. Une carte s'est glissée sous le sapin d'un lieu de la ville. Va la chercher avant les autres !", theme: [[nm(/no[ëe]l|[ée]toile|\banges?\b|nativit|nicolas|sapin|neige|berger/i), 3], [lbl('Église', 'Chapelle'), 2]] }
 ];
+const evOf = key => MYTHS.find(m => key && key.replace(/\d+$/, '') === m.id);
+const evTag = c => { const e = c && evOf(c.myth); return e ? `${e.ic} ${e.name} ${c.myth.match(/\d+$/)[0]}` : ''; };
+// le lieu le plus « dans le thème » à la bonne distance (sinon un lieu normal)
+function eventPlace(ev, km) {
+  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist), wk = new Set((S.week ? S.week.quests : []).map(q => q.pid)), target = km * 1000;
+  // les lieux de mémoire (morts, guerres) ne servent qu'au 11 novembre : jamais pour une fête
+  const grave = p => /^(Monument aux morts|Stèle|Mémorial)$/.test(p.label) || /\bmorts?\b|fusill|victime|d[ée]port|g[ée]nocide|martyr|guerre|r[ée]sistan/i.test(p.name || '');
+  const score = p => ev.id !== 'nov' && grave(p) ? 0 : Math.max(0, ...ev.theme.map(([f, w]) => f(p) ? w : 0));
+  const pool = S.places.filter(p => p.name && !found.has(p.id) && !black.has(p.id) && !wk.has(p.id) && score(p) > 0)
+    .map(p => ({ p, sc: score(p), d: Math.abs(effortM(p) - target) / target })).filter(x => x.d <= 0.7);
+  if (pool.length) { pool.sort((a, b) => (b.sc - a.sc) || (a.d - b.d)); const top = pool.filter(x => x.sc === pool[0].sc).slice(0, 4); return top[Math.floor(Math.random() * top.length)].p; }
+  const alt = pickQuests(4, 'myth|' + ev.id + Date.now(), wk, { km }); return alt.find(p => !grave(p)) || alt[0];
+}
 const MYTH_MS = 72 * 3600e3;
 function mythWindows(from = Date.now()) {
   const y = new Date(from).getFullYear(), out = [];
@@ -1490,19 +1528,44 @@ async function maybeMythic() {
   if (!w || !S.week || !S.home || (S.mythSeen || {})[w.key] || ((S.prog && S.prog.okRuns) || 0) < TIER_UNLOCK.mythic) return false;
   if (S.collection.some(c => c.myth === w.key)) return false;
   const km = Math.round(Math.max(3, S.goal.km * 1.2) * 2) / 2;
-  const [p] = pickQuests(1, 'myth|' + w.key + Date.now(), new Set(S.week.quests.map(q => q.pid)), { km });
+  const p = eventPlace(w, km);
   if (!p) return false;
   (S.mythSeen = S.mythSeen || {})[w.key] = Date.now();
-  S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), legend: true, mythic: w.key, mythName: w.name, until: w.b, tier: 'mythic', km });
+  S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), legend: true, mythic: w.key, mythName: 'Événement ' + w.name, until: w.b, tier: 'mythic', km });
   save(); wikiFor(p);
-  await overlay(`<div class="v-title gold pixel">APPARITION<br>MYTHIQUE !</div>
-    <div class="vcard card mythic holo" style="margin:16px auto"><div class="in"><span class="ic">${w.ic}</span><b>${esc(w.name)}</b><small>${esc(w.when)}</small></div></div>
-    <div class="v-sub">Seulement <b style="color:#FFD23F">72 h</b> pour la saisir ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
+  await overlay(`<div class="v-title gold pixel">ÉVÉNEMENT<br>MYTHIQUE !</div>
+    <div class="big-ic" style="margin:18px 0 6px">${w.ic}</div>
+    <div class="v-sub" style="font-size:24px;color:#fff;font-weight:900;margin:0 0 10px">Événement ${esc(w.name)}</div>
+    <div class="box" style="text-align:left;margin:0 0 18px"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage</b></div><p>${esc(w.line)}</p></div>
+    <div class="v-sub">Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
     <button class="btn gold" data-close>Voir la quête</button>`);
   if (current === 'quests') renderQuests();
   return true;
 }
-function legendQuest() { return S.week && S.week.quests.find(q => q.legend && q.status === 'todo'); }
+function legendQuest() { return S.week && S.week.quests.find(q => q.legend && !q.star && q.status === 'todo'); }
+/* ---------- la carte vedette de la Vitrine (28/10) : le lieu le plus prestigieux de la zone, nom caché,
+   confié par le sage comme quête Mythique après 6 sorties réussies ---------- */
+const mysteryName = p => p.label === 'Ruines' ? 'Les Mystérieuses Ruines' : `${FEM.has(p.label) ? 'La Mystérieuse' : 'Le Mystérieux'} ${p.label === "Œuvre d'art" ? 'Œuvre' : p.label}`;
+const STAR_W = { 'Château': 6, 'Manoir': 5, 'Ruines': 5, 'Monument': 4, 'Musée': 4, 'Obélisque': 3, 'Point de vue': 3, 'Église': 2, 'Chapelle': 2, 'Mairie': 1, 'Monument aux morts': 1 };
+function starPlace() {
+  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
+  const cur = S.starPid && placeById(S.starPid);
+  if (cur && !found.has(cur.id) && !black.has(cur.id)) return cur;
+  const max = Math.max(6, S.goal.km * TIER_KM.mythic * 1.25) * 1000;
+  const sc = p => (STAR_W[p.label] || 0) * 2 + (p.wp ? 3 : 0) + (p.st === 3 ? 2 : 0);
+  const pool = (S.places || []).filter(p => p.name && STAR_W[p.label] && !found.has(p.id) && !black.has(p.id) && effortM(p) <= max);
+  if (!pool.length) return null;
+  pool.sort((a, b) => (sc(b) - sc(a)) || (effortM(b) - effortM(a)));
+  S.starPid = pool[0].id; save();
+  return pool[0];
+}
+function maybeStar() {
+  if (!S.week || (prog().okRuns || 0) < TIER_UNLOCK.mythic || S.week.quests.some(q => q.star)) return false;
+  const p = starPlace(); if (!p) return false;
+  S.week.quests.unshift({ pid: p.id, status: 'todo', day: todayIdx(), legend: true, star: true, tier: 'mythic', mythName: mysteryName(p), until: Date.now() + 400 * 864e5, km: Math.round(roundTripKm(p) * 2) / 2 });
+  save(); toast(`🧙 Le vieux sage te confie « ${mysteryName(p)} »…`);
+  return true;
+}
 function expireLegend() {
   if (!S.week) return false;
   const f = S.week.quests.findIndex(q => q.friend && q.status === 'todo' && q.until <= Date.now());
@@ -1627,10 +1690,10 @@ function renderQuests() {
         <div class="num ${q.seen ? '' : 'new'}">👥</div>
         <div class="t"><b>${esc(questLine(p)[0])}</b><span>Quête de ${esc(q.friend)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
         ${tierBadge(t)}</button>`;
-      if (q.legend && !done) return `<button class="quest legendq" data-i="${i}">
-        <div class="num ${q.seen ? '' : 'new'}">✨</div>
-        <div class="t"><b>${esc(q.mythName || shownName(p, false))}</b><span><span class="legtime">⏳ encore ${hoursLeft(q)} h</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
-        ${tierBadge(q.mythic ? 'mythic' : 'legend')}</button>`;
+      if (q.legend && !done) return `<button class="quest legendq ${q.mythic || q.star ? 'mythq' : ''}" data-i="${i}">
+        <div class="num ${q.seen ? '' : 'new'}">${q.star ? '🌈' : q.mythic ? (evOf(q.mythic) || {}).ic || '✨' : '✨'}</div>
+        <div class="t"><b>${esc(q.mythName || shownName(p, false))}</b><span><span class="legtime">${q.star ? 'Quête du sage' : `⏳ encore ${hoursLeft(q)} h`}</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        ${tierBadge(q.mythic || q.star ? 'mythic' : 'legend')}</button>`;
       const isToday = !done && q.day === td, late = !done && q.day < td;
       const when = isToday ? `<span class="today-tag">Aujourd'hui</span>` : `${DAYS[q.day] || ''}${late ? ' · rattrapable' : ''}`;
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''} ${isToday ? 'today' : ''}" data-i="${i}">
@@ -1674,14 +1737,14 @@ function openQuest(i) {
   }
   const [qt, qtxt0] = questLine(p);
   const qtxt = S.name ? qtxt0.replace(/^Hé, toi !( Oui, toi, le coureur !)?/, `Hé, ${S.name} !`) : qtxt0;
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'apparaît qu'une fois par mois. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.star ? `Enfin… tu es prêt. Voici mon plus grand secret : ${q.mythName.replace(/^L/, 'l')}. Personne ne sait vraiment ce qu'il cache… Rapporte-moi sa carte MYTHIQUE, Élu !` : q.mythic ? `${(evOf(q.mythic) || {}).line || 'Par ma barbe ! Une carte MYTHIQUE !'} Une carte MYTHIQUE t'y attend… mais seulement 72 h !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   // trésor caché : les indices sont donnés par le sage, dans sa bulle (29/10)
   const say = rare && !q.legend && !q.friend ? `Psst… ${article(p.label).replace(/^./, c => c.toLowerCase())} se cache dans cette zone.${p.name ? ` Son nom commence par « ${p.name.slice(0, 3)}… ».` : ''}${p.artist ? ` Une œuvre de ${p.artist}.` : ''} Trouve-la, jeune coureur !` : intro;
   const sh = sheet(`<div class="lockimg sm ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer sa carte</span></div>
       <button class="qsharei" id="qshare" aria-label="Partager la quête avec un ami"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
-    ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
-    <h3 style="margin:8px 0 2px">${esc(shownName(p, false))}</h3>
+    ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend && !q.star ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
+    <h3 style="margin:8px 0 2px">${esc(q.star ? q.mythName : shownName(p, false))}</h3>
     <p class="muted" style="margin:0 0 12px">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
     ${sageBox(qt, 'qsay')}
     <div class="row" style="margin-top:0"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
@@ -2029,11 +2092,11 @@ function report(i) {
 /* ---------- cartes ---------- */
 const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>';
 function cardHtml(c) {
-  const cls = (c.rarity === 'common' ? '' : c.rarity) + (c.rarity === 'legend' || c.rarity === 'mythic' ? ' holo' : '');
+  const cls = (c.rarity === 'common' ? '' : c.rarity) + (c.rarity === 'legend' || c.rarity === 'mythic' ? ' holo' : '') + (isBonus(c) ? ' bonus' : '');
   const tag = TIER_NAME[c.rarity] || 'Commune';
   return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
     <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
-    <div class="cap"><b>${esc(c.name)}</b><span>${esc(c.label)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + sportOf(runOf(c)).ic + ' ' + km(runOf(c).dist) + ' km' : ''}</span></div>
+    <div class="cap"><b>${esc(c.name)}</b><span>${esc(cardSub(c))}${c.month || c.myth ? '' : ' · ' + new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}${runOf(c) ? ' · ' + sportOf(runOf(c)).ic + ' ' + km(runOf(c).dist) + ' km' : ''}</span></div>
     <span class="badge b-${c.rarity} r">${tag}</span><span class="pts">+${c.pts}</span>${c.fav ? '<span class="fav">♥</span>' : ''}
   </div></div>`;
 }
@@ -2059,23 +2122,22 @@ function fillPhotos(root) {
     if (u) { el.style.backgroundImage = `url("${u}")`; el.innerHTML = ''; }
   });
 }
-let collFilter = 'all';
+let collFilter = 'all', collTab = 'lieux';
+const COLL_TABS = [['lieux', '📍', 'Lieux', c => !isBonus(c) && !c.myth], ['events', '🎃', 'Événements', c => !!c.myth], ['mois', '🏆', 'Défis du mois', isBonus]];
+const COLL_EMPTY = { lieux: ['AUCUNE CARTE', 'Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.'], events: ['AUCUN ÉVÉNEMENT', "Halloween, Saint-Valentin, 14 juillet… Pendant un événement, une quête Mythique apparaît dans tes Quêtes."], mois: ['AUCUN DÉFI', 'Réussis le défi du mois pour gagner sa carte Rare.'] };
 function renderColl() {
   renderPoints();
   const n = placeCards().length, r = placeCards().filter(c => c.rarity !== 'common').length;
   $('#colltitle').innerHTML = `Ma collection <span class="muted" style="font-size:15px;font-weight:600">· ${n} lieu${n > 1 ? 'x' : ''} · ${r} rare${r > 1 ? 's' : ''}</span>`;
-  if (!S.collection.length) {
-    $('#collbar').innerHTML = '';
-    $('#grid').innerHTML = `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUNE CARTE</span>Chaque lieu trouvé pendant une sortie devient une carte, avec ta photo.</div>`;
-    return;
-  }
-  const nf = S.collection.filter(c => c.fav).length;
-  $('#collbar').innerHTML = `<button data-f="all" class="${collFilter === 'all' ? 'on' : ''}">Toutes · ${S.collection.length}</button><button data-f="fav" class="${collFilter === 'fav' ? 'on' : ''}">♥ Favoris · ${nf}</button>`;
+  const T = COLL_TABS.find(t => t[0] === collTab) || COLL_TABS[0], inTab = S.collection.filter(T[3]), nf = inTab.filter(c => c.fav).length;
+  $('#collbar').innerHTML = `<div class="colltabs">${COLL_TABS.map(([k, ic, name, f]) => `<button data-t="${k}" class="${k === T[0] ? 'on' : ''}"><span>${ic}</span>${name}<em>${S.collection.filter(f).length}</em></button>`).join('')}</div>
+    ${inTab.length ? `<div class="collfav"><button data-f="all" class="${collFilter === 'all' ? 'on' : ''}">Toutes · ${inTab.length}</button><button data-f="fav" class="${collFilter === 'fav' ? 'on' : ''}">♥ Favoris · ${nf}</button></div>` : ''}`;
+  $('#collbar').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { collTab = b.dataset.t; collFilter = 'all'; renderColl(); });
   $('#collbar').querySelectorAll('[data-f]').forEach(b => b.onclick = () => { collFilter = b.dataset.f; renderColl(); });
-  const list = S.collection.slice().reverse().filter(c => collFilter !== 'fav' || c.fav).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0));
-  const main = list.filter(c => !isBonus(c)), bonus = list.filter(isBonus), btn = c => `<button style="padding:0">${cardHtml(c)}</button>`;
-  $('#grid').innerHTML = list.length ? main.map(btn).join('') + (bonus.length ? `<div class="bonushead">Cartes bonus · ${bonus.length}</div>` + bonus.map(btn).join('') : '')
-    : `<div class="empty" style="grid-column:1/-1"><span class="pixel">AUCUN FAVORI</span>Ouvre une carte et touche ♡ pour la mettre en favori.</div>`;
+  const list = inTab.slice().reverse().filter(c => collFilter !== 'fav' || c.fav).sort((a, b) => (b.fav ? 1 : 0) - (a.fav ? 1 : 0));
+  const E = collFilter === 'fav' ? ['AUCUN FAVORI', 'Ouvre une carte et touche ♡ pour la mettre en favori.'] : COLL_EMPTY[T[0]];
+  $('#grid').innerHTML = list.length ? list.map(c => `<button style="padding:0">${cardHtml(c)}</button>`).join('')
+    : `<div class="empty" style="grid-column:1/-1"><span class="pixel">${E[0]}</span>${E[1]}</div>`;
   fillPhotos($('#grid'));
   $('#grid').querySelectorAll('.card').forEach(el => el.parentElement.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)).then(() => current === 'coll' && renderColl()));
 }
@@ -2245,6 +2307,8 @@ function wrapLines(x, text, w, max) {
   return out;
 }
 function storyOf(c) {
+  if (c.month) return MONTH_CARDS[+c.month.split('-')[1] - 1][1];
+  if (c.welcome) return "Ce grimoire garde l'histoire de chaque lieu de la ville. À toi de retrouver ses pages !";
   const w = S.wiki[c.pid] || {}; const t = (w.text || w.ai || '').trim();
   if (!t) return '';
   const cut = t.slice(0, 230), dot = cut.lastIndexOf('. ');
@@ -2269,7 +2333,7 @@ async function cardImage(c, withPhoto = true) {
   x.fillStyle = '#fff'; x.fillRect(ix, iy + ih, iw, ch - 36 - ih);
   x.fillStyle = '#16131F'; x.font = `800 54px ${F}`; x.textBaseline = 'top';
   wrapLines(x, c.name, iw - 60, 2).forEach((l, k) => x.fillText(l, ix + 30, iy + ih + 34 + k * 62));
-  x.fillStyle = '#6E6982'; x.font = `600 34px ${F}`; x.fillText(`${c.label} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`, ix + 30, iy + ch - 36 - 64);
+  x.fillStyle = '#6E6982'; x.font = `600 34px ${F}`; x.fillText(c.month ? cardSub(c) : `${cardSub(c)} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`, ix + 30, iy + ch - 36 - 64);
   x.restore();
   // pastille de rareté
   x.font = `900 34px ${F}`; const tag = (TIER_NAME[c.rarity] || 'Commune').toUpperCase(), tw = x.measureText(tag).width + 48;
@@ -2278,7 +2342,7 @@ async function cardImage(c, withPhoto = true) {
   const r = runOf(c); x.textAlign = 'center'; x.textBaseline = 'top';
   x.fillStyle = '#fff'; x.font = `800 48px ${F}`;
   x.fillText(r ? `${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)}${r.dplus ? ' · ↗ ' + r.dplus + ' m' : ''}` : `+${c.pts} ★`, W / 2, 1460);
-  if (S.name) { x.fillStyle = '#c9c2e0'; x.font = `700 36px ${F}`; x.fillText(`Trouvée par ${S.name}`, W / 2, 1522); }
+  if (S.name) { x.fillStyle = '#c9c2e0'; x.font = `700 36px ${F}`; x.fillText(`${isBonus(c) ? 'Gagnée' : 'Trouvée'} par ${S.name}`, W / 2, 1522); }
   // l'histoire
   const st = storyOf(c);
   if (st) { x.fillStyle = '#d9d2ef'; x.font = `italic 500 38px ${F}`; wrapLines(x, '« ' + st + ' »', 860, 4).forEach((l, k) => x.fillText(l, W / 2, 1600 + k * 52)); }
@@ -2364,7 +2428,7 @@ function showFiche(c) {
     <div class="fliphint"><span class="hand">👆</span>Glisse pour retourner la carte</div>
     <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="favbtn ${c.fav ? 'on' : ''}" id="favbtn">${c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris'}</button><button class="favbtn" id="cshare">📤 Partager</button></div>
     <h2>${esc(c.name)}</h2>
-    <p class="sub">${esc(c.label)} · ${c.month || c.welcome ? 'gagnée' : 'trouvé'} le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+    <p class="sub">${esc(cardSub(c))} · ${c.month || c.welcome ? 'gagnée' : 'trouvé'} le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     ${r ? `<div class="box"><span class="pixel">TA SORTIE · ${sportOf(r).ic} ${esc(sportOf(r).name.toUpperCase())}</span>
       <div class="stats3"><div><b>${km(r.dist)}</b><span>km</span></div><div><b>${dur(r.time)}</b><span>temps</span></div><div><b>${rate(r.time, r.dist, r.sport)}</b><span>${r.sport === 'bike' ? 'km/h' : 'allure'}</span></div></div>
       ${r.dplus != null ? `<p style="text-align:center;margin:10px 0 0;color:#e8e3f6">↗ <b>${r.dplus} m</b> de dénivelé positif</p>` : ''}
@@ -3116,28 +3180,44 @@ function tierOdds() {
   return { common: pc(n.common), rare: pc(n.rare), epic: pc(n.epic), legend: pc(n.legend) };
 }
 const MYTH_PCT = Math.round(MYTHS.length * 3 / 365 * 1000) / 10; // 36 jours sur 365 ≈ 9,9 %
+function mysCard(p, t) {
+  const w = S.wiki[p.id], img = (w && w.img) || p.img;
+  return `<div class="card ${t} mys ${t === 'legend' || t === 'mythic' ? 'holo' : ''}" data-mys="${esc(p.id)}"><div class="in">
+    <div class="ph"><i style="${img && /^https?:/.test(img) ? `background-image:url('${esc(img)}')` : ''}"></i><span class="q">?</span></div>
+    <div class="cap"><b>${esc(mysteryName(p))}</b><span>Lieu secret</span></div>
+    <span class="badge b-${t} r">${TIER_NAME[t]}</span></div></div>`;
+}
 function renderVit() {
   renderPoints();
-  const nx = mythNext(), now = mythNow(), days = nx ? Math.ceil((nx.a - Date.now()) / 864e5) : 0;
-  const got = new Set(S.collection.filter(c => c.myth).map(c => c.myth.replace(/\d+$/, '')));
-  const mine = S.collection.filter(c => c.rarity === 'legend' || c.rarity === 'mythic');
-  // les lieux les plus lointains = les plus belles cartes à aller chercher
-  const far = (S.places || []).filter(p => p.name && !S.collection.some(c => c.pid === p.id)).map(p => [tierOf(p), p]).filter(([t]) => t === 'legend' || t === 'epic').sort((a, b) => effortM(b[1]) - effortM(a[1])).slice(0, 6);
-  const P = prog(), od = tierOdds(), pct = v => `${v} %`;
+  const ok = (S.prog && S.prog.okRuns) || 0, need = TIER_UNLOCK.mythic, star = starPlace();
+  const found = new Set(S.collection.map(c => c.pid)), black = new Set(S.blacklist);
+  // cartes Légendaires et Rares à faire saliver (lieux secrets, nom caché)
+  const pool = (S.places || []).filter(p => p.name && p.id !== (star && star.id) && !found.has(p.id) && !black.has(p.id));
+  const legs = pool.filter(p => tierOf(p) === 'legend' || tierOf(p) === 'epic').sort((a, b) => effortM(b) - effortM(a)).slice(0, 4).map(p => [p, 'legend']);
+  const rares = pool.filter(p => p.rarity === 'rare' && !legs.some(([x]) => x.id === p.id)).sort((a, b) => (b.wp ? 1 : 0) - (a.wp ? 1 : 0) || effortM(b) - effortM(a)).slice(0, 4).map(p => [p, 'rare']);
+  const tease = []; for (let i = 0; i < 4; i++) { if (legs[i]) tease.push(legs[i]); if (rares[i]) tease.push(rares[i]); }
+  const mine = placeCards().filter(c => c.rarity === 'legend' || c.rarity === 'mythic');
+  const evWon = id => S.collection.filter(c => c.myth && c.myth.replace(/\d+$/, '') === id);
+  const nEv = MYTHS.filter(m => evWon(m.id).length).length;
   $('#vit').innerHTML = `
   <h2>Les cartes les plus rares</h2><p class="lead">Elles ne s'achètent pas : elles se gagnent en courant.</p>
-  <div class="mythhero">
-    <div class="vcard card mythic holo"><div class="in"><span class="ic">${now ? now.ic : nx.ic}</span><b>${esc(now ? now.name : nx.name)}</b><small>Mythique</small></div></div>
-    ${now ? `<div class="when">${esc(now.when)} · c'est maintenant !</div><div class="count">Encore ${Math.ceil((now.b - Date.now()) / 3600e3)} h</div><div style="font-size:13px;color:#c9c2e0">Ouvre l'onglet Quêtes pour la chercher</div>`
-      : `<div class="when">Prochaine apparition mythique · ${esc(nx.when)}</div><div class="count">Dans ${days} jour${days > 1 ? 's' : ''}</div><div style="font-size:13px;color:#c9c2e0">${new Date(nx.a).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · 72 h seulement</div>`}
-  </div>
-  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Tirées au sort à chaque quête. Plus tu réussis de sorties, plus les cartes rares se débloquent (${(S.prog && S.prog.okRuns) || 0} pour l'instant).</p>
-    ${(() => { const ok = (S.prog && S.prog.okRuns) || 0, od = Object.fromEntries(oddsNow()), D = { common: 'Ta distance habituelle', rare: 'Un peu plus loin (+15 %)', epic: 'Plus loin (+30 %)', legend: 'Bien plus loin (+50 %) · et parfois le week-end', mythic: 'Le défi ultime (+60 %) · et pendant les grands événements' };
+  ${star ? `<div class="mythhero">
+    <div class="starcard">${mysCard(star, 'mythic')}</div>
+    <div class="st-t">La carte la plus rare de ta ville</div>
+    <div class="st-s">${ok >= need ? 'Le vieux sage te l’a confiée : elle t’attend dans tes Quêtes !' : 'Oseras-tu aller la chercher ?'}</div>
+    ${ok >= need ? '' : `<div class="st-bar"><i style="width:${ok / need * 100}%"></i></div><div class="st-k">🔒 ${ok} / ${need} sorties réussies pour la débloquer</div>`}
+  </div>` : ''}
+  ${tease.length ? `<h4 class="vh">Cartes à gagner près de chez toi</h4><div class="vrow">${tease.map(([p, t]) => mysCard(p, t)).join('')}</div>` : ''}
+  <div class="panel odds"><h4>Tes chances</h4><p class="muted" style="font-size:13px;margin:-6px 0 4px">Tirées au sort à chaque quête. Plus tu réussis de sorties, plus les cartes rares se débloquent (${ok} pour l'instant).</p>
+    ${(() => { const od = Object.fromEntries(oddsNow()), D = { common: 'Ta distance habituelle', rare: 'Un peu plus loin (+15 %)', epic: 'Plus loin (+30 %)', legend: 'Bien plus loin (+50 %) · et parfois le week-end', mythic: 'Le défi ultime (+60 %) · et pendant les événements' };
       return ['common', 'rare', 'epic', 'legend', 'mythic'].map(t => { const lock = TIER_UNLOCK[t] > ok, left = TIER_UNLOCK[t] - ok;
         return `<div class="o ${lock ? 'locked' : ''}">${tierBadge(t)}<span><b>${TIER_NAME[t]}</b>${lock ? `🔒 Encore ${left} sortie${left > 1 ? 's' : ''} réussie${left > 1 ? 's' : ''}` : D[t]}</span><em>${lock ? '🔒' : (od[t] || 0) + ' %'}</em></div>`; }).join(''); })()}
   </div>
-  <div class="panel"><h4>Les ${MYTHS.length} cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
-  ${mine.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
+  <div class="panel"><h4>Événements de l'année · ${nEv} / ${MYTHS.length}</h4>
+    <p class="muted" style="font-size:13px;margin:-6px 0 12px">Pendant 72 h, une quête Mythique apparaît dans tes Quêtes, vers un lieu en rapport avec l'événement.</p>
+    <div class="trophies">${MYTHS.map(m => { const w = evWon(m.id);
+      return `<button class="tro ${w.length ? '' : 'off'}" ${w.length ? `data-ev="${esc(w[w.length - 1].pid)}"` : `data-d="${esc(m.name + ' · ' + m.when)}"`}><span class="ic">${w.length ? m.ic : '🔒'}</span><b>${esc(m.short)}</b><small>${w.length ? 'Gagnée ✓' : esc(m.day)}</small></button>`; }).join('')}</div></div>
+  ${mine.length ? `<h4 class="vh">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
   <div class="panel" style="text-align:center"><div style="font-size:40px">📦</div><h4 style="margin:6px 0">Reçois tes cartes en vrai</h4>
     <p class="muted" style="font-size:14px;margin:0 0 12px">Un booster imprimé avec ta photo, ton run, la date et l'histoire de chaque lieu.</p>
     <button class="btn" id="boost" style="width:100%">Je veux être prévenu</button></div>
@@ -3145,6 +3225,11 @@ function renderVit() {
   fillPhotos($('#vit'));
   holoTilt($('#vit'));
   $('#vit').querySelectorAll('.vrow .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
+  $('#vit').querySelectorAll('[data-mys]').forEach(el => el.onclick = () => toast(el.closest('.starcard') ? '🔒 Le vieux sage garde ce secret… Réussis tes sorties pour le découvrir !' : '✨ Ce lieu secret apparaîtra peut-être dans tes prochaines quêtes…'));
+  $('#vit').querySelectorAll('[data-ev]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.ev)));
+  $('#vit').querySelectorAll('.tro[data-d]').forEach(el => el.onclick = () => toast('🔒 ' + el.dataset.d));
+  // photos floues des lieux secrets (chargées une fois, gardées)
+  [star, ...tease.map(x => x[0])].filter(p => p && !(S.wiki[p.id] && S.wiki[p.id].img)).slice(0, 9).forEach(p => wikiFor(p).then(w => { if (!w || !w.img) return; $('#vit').querySelectorAll(`[data-mys="${CSS.escape(p.id)}"] .ph i`).forEach(i => i.style.backgroundImage = `url('${w.img}')`); }).catch(() => {}));
   $('#boost').onclick = () => {
     S.boosterTaps = (S.boosterTaps || 0) + 1; save(); track('booster_interest', {});
     if (S.boosterMail) { toast('C\'est noté : on te prévient dès que c\'est prêt 📦'); return; }
@@ -3200,34 +3285,35 @@ async function flushBugs() {
 /* ---------- notifications perso (28/10) : 1 par jour max, à ton heure habituelle ---------- */
 const isStandalone = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
 const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+// heure habituelle de départ (médiane des 10 dernières sorties), 18 h sans historique
 function notifHour() {
-  const n = S.notif || {};
-  if (n.hour && n.hour !== 'auto') return +n.hour;
   const hs = (S.runs || []).slice(-10).map(r => new Date(r.date).getHours()).sort((a, b) => a - b);
   return hs.length ? Math.max(7, Math.min(21, hs[Math.floor(hs.length / 2)])) : 18;
 }
+// planning automatique (28/10) : l'utilisateur ne règle rien, 1 notification par jour maximum.
+// Moments clés (Duolingo : rappel à l'heure habituelle + rappel du soir quand la série est en danger ;
+// Strava : lundi = motivation, le week-end = jours où l'on court le plus).
 function notifPlan() {
   const H = notifHour(), out = [], now = Date.now(), m = monthlyNow(), fire = streakNow();
   for (let k = 0; k < 8; k++) {
-    const d = new Date(); d.setDate(d.getDate() + k); d.setHours(H, 0, 0, 0);
-    if (d.getTime() <= now + 60e3) continue;
-    const wd = (d.getDay() + 6) % 7, key = dayKey(d);
-    const tail = fire ? ` 🔥 Série de ${fire}` : '';
-    let msg = null;
-    const myth = mythWindows().find(w => d.getTime() >= w.a && d.getTime() < w.b && !(S.mythSeen || {})[w.key]);
-    if (myth) msg = ['🌈 Apparition mythique !', `« ${myth.name} » n'apparaît qu'une fois par mois… Le vieux sage t'attend !`];
-    else if (S.goal.days.includes(wd) && !(S.streak && S.streak.last === key)) {
-      const q = S.week && weekId(d) === S.week.id && S.week.quests.find(x => x.status === 'todo' && x.day === wd && !x.friend && !x.legend);
+    const day = new Date(); day.setDate(day.getDate() + k); day.setHours(0, 0, 0, 0);
+    const wd = (day.getDay() + 6) % 7, key = dayKey(day), at = h => { const d = new Date(day); d.setHours(h, 0, 0, 0); return d.getTime(); };
+    if (S.streak && S.streak.last === key) continue;                       // déjà couru ce jour-là : rien
+    let msg = null, t = 0;
+    const ev = mythWindows().find(w => w.a >= day.getTime() && w.a < day.getTime() + 864e5);
+    if (ev && !(S.mythSeen || {})[ev.key] && (prog().okRuns || 0) >= TIER_UNLOCK.mythic) { t = at(10); msg = [`${ev.ic} Événement ${ev.name} !`, `${ev.line} Une carte Mythique t'attend… 72 h seulement !`]; }
+    else if (S.goal.days.includes(wd)) {
+      const q = S.week && weekId(day) === S.week.id && S.week.quests.find(x => x.status === 'todo' && x.day === wd && !x.friend && !x.legend);
       const pl = q && placeById(q.pid);
-      msg = ['🏃 Ta quête du jour', pl ? `${questLine(pl)[0]} · ${roundTripKm(pl).toFixed(1).replace('.', ',')} km${tail}` : `Hé, toi ! Le vieux sage a une mission pour toi aujourd'hui.${tail}`];
+      if (fire >= 2 && H < 20) { t = at(20); msg = [`🔥 Ta série de ${fire} est en danger !`, pl ? `Il reste du temps : ${questLine(pl)[0]} · ${roundTripKm(pl).toFixed(1).replace('.', ',')} km` : "Il reste du temps pour une petite sortie. Le vieux sage compte sur toi !"]; }
+      else { t = at(Math.max(7, H - 1)); msg = ['🏃 Ta quête du jour', pl ? `${questLine(pl)[0]} · ${roundTripKm(pl).toFixed(1).replace('.', ',')} km${fire ? ` · 🔥 ${fire}` : ''}` : "Hé, toi ! Le vieux sage a une mission pour toi aujourd'hui."]; }
     }
-    else if (wd === 0) msg = ['🗺️ Nouvelles quêtes !', "Le vieux sage a de nouvelles missions pour toi… et ton bilan de la semaine t'attend."];
-    else if (wd === 5 && (prog().okRuns || 0) >= TIER_UNLOCK.legend) msg = ['✨ Une rumeur court…', "On dit qu'une carte légendaire pourrait apparaître ce week-end. Garde l'œil ouvert !"];
-    if (!msg && !m.done && m.key === d.getFullYear() + '-' + (d.getMonth() + 1) && Math.round((new Date(d.getFullYear(), d.getMonth() + 1, 1) - d) / 864e5) === 3) {
-      const left = Math.max(1, m.target - monthlyProgress(m));
-      msg = ['🏅 Défi du mois', `Plus que ${left} pour le badge de ${MONTH_NAMES[d.getMonth()]} !`];
+    else if (wd === 0) { t = at(8); msg = ['🗺️ Tes nouvelles quêtes sont là !', "Le vieux sage a de nouvelles missions pour toi… et ton bilan de la semaine t'attend."]; }
+    else if (wd === 5 && (prog().okRuns || 0) >= TIER_UNLOCK.legend) { t = at(9); msg = ['✨ Une rumeur court…', "On dit qu'une carte légendaire pourrait apparaître ce week-end. Garde l'œil ouvert !"]; }
+    else if (!m.done && m.key === day.getFullYear() + '-' + (day.getMonth() + 1) && Math.round((new Date(day.getFullYear(), day.getMonth() + 1, 1) - day) / 864e5) === 3) {
+      t = at(Math.max(7, H - 1)); msg = ['🏅 Défi du mois', `Plus que ${Math.max(1, m.target - monthlyProgress(m))} pour ta carte ${deM(MONTH_NAMES[day.getMonth()])} !`];
     }
-    if (msg) out.push({ t: d.getTime(), title: msg[0], body: msg[1] });
+    if (msg && t > now + 60e3) out.push({ t, title: msg[0], body: msg[1] });
   }
   return out;
 }
@@ -3283,15 +3369,13 @@ function renderPref() {
     <button class="btn" id="papply" style="width:100%" disabled>Appliquer · ${PREF_COST} 🪙</button></div>
   <div class="panel"><h4>Ton nom d'aventurier</h4><input id="pname" maxlength="20" value="${esc(S.name || '')}" placeholder="Ton prénom ou pseudo" style="width:100%;padding:12px;border-radius:14px;border:1.5px solid var(--line);background:var(--card);color:var(--text);font:inherit;font-size:16px;font-weight:700">
     <p class="muted" style="font-size:13px;margin:8px 0 0">Gratuit. Il apparaît quand tu partages une carte, ta semaine ou une quête.</p></div>
-  <div class="panel"><h4>Notifications</h4>
-    <div class="set"><span>🔔 Rappels du vieux sage<small class="muted" style="display:block;font-size:13px">1 par jour maximum · pause si tu ne réponds plus</small></span><button class="switch ${S.notif && S.notif.on ? 'on' : ''}" id="swnotif" role="switch"></button></div>
-    <div class="set"><span>Heure</span><select id="nhour" class="setbtn" style="background:none;border:0;font:inherit;color:var(--violet);font-weight:700">
-      <option value="auto">Auto (${notifHour()} h, ton heure habituelle)</option>${Array.from({ length: 16 }, (_, k) => k + 7).map(h => `<option value="${h}" ${S.notif && +S.notif.hour === h ? 'selected' : ''}>${h} h</option>`).join('')}</select></div></div>
+  ${S.notif && S.notif.on ? '' : `<div class="panel"><h4>Rappels du vieux sage</h4>
+    <p class="muted" style="font-size:13px;margin:0 0 12px">Le sage te prévient au bon moment : jamais plus d'une fois par jour.</p>
+    <button class="btn" id="pnotif" style="width:100%">🔔 Activer les rappels</button></div>`}
   <div class="panel"><h4>Sport par défaut</h4><div class="chips" id="spdef">${Object.entries(SPORTS).map(([k, v]) => `<button data-sp="${k}" class="${(S.sport || 'run') === k ? 'on' : ''}">${v.ic} ${v.short}</button>`).join('')}</div>
     <p class="muted" style="font-size:13px;margin:10px 0 0">Gratuit : ne change pas tes quêtes.</p></div>`;
   $('#pname').onchange = e => { const n = e.target.value.trim().slice(0, 20); if (n) { S.name = n; save(); toast(`Enchanté, ${n} !`); } };
-  $('#swnotif').onclick = async () => { const on = S.notif && S.notif.on; if (on) await disablePush(); else await enablePush(); renderPref(); };
-  $('#nhour').onchange = e => { S.notif = Object.assign(S.notif || {}, { hour: e.target.value }); save(); pushSync(); toast(e.target.value === 'auto' ? 'Heure automatique' : `Rappels à ${e.target.value} h`); };
+  if ($('#pnotif')) $('#pnotif').onclick = async () => { await enablePush(); renderPref(); };
   const changed = () => prefDraft.km !== S.goal.km || prefDraft.days.join() !== S.goal.days.join();
   const upd = () => { $('#papply').disabled = !changed(); };
   goalPicker($('#pgoal'), upd, prefDraft);
@@ -3608,7 +3692,7 @@ function onboarding(step = 0) {
   if (step === 8) {
     // première victoire, façon Pokémon Go : le sage offre sa carte
     if (!S.collection.some(c => c.welcome)) {
-      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'bonus', pts: 100, date: Date.now(), img: 'grimoire.svg', photo: false });
+      S.collection.push({ pid: 'welcome', welcome: true, name: 'Le Grimoire du Sage', label: 'Carte de bienvenue', rarity: 'rare', pts: 100, date: Date.now(), img: 'grimoire.svg', photo: false });
       S.points += 100; save();
     }
     const card = S.collection.find(c => c.welcome);
@@ -3808,10 +3892,10 @@ if (typeof L === 'undefined') {
   onboarding(0);
 } else {
   ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
-  S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'bonus') c.rarity = 'bonus'; });
+  S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'rare') c.rarity = 'rare'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');
-  setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else await maybeLegend(); }, 1200);
+  setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else { maybeStar(); await maybeLegend(); } if (current === 'quests') renderQuests(); }, 1200);
   upgradePlaces().catch(() => {});
   checkStreakBreak();
   loadElevations().then(() => current === 'quests' && renderQuests()).catch(() => {});
