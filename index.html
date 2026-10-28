@@ -120,6 +120,12 @@ h2{font-size:22px;margin:4px 16px 12px}
 /* le vieux sage (avatar provisoire en attendant les dessins de Bazil) */
 .sagebox{display:flex;gap:12px;align-items:flex-start;margin:2px 0 14px}
 .sage{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:34px;background:radial-gradient(circle at 35% 30%,#9B5CFF,#4E12B0);box-shadow:0 4px 14px rgba(123,47,247,.45);animation:sagebob 3s ease-in-out infinite}
+.isteps{display:flex;flex-direction:column;gap:10px;margin-top:16px;text-align:left}
+.isteps>div{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.isteps .n{flex:none;width:24px;height:24px;border-radius:50%;background:var(--violet);color:#fff;font-weight:800;font-size:13px;display:grid;place-items:center}
+.isteps .ic{flex:none;width:40px;height:40px;border-radius:12px;background:var(--violet-soft);color:var(--violet);display:grid;place-items:center}
+.isteps .ic svg{width:22px;height:22px}.isteps .ic img{width:40px;height:40px;border-radius:10px}
+.isteps .t{flex:1}.isteps b{display:block;font-size:16px}.isteps small{display:block;font-size:13px;color:var(--muted);font-weight:500}
 .splash{position:fixed;inset:0;z-index:1100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 40%,#9B5CFF,#7B2FF7 45%,#4E12B0);transition:opacity .45s}
 .splash img{width:168px;height:168px;border-radius:38px;box-shadow:0 18px 50px rgba(0,0,0,.35);animation:pop .6s cubic-bezier(.2,1.5,.4,1)}
 .splash b{color:#fff;font-size:34px;font-weight:900;letter-spacing:.02em}
@@ -673,7 +679,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v50';
+const VERSION = 'v51';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3299,6 +3305,25 @@ function onboarding(step = 0) {
       document.body.appendChild(sp);
       setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, 1200);
     }
+    // iPhone dans Safari : on installe d'abord (Safari et l'appli installée ne partagent pas leur mémoire)
+    if (isIOS() && !isStandalone() && !S.skipInstall && !onboarding.installShown) {
+      onboarding.installShown = true;
+      const showInstall = () => {
+        o.innerHTML = `<div class="body center install">
+          <div class="sage big">🧙</div><div class="bubble" id="ib0" style="flex:none;text-align:left"><p id="it0"></p></div>
+          <div class="isteps">
+            <div><span class="n">1</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></span><span class="t"><b>Touche Partager</b><small>en bas de Safari</small></span></div>
+            <div><span class="n">2</span><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span><span class="t"><b>Sur l'écran d'accueil</b><small>puis « Ajouter »</small></span></div>
+            <div><span class="n">3</span><span class="ic"><img src="icon-192.png" alt=""></span><span class="t"><b>Ouvre Quest Run</b><small>depuis ton écran d'accueil</small></span></div>
+          </div></div>
+          <button class="link" id="skipinst" style="margin:6px auto 0">Continuer dans Safari (sans les rappels)</button>`;
+        typeText($('#it0'), "Avant de partir à l'aventure, installe-moi sur ton écran d'accueil, Élu ! Je pourrai te prévenir de tes quêtes.", $('#ib0'));
+        $('#skipinst').onclick = () => { S.skipInstall = true; save(); onboarding(0); };
+      };
+      setTimeout(showInstall, onboarding.splashDone ? 0 : 1500); onboarding.splashDone = true;
+      if (!onboarding.splashed) { onboarding.splashed = true; const sp = document.createElement('div'); sp.className = 'splash'; sp.innerHTML = '<img src="icon-512.png" alt=""><b>Quest Run</b>'; document.body.appendChild(sp); setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 500); }, 1200); }
+      return;
+    }
     o.innerHTML = `<div class="body intro">
       <div class="sage big">🧙</div><div class="bubble" id="ib"><p id="it"></p><span class="more">▼</span></div>
       <div class="idots">${LINES.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div></div>
@@ -3409,6 +3434,7 @@ function onboarding(step = 0) {
     typeText($('#say8'), "Avant de partir… prends ceci. Mon grimoire ! C'est ta toute première carte. Il y en a des centaines d'autres qui t'attendent dehors.", $('#say8b'));
     setTimeout(() => { const f = $('#gflip'); if (f) { f.classList.add('on'); vibrate([30, 40, 60]); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
     $('#go').onclick = () => {
+      if (isIOS() && !isStandalone()) return onboarding(9); // pas de notifs possibles dans Safari sur iPhone
       // puis il propose les rappels
       o.querySelector('.body').innerHTML = `<div class="sage big">🧙</div><div class="bubble" id="say8nb" style="flex:none;text-align:left"><p id="say8n"></p></div>`;
       typeText($('#say8n'), "Une dernière chose. Veux-tu que je te prévienne quand une quête t'attend ? Une fois par jour, pas plus. Promis !", $('#say8nb'));
