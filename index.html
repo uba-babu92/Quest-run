@@ -280,6 +280,9 @@ h2{font-size:22px;margin:4px 16px 12px}
 .evlock .ic{font-size:34px;filter:grayscale(1) brightness(.85);margin-bottom:4px}
 .evlock b{font-size:11.5px;color:#fff;line-height:1.2;white-space:nowrap}
 .evlock small{font-size:10.5px;color:#b9b0d6}
+.arrph{margin:12px auto 0;width:100%;max-width:340px;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;padding:0;font-size:13px}
+.arrph img{width:100%;height:100%;object-fit:cover;display:block}
+.arrph .muted{padding:12px}
 .btn.buy{flex:none;height:46px;padding:0 30px;margin:0 auto;font-size:15px;border-radius:14px}
 .mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:6px;margin:0 auto}
@@ -727,7 +730,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v62';
+const VERSION = 'v63';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1391,6 +1394,13 @@ function typeText(el, text, box) {
 const sageBox = (title, id) => `<div class="sagebox"><div class="sage">🧙</div><div class="bubble" id="${id}b">${title ? `<b>${esc(title)}</b>` : ''}<p id="${id}"></p><span class="more">▼</span></div></div>`;
 
 /* ---------- génération des quêtes ---------- */
+// lieu dans ou près d'un parc, d'un jardin ou d'un point de vue (28/10) : des sorties plus agréables
+const greenCache = {};
+function isGreen(p) {
+  if (greenCache[p.id] != null) return greenCache[p.id];
+  if (['Parc', 'Jardin', 'Point de vue'].includes(p.label)) return greenCache[p.id] = true;
+  return greenCache[p.id] = (S.places || []).some(x => (x.label === 'Parc' || x.label === 'Jardin' || x.label === 'Point de vue') && Math.abs(x.lat - p.lat) < 0.003 && dist(p, x) < 250);
+}
 function pickQuests(n, seed, exclude, o = {}) {
   // on vise la distance en EFFORT (montées comprises), pas seulement en km
   const km = o.km || S.goal.km, target = km * 1000, others = o.others || [];
@@ -1403,7 +1413,7 @@ function pickQuests(n, seed, exclude, o = {}) {
   const told = pool.filter(p => (p.st || 0) >= 2);
   if (told.length >= Math.max(n * 2, 3)) pool = told;
   const r = rng(seed);
-  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0);
+  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0);
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const wantRare = o.hidden === true ? n : o.hidden === false ? 0 : n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
@@ -1837,9 +1847,11 @@ async function checkIn(i, sh) {
 
 function takePhoto(i) {
   const q = S.week.quests[i], p = placeById(q.pid);
-  const sh = sheet(`<div style="text-align:center"><div class="pixel" style="color:var(--violet);font-size:14px;line-height:1.6;margin:8px 0 10px">LIEU TROUVÉ !</div>
-    <h3>${esc(shownName(p, true))}</h3>
-    <p class="muted">Prends ta photo : elle devient l'image de ta carte.</p></div>
+  // la photo du lieu, pour le repérer et le prendre en photo (28/10, demande de Bazil)
+  const sh = sheet(`<div style="text-align:center"><div class="pixel" style="color:var(--violet);font-size:14px;line-height:1.6;margin:8px 0 10px">TU Y ES PRESQUE !</div>
+    <h3 style="margin-bottom:4px">${esc(shownName(p, true))}</h3>
+    <div class="arrph" id="arrph"><span class="muted">Je cherche à quoi il ressemble…</span></div>
+    <p class="muted" style="margin:10px 0 0">Repère-le autour de toi, puis prends ta photo : elle devient l'image de ta carte.</p></div>
     <div class="row"><button class="btn gold" id="shoot">📸 Prendre la photo</button></div>
     <button class="link" id="nophoto">Continuer sans photo</button>`);
   const input = $('#photo');
@@ -1852,6 +1864,12 @@ function takePhoto(i) {
   };
   sh.querySelector('#shoot').onclick = () => input.click();
   sh.querySelector('#nophoto').onclick = () => { closeSheet(); award(i, null); };
+  Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 6000))]).then(w => {
+    const el = sh.querySelector('#arrph'); if (!el) return;
+    const img = (w && w.img) || (/^https?:/.test(p.img || '') ? p.img : null);
+    if (img) { el.innerHTML = `<img src="${esc(img)}" alt="">`; el.onclick = () => zoomImg(img); }
+    else el.innerHTML = `<span class="muted">Pas encore de photo de ce lieu : la tienne sera la première !</span>`;
+  }).catch(() => {});
 }
 
 async function award(i, blob) {
@@ -1963,17 +1981,16 @@ async function storyFor(p) {
 }
 // Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
 const STORY_API = 'https://questrun-histoires.v5nhskv7zy.workers.dev'; // relais Cloudflare (garde la clé Mistral)
-const AI_V = 5; // version des consignes : les anciens textes sont réécrits (5 = anecdote sur l'objet lui-même, 29/10)
+const AI_V = 6; // 6 (28/10) : décrire l'objet d'abord, plus jamais de remplissage sur la ville // version des consignes : les anciens textes sont réécrits (5 = anecdote sur l'objet lui-même, 29/10)
 // consignes pour l'IA (envoyées au relais, modifiables ici sans toucher à Cloudflare)
 const STORY_RULES = `Tu es le vieux sage de Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville. Tu parles comme un vieux sage malicieux et chaleureux d'un jeu Zelda. Le joueur vient de trouver ce lieu en courant et le prend en photo : tu lui racontes SON histoire. Commence par une courte exclamation (« Ha ! », « Oh oh ! », « Hé hé… »).
-On te donne des SOURCES : la fiche du lieu (type, artiste, date, matière, personne représentée, protection…), parfois son article Wikipédia, parfois l'article de son artiste, de la personne représentée ou de celle qui a donné son nom, et en dernier recours l'article de la ville.
+On te donne des SOURCES : la fiche du lieu (type, nom, artiste, date, matière, personne représentée, protection, où il se trouve…), parfois son article Wikipédia, la description de ses photos sur Wikimedia, l'article de son artiste ou de la personne représentée.
 Règles :
-- Parle UNIQUEMENT de ce lieu, de cet objet, de cette œuvre. Jamais d'un autre lieu à côté.
-- Commence par l'anecdote la plus croustillante que donnent les sources : un scandale, un record, un prix, une rivalité, un détail étonnant de la vie de l'artiste ou de la personne représentée, pourquoi l'œuvre a été faite.
-- Donne des faits précis tirés des sources : noms, dates, chiffres, matière.
-- Si un détail manque, tu peux faire une ESTIMATION prudente fondée sur le type d'objet, son style, sa matière ou son époque, en le disant clairement (« sûrement », « sans doute », « comme beaucoup de… »). Jamais de faux nom, de fausse date ou de faux chiffre présenté comme sûr.
-- Si seule la ville est connue, parle de l'objet en général (à quoi servaient ces statues, fontaines, croix… à son époque probable) puis glisse un fait marquant de la ville.
-- Pas de phrase vague du type « un lieu chargé d'histoire ».
+- Parle UNIQUEMENT de cet objet. Jamais d'un autre lieu, jamais de l'histoire de la ville ou du quartier.
+- 1re phrase : DÉCRIS l'objet pour qu'on le reconnaisse : ce que c'est, sa forme, sa matière, ce qu'il représente, où il est exactement (dans quel parc, contre quel mur…), d'après les sources et son nom.
+- Ensuite les FAITS PRÉCIS : qui l'a créé, quand, dans quel style ou mouvement, pour qui ou pourquoi, à qui il appartient, et l'anecdote la plus étonnante des sources.
+- Si un fait manque (artiste, date…), dis-le franchement et avec malice (« Nul ne sait qui a sculpté ce soleil… le mystère reste entier ! »). Une estimation prudente est permise si tu la dis comme telle (« sûrement », « sans doute »). Jamais de faux nom, de fausse date ou de faux chiffre présenté comme sûr.
+- Pas de phrase vague du type « un lieu chargé d'histoire », « où les gens viennent se détendre ».
 - Français, tutoiement, 3 ou 4 phrases, 550 caractères maximum. Réponds uniquement par le texte.`;
 // Sources sur l'objet lui-même (29/10) : fiche, son article, son artiste, son sujet, son nom… puis la ville.
 const wpExtract = async (title, n = 1500) => {
@@ -1993,6 +2010,9 @@ function factSheet(p) {
   if (fx.named) f.push(`Nommé d'après : ${fx.named[0]}`);
   if (fx.her) f.push(`Protection : ${fx.her}`);
   const insc = fx.insc || p.insc; if (insc) f.push(`Inscription : « ${insc} »`);
+  // où il se trouve : le parc ou jardin le plus proche
+  const park = (S.places || []).filter(x => x.id !== p.id && (x.label === 'Parc' || x.label === 'Jardin') && x.name).map(x => [dist(p, x), x]).filter(([d]) => d < 180).sort((a, b) => a[0] - b[0])[0];
+  if (park) f.push(`Se trouve dans ou près de : ${park[1].name}`);
   return f.join('. ') + '.';
 }
 async function objectSources(p) {
@@ -2001,12 +2021,15 @@ async function objectSources(p) {
   if (own) out.push({ title: own.title, text: own.text });
   const linked = [['Artiste', fx.by], ['Architecte', fx.arch], ...(fx.dep || []).map(d => ['Personne ou sujet représenté', d]), ['Nommé d\'après', fx.named]].filter(([, r]) => r && r[1]);
   for (const [k, r] of linked.slice(0, 2)) { const x = await wpExtract('fr:' + r[1], 1000).catch(() => null); if (x) out.push({ title: `${k} : ${x.title}`, text: x.text }); }
-  if (out.length === 1) { // rien sur l'objet : la ville, en dernier recours
+  // description des photos Wikimedia du lieu (seulement celles qui portent son nom) ; plus jamais l'article de la ville
+  if (out.length < 3 && p.name) {
     try {
-      const g = await getJSON(`https://nominatim.openstreetmap.org/reverse?format=json&zoom=10&accept-language=fr&lat=${p.lat}&lon=${p.lng}`);
-      const city = g.address && (g.address.city || g.address.town || g.address.village || g.address.municipality);
-      const x = city && await wpExtract('fr:' + city, 1200);
-      if (x) out.push({ title: `La ville : ${x.title}`, text: x.text });
+      const j = await getJSON(`https://commons.wikimedia.org/w/api.php?action=query&generator=geosearch&ggscoord=${p.lat}|${p.lng}&ggsradius=${p.area ? 200 : 80}&ggsnamespace=6&ggslimit=20&prop=imageinfo&iiprop=extmetadata&iiextmetadatafilter=ImageDescription|Artist|DateTimeOriginal&iiextmetadatalanguage=fr&format=json&origin=*`, 8000);
+      const strip = h => String(h || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      const d = Object.values(j.query?.pages || {}).filter(x => sameName(p.name, x.title.replace(/^File:/, '').replace(/\.[a-z]+$/i, '')))
+        .map(x => strip(x.imageinfo?.[0]?.extmetadata?.ImageDescription?.value)).filter(t => t.length > 15);
+      const txt = [...new Set(d)].join(' / ').slice(0, 700);
+      if (txt) out.push({ title: 'Description des photos (Wikimedia)', text: txt });
     } catch (e) {}
   }
   return out.slice(0, 3);
@@ -2609,20 +2632,78 @@ const fmtKm = d => d < 1000 ? `${Math.round(d)} m` : `${(d / 1000).toFixed(1).re
 
 /* --- itinéraire à pied (OpenStreetMap, sans clé) --- */
 const ROUTER = p => `https://routing.openstreetmap.de/${p}/route/v1/driving/`;
-// BRouter : profil randonnée (préfère sentiers, parcs, chemins balisés), trekking à vélo
+// BRouter : profils « agréables » faits pour Quest Run (28/10) : parcs, bois, bords de l'eau, rues piétonnes ;
+// on évite les grands axes, le bruit et le trafic (étiquettes « estimated_* » de BRouter). Secours : profils standards.
 const BROUTER_PROF = { 'routed-foot': 'hiking-mountain', 'routed-bike': 'trekking' };
-async function brouter(points, prof, alt = 0) {
+const NICE = `
+assign green switch estimated_forest_class=5|6 0.8 switch estimated_forest_class=3|4 0.88 switch estimated_forest_class=1|2 0.95 1
+assign water switch estimated_river_class=5|6 0.8 switch estimated_river_class=3|4 0.88 switch estimated_river_class=1|2 0.95 1
+assign noisy switch estimated_noise_class=6 1.5 switch estimated_noise_class=5 1.35 switch estimated_noise_class=4 1.18 switch estimated_noise_class=3 1.06 1
+assign busy switch estimated_traffic_class=6 1.5 switch estimated_traffic_class=5 1.35 switch estimated_traffic_class=4 1.18 switch estimated_traffic_class=3 1.06 1
+assign nice multiply min green water multiply noisy busy`;
+const PROFILES = {
+  'routed-foot': `---context:global
+assign validForFoot 1
+assign downhillcost 0
+assign downhillcutoff 1.5
+assign uphillcost 60
+assign uphillcutoff 1.5
+---context:way
+assign turncost 0
+assign initialcost 0
+assign closed or access=private|no foot=no
+assign base switch highway=footway|pedestrian|path 1.3 switch highway=living_street 1.35 switch highway=track|bridleway 1.4 switch highway=cycleway 1.45 switch highway=residential|service 1.5 switch highway=unclassified|road 1.6 switch highway=steps 2.0 switch highway=tertiary|tertiary_link 1.9 switch highway=secondary|secondary_link 2.5 switch highway=primary|primary_link 3.3 10000
+${NICE}
+assign costfactor switch closed 10000 max 1 multiply base nice
+---context:node
+assign initialcost 0`,
+  'routed-bike': `---context:global
+assign validForBikes 1
+assign downhillcost 0
+assign downhillcutoff 1.5
+assign uphillcost 50
+assign uphillcutoff 1.5
+---context:way
+assign turncost 10
+assign initialcost 0
+assign closed or access=private|no bicycle=no
+assign badway and reversedirection=yes and or oneway=yes|true|1 junction=roundabout not or oneway:bicycle=no cycleway=opposite|opposite_lane|opposite_track
+assign base switch highway=cycleway 1.2 switch highway=pedestrian|living_street 1.5 switch highway=residential|service 1.5 switch highway=track|path 1.5 switch highway=unclassified|road 1.6 switch highway=footway 2.6 switch highway=tertiary|tertiary_link 1.9 switch highway=secondary|secondary_link 2.6 switch highway=primary|primary_link 3.5 switch highway=steps 20 10000
+${NICE}
+assign costfactor switch or closed badway 10000 max 1 multiply base nice
+---context:node
+assign initialcost 0`
+};
+const niceId = {};
+async function niceProfile(prof) {
+  if (niceId[prof]) return niceId[prof];
+  const r = await fetch('https://brouter.de/brouter/profile', { method: 'POST', body: PROFILES[prof] || PROFILES['routed-foot'], signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined });
+  const j = await r.json(); if (!j.profileid) throw new Error(j.error || 'profil');
+  return niceId[prof] = j.profileid;
+}
+async function brouter(points, prof, alt = 0, profile) {
   const ll = points.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join('|');
-  const j = await getJSON(`https://brouter.de/brouter?lonlats=${ll}&profile=${BROUTER_PROF[prof] || 'hiking-mountain'}&alternativeidx=${alt}&format=geojson`, 15000);
+  const j = await getJSON(`https://brouter.de/brouter?lonlats=${ll}&profile=${profile || BROUTER_PROF[prof] || 'hiking-mountain'}&alternativeidx=${alt}&format=geojson`, 15000);
   const f = j.features && j.features[0]; if (!f || !f.geometry) throw new Error('brouter');
   const c = f.geometry.coordinates;
-  return { pts: c.map(x => [x[1], x[0]]), ele: c.map(x => x[2]), dist: +f.properties['track-length'] || 0, engine: 'BRouter' };
+  return { pts: c.map(x => [x[1], x[0]]), ele: c.map(x => x[2]), dist: +f.properties['track-length'] || 0, engine: profile ? 'BRouter agréable' : 'BRouter' };
+}
+// itinéraire agréable s'il ne fait pas plus de 15 % de plus que l'itinéraire standard
+async function niceRoute(points, prof) {
+  const std = brouter(points, prof, 0);
+  let nice = null;
+  try {
+    const id = await niceProfile(prof);
+    nice = await brouter(points, prof, 0, id).catch(async e => { delete niceId[prof]; return brouter(points, prof, 0, await niceProfile(prof)); });
+  } catch (e) {}
+  const s0 = await std.catch(() => null);
+  if (nice && (!s0 || nice.dist <= s0.dist * 1.15)) return s0 ? [nice, s0] : [nice];
+  if (s0) return [s0];
+  throw new Error('brouter');
 }
 async function routeVia(points, prof = 'routed-foot') {
   try {
-    const tries = [brouter(points, prof, 0)];
-    if (points.length === 2) tries.push(brouter(points, prof, 1));
-    const ok = (await Promise.allSettled(tries)).filter(x => x.status === 'fulfilled').map(x => x.value);
+    const ok = await niceRoute(points, prof);
     if (ok.length) return ok;
   } catch (e) {}
   return osrmVia(points, prof);
