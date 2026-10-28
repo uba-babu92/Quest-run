@@ -683,7 +683,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v53';
+const VERSION = 'v54';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3619,7 +3619,7 @@ function onboarding(step = 0) {
       o.querySelector('.scan .ic').textContent = '🗺️';
       vibrate([40, 40, 80]); sfx('ready');
       $('#go').classList.remove('hidden');
-      $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); Metrics.askConsent(); if (S.pendingFriend) setTimeout(addFriendQuest, 600); };
+      $('#go').onclick = async () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); await wait(500); await dailyGift(); Metrics.askConsent(); if (S.pendingFriend) setTimeout(addFriendQuest, 600); };
     })();
   }
 }
