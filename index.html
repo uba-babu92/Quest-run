@@ -170,6 +170,45 @@ h2{font-size:22px;margin:4px 16px 12px}
 .card.rare{background:linear-gradient(145deg,#B07BFF,#5A12D6,#C9A6FF)}
 .card.legend{background:linear-gradient(145deg,#FFE27A,#D38E00,#FFF3B0)}
 .card.epic{background:linear-gradient(145deg,#8EC5FF,#1559C9,#BFE0FF)}
+.card.mythic{background:linear-gradient(120deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff,#c45fff,#ff5fd2);background-size:300% 300%;animation:rainbow 4s linear infinite}
+@keyframes rainbow{to{background-position:300% 0}}
+.b-mythic{background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);color:#1a0b2e}
+/* effet holographique : reflet arc-en-ciel qui suit l'inclinaison */
+.holo{position:relative;overflow:hidden;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .15s}
+.holo::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;mix-blend-mode:color-dodge;opacity:.55;
+  background:linear-gradient(115deg,transparent 20%,rgba(255,95,210,.7) 35%,rgba(255,210,63,.7) 45%,rgba(95,255,208,.7) 55%,rgba(95,157,255,.7) 65%,transparent 80%);
+  background-size:250% 250%;background-position:var(--hx,50%) var(--hy,50%);animation:holomove 3.5s ease-in-out infinite alternate}
+@keyframes holomove{from{background-position:0% 0%}to{background-position:100% 100%}}
+.holo .sparkle{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 10px 3px #fff;animation:spark 2.2s ease-in-out infinite;pointer-events:none}
+@keyframes spark{0%,100%{opacity:0;transform:scale(.3)}50%{opacity:1;transform:scale(1)}}
+.vit h2{margin:6px 16px 4px;font-size:24px}
+.vit .lead{margin:0 16px 14px;color:var(--muted);font-size:14px}
+.mythhero{margin:0 16px 16px;border-radius:22px;padding:18px;background:radial-gradient(circle at 50% 0%,#3b1a6e,#120d1e 70%);color:#fff;text-align:center;border:1px solid rgba(255,255,255,.12)}
+.mythhero .when{font-size:13px;color:#c9c2e0;margin-top:10px}
+.mythhero .count{font-size:30px;font-weight:900;margin:4px 0;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.vcard{width:150px;aspect-ratio:3/4.2;border-radius:16px;padding:5px;margin:0 auto}
+.vcard .in{height:100%;border-radius:12px;background:#140f22;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#fff;position:relative;overflow:hidden}
+.vcard .in .ic{font-size:44px;filter:drop-shadow(0 0 12px rgba(255,255,255,.5))}
+.vcard .in b{font-size:13px;text-align:center;padding:0 8px}
+.vcard .in small{font-size:11px;opacity:.7}
+.vrow{display:flex;gap:12px;overflow-x:auto;padding:4px 16px 16px;scroll-snap-type:x mandatory}
+.vrow>*{flex:none;scroll-snap-align:center}
+.vrow .card{width:150px}
+.odds{margin:0 16px 16px}
+.odds .o{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.odds .o:last-child{border:0}
+.odds .o>span:not(.badge){flex:1;font-size:14px;color:var(--muted)}
+.odds .o .badge{flex:none;min-width:96px;text-align:center}
+.odds .o>span b{display:block;color:var(--text);font-size:15px}
+.odds .o em{font-style:normal;font-weight:800;font-size:13px;white-space:nowrap;color:var(--violet)}
+.mythlist .m{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
+.mythlist .m:last-child{border:0}
+.mythlist .m .ic{font-size:28px}
+.mythlist .m span{flex:1;font-size:14px}
+.mythlist .m .ic{flex:none;width:36px;text-align:center}
+.mythlist .m span small{display:block;color:var(--muted)}
+.mythlist .m em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
+.mythlist .m.got em{color:#3BB273}
 .card .in{position:relative;height:100%;border-radius:12px;overflow:hidden;background:#1a1525;display:flex;flex-direction:column}
 .card .ph{flex:1;background-size:cover;background-position:center;display:grid;place-items:center;color:rgba(255,255,255,.85);font-size:34px;
   background-color:#2a2140;background-image:radial-gradient(circle at 30% 20%,rgba(155,92,255,.5),transparent 60%)}
@@ -506,6 +545,10 @@ button.chip{cursor:pointer}
   <div class="topbar"><button class="backbtn" data-back>‹ Profil</button><div class="logo pixel">PARAMÈTRES</div></div>
   <div id="set"></div>
 </section>
+<section id="s-vit" class="screen hidden">
+  <div class="topbar"><div class="logo pixel">VITRINE</div><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div></div>
+  <div id="vit" class="vit"></div>
+</section>
 <section id="s-pref" class="screen hidden">
   <div class="topbar"><button class="backbtn" data-back="set">‹ Paramètres</button><div class="logo pixel">PRÉFÉRENCES</div></div>
   <div id="pref"></div>
@@ -522,6 +565,7 @@ button.chip{cursor:pointer}
 <nav class="tabbar" id="tabbar">
   <button data-tab="quests" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>Quêtes</button>
   <button data-tab="coll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="11" height="15" rx="2"/><path d="M17 6.5l3 .8-3.2 12.3-6-1.6"/></svg>Collection</button>
+  <button data-tab="vit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 6.4L21 9.2l-5 4.4 1.5 6.6L12 16.8 6.5 20.2 8 13.6 3 9.2l6.4-.8z"/></svg>Vitrine</button>
   <button data-tab="prof"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profil</button>
 </nav>
 
@@ -557,11 +601,11 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v40';
-const PTS = { common: 100, rare: 250, epic: 500, legend: 1000 };
+const VERSION = 'v41';
+const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
-const TIER_NAME = { common: 'Commune', rare: 'Rare', epic: 'Épique', legend: 'Légendaire' };
+const TIER_NAME = { common: 'Commune', rare: 'Rare', epic: 'Épique', legend: 'Légendaire', mythic: 'Mythique' };
 function tierOf(p, sport) {
   if (!p) return 'common';
   const k = effortM(p) / 1000 / ((sport || S.sport) === 'bike' ? 3 : 1);
@@ -1130,7 +1174,39 @@ function comeback() {
 }
 
 /* ---------- apparition légendaire : 48 h, le week-end, après 6 sorties réussies ---------- */
-const LEG_MS = 48 * 3600e3;
+const LEG_MS = 48 * 3600e3, LEG_CHANCE = 1 / 3;
+/* ---------- cartes mythiques : 4 dates par an, 72 h (jours où l'on court le plus) ---------- */
+const MYTHS = [
+  { id: 'mai', ic: '🌸', name: 'Le Muguet d\'Or', when: 'Week-end du 1er mai', start: y => new Date(y, 4, 1) },
+  { id: 'juin', ic: '🏃', name: 'La Foulée d\'Or', when: 'Journée mondiale de la course', start: y => { const d = new Date(y, 5, 1); while (d.getDay() !== 3) d.setDate(d.getDate() + 1); return d; } },
+  { id: 'sept', ic: '🏛️', name: 'Le Gardien du Patrimoine', when: 'Journées du patrimoine', start: y => { const d = new Date(y, 8, 1); while (d.getDay() !== 6) d.setDate(d.getDate() + 1); d.setDate(d.getDate() + 13); return d; } },
+  { id: 'nov', ic: '💙', name: 'Le Bleuet', when: '11 novembre', start: y => new Date(y, 10, 10) }
+];
+const MYTH_MS = 72 * 3600e3;
+function mythWindows(from = Date.now()) {
+  const y = new Date(from).getFullYear(), out = [];
+  for (const yy of [y - 1, y, y + 1]) for (const m of MYTHS) { const a = m.start(yy).getTime(); out.push({ ...m, key: m.id + yy, a, b: a + MYTH_MS }); }
+  return out.sort((p, q) => p.a - q.a);
+}
+const mythNow = () => mythWindows().find(w => Date.now() >= w.a && Date.now() < w.b);
+const mythNext = () => mythWindows().find(w => w.a > Date.now());
+async function maybeMythic() {
+  const w = mythNow();
+  if (!w || !S.week || !S.home || (S.mythSeen || {})[w.key]) return false;
+  if (S.collection.some(c => c.myth === w.key)) return false;
+  const km = Math.round(Math.max(3, S.goal.km * 1.2) * 2) / 2;
+  const [p] = pickQuests(1, 'myth|' + w.key + Date.now(), new Set(S.week.quests.map(q => q.pid)), { km });
+  if (!p) return false;
+  (S.mythSeen = S.mythSeen || {})[w.key] = Date.now();
+  S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), legend: true, mythic: w.key, mythName: w.name, until: w.b, tier: 'mythic', km });
+  save(); wikiFor(p);
+  await overlay(`<div class="v-title gold pixel">APPARITION<br>MYTHIQUE !</div>
+    <div class="vcard card mythic holo" style="margin:16px auto"><div class="in"><span class="ic">${w.ic}</span><b>${esc(w.name)}</b><small>${esc(w.when)}</small></div></div>
+    <div class="v-sub">Seulement <b style="color:#FFD23F">4 fois par an</b> ! Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
+    <button class="btn gold" data-close>Voir la quête</button>`);
+  if (current === 'quests') renderQuests();
+  return true;
+}
 function legendQuest() { return S.week && S.week.quests.find(q => q.legend && q.status === 'todo'); }
 function expireLegend() {
   if (!S.week) return false;
@@ -1145,7 +1221,10 @@ function expireLegend() {
 async function maybeLegend() {
   if (!S.week || !S.home) return;
   const P = prog(), d = new Date().getDay();
+  if (await maybeMythic()) return;
   if ((d !== 6 && d !== 0) || (P.okRuns || 0) < 6 || S.legendWeek === S.week.id || legendQuest()) return;
+  S.legendWeek = S.week.id;                                   // un seul tirage par week-end
+  if (Math.random() >= LEG_CHANCE) { save(); return; }
   const best = Math.max(0, ...(S.runs || []).filter(r => r.found).map(r => r.dist)) / 1000;
   const km = Math.max(S.goal.km * 1.25, Math.min(best * 1.1, S.goal.km * 1.6));
   const [p] = pickQuests(1, 'legend|' + Date.now(), new Set(S.week.quests.map(q => q.pid)), { km: Math.round(km * 2) / 2 });
@@ -1253,8 +1332,8 @@ function renderQuests() {
         ${tierBadge(t)}</button>`;
       if (q.legend && !done) return `<button class="quest legendq" data-i="${i}">
         <div class="num ${q.seen ? '' : 'new'}">✨</div>
-        <div class="t"><b>${esc(shownName(p, false))}</b><span><span class="legtime">⏳ encore ${hoursLeft(q)} h</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
-        ${tierBadge('legend')}</button>`;
+        <div class="t"><b>${esc(q.mythName || shownName(p, false))}</b><span><span class="legtime">⏳ encore ${hoursLeft(q)} h</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        ${tierBadge(q.mythic ? 'mythic' : 'legend')}</button>`;
       const isToday = !done && q.day === td, late = !done && q.day < td;
       const when = isToday ? `<span class="today-tag">Aujourd'hui</span>` : `${DAYS[q.day] || ''}${late ? ' · rattrapable' : ''}`;
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''} ${isToday ? 'today' : ''}" data-i="${i}">
@@ -1297,7 +1376,7 @@ function openQuest(i) {
     return;
   }
   const [qt, qtxt] = questLine(p);
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.mythic ? `Par ma barbe ! « ${q.mythName} »… une carte MYTHIQUE ! Elle n'apparaît que quatre fois par an. Cours, vite, avant qu'elle ne s'envole !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   const sh = sheet(`${sageBox(qt, 'qsay')}
     <div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
@@ -1387,6 +1466,7 @@ async function award(i, blob) {
   S.coins = (S.coins || 0) + COIN_PLACE;
   const card = { pid: p.id, name: p.name || p.label, label: p.label, rarity: tier, hidden: p.rarity === 'rare', pts, date: Date.now(), lat: p.lat, lng: p.lng, photo: !!blob };
   if (q.legend) card.event = true;
+  if (q.mythic) { card.myth = q.mythic; card.mythName = q.mythName; }
   if (RUN) { card.run = RUN.id; card.sport = RUN.sport || 'run'; RUN.found = p.id; }
   const w = await Promise.race([wikiFor(p), new Promise(r => setTimeout(r, 2500))]);
   if (w && w.img) card.img = w.img;
@@ -1596,7 +1676,7 @@ function report(i) {
 /* ---------- cartes ---------- */
 const ICON_PIN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 22s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="10" r="2.6"/></svg>';
 function cardHtml(c) {
-  const cls = c.rarity === 'common' ? '' : c.rarity;
+  const cls = (c.rarity === 'common' ? '' : c.rarity) + (c.rarity === 'legend' || c.rarity === 'mythic' ? ' holo' : '');
   const tag = TIER_NAME[c.rarity] || 'Commune';
   return `<div class="card ${cls}" data-pid="${esc(c.pid)}"><div class="in">
     <div class="ph" data-ph="${esc(c.pid)}">${ICON_PIN}</div>
@@ -1685,7 +1765,7 @@ async function victory(card, pts) {
   const place = placeById(card.pid) || { id: card.pid, name: card.name, label: card.label, lat: card.lat, lng: card.lng };
   const p = overlay(`<div class="fiche" style="text-align:center">
     <div class="v-title pixel">LIEU TROUVÉ !</div>
-    ${card.rarity !== 'common' ? `<div class="pixel" style="font-size:12px;margin-top:8px;color:${{ rare: '#B07BFF', epic: '#8EC5FF', legend: '#FFD23F' }[card.rarity]}">CARTE ${(TIER_NAME[card.rarity] || '').toUpperCase()} !</div>` : ''}
+    ${card.rarity !== 'common' ? `<div class="pixel" style="font-size:12px;margin-top:8px;color:${{ rare: '#B07BFF', epic: '#8EC5FF', legend: '#FFD23F', mythic: '#FF8FE0' }[card.rarity]}">CARTE ${(TIER_NAME[card.rarity] || '').toUpperCase()} !</div>` : ''}
     <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_PLACE} 🪙</div>
     <div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
     <div class="box vstory" id="vstory" style="text-align:left"><span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On déverrouille l'histoire…</p></div>
@@ -1697,7 +1777,7 @@ async function victory(card, pts) {
   vibrate([30, 40, 30]);
   setTimeout(() => {
     $('#flip').classList.add('on'); vibrate(60);
-    confetti({ rare: ['#7B2FF7', '#B07BFF', '#FFD23F', '#fff'], epic: ['#1559C9', '#8EC5FF', '#FFD23F', '#fff'], legend: ['#FFD23F', '#FFB800', '#FFF3B0', '#fff'] }[card.rarity] || ['#FFD23F', '#FFB800', '#fff', '#C0C6D0']);
+    confetti({ rare: ['#7B2FF7', '#B07BFF', '#FFD23F', '#fff'], epic: ['#1559C9', '#8EC5FF', '#FFD23F', '#fff'], legend: ['#FFD23F', '#FFB800', '#FFF3B0', '#fff'], mythic: ['#FF5FD2', '#FFD23F', '#5FFFD0', '#5F9DFF', '#fff'] }[card.rarity] || ['#FFD23F', '#FFB800', '#fff', '#C0C6D0']);
   }, 900);
   return p;
 }
@@ -1731,7 +1811,7 @@ async function fillStory(box, p, c, retry) {
 }
 
 /* ---------- partager une carte en image (format story, logo seul) ---------- */
-const TIER_COL = { common: ['#D9DDE4', '#9AA1AE', '#E9ECF1'], rare: ['#B07BFF', '#5A12D6', '#C9A6FF'], epic: ['#8EC5FF', '#1559C9', '#BFE0FF'], legend: ['#FFE27A', '#D38E00', '#FFF3B0'] };
+const TIER_COL = { common: ['#D9DDE4', '#9AA1AE', '#E9ECF1'], rare: ['#B07BFF', '#5A12D6', '#C9A6FF'], epic: ['#8EC5FF', '#1559C9', '#BFE0FF'], legend: ['#FFE27A', '#D38E00', '#FFF3B0'], mythic: ['#FF5FD2', '#5F9DFF', '#FFD23F'] };
 const loadImg = (src, cors) => new Promise((res, rej) => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
 function rrect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
 function wrapLines(x, text, w, max) {
@@ -2584,6 +2664,58 @@ function renderProf() {
   $('#shopbtn').onclick = () => tab('shop');
 }
 
+/* ---------- vitrine : les cartes les plus rares, les chances, les mythiques (pas d'achat) ---------- */
+function holoTilt(root) {
+  root.querySelectorAll('.holo').forEach(el => {
+    if (!el.querySelector('.sparkle')) for (let k = 0; k < 4; k++) { const s = document.createElement('i'); s.className = 'sparkle'; s.style.left = (15 + Math.random() * 70) + '%'; s.style.top = (10 + Math.random() * 80) + '%'; s.style.animationDelay = (Math.random() * 2) + 's'; (el.querySelector('.in') || el).appendChild(s); }
+    const move = (cx, cy) => { const r = el.getBoundingClientRect(), px = (cx - r.left) / r.width, py = (cy - r.top) / r.height;
+      el.style.setProperty('--ry', ((px - .5) * 22) + 'deg'); el.style.setProperty('--rx', ((.5 - py) * 22) + 'deg'); el.style.setProperty('--hx', (px * 100) + '%'); el.style.setProperty('--hy', (py * 100) + '%'); };
+    el.addEventListener('touchmove', e => move(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    el.addEventListener('mousemove', e => move(e.clientX, e.clientY));
+    const reset = () => { el.style.setProperty('--rx', '0deg'); el.style.setProperty('--ry', '0deg'); };
+    el.addEventListener('touchend', reset); el.addEventListener('mouseleave', reset);
+  });
+}
+function renderVit() {
+  renderPoints();
+  const nx = mythNext(), now = mythNow(), days = nx ? Math.ceil((nx.a - Date.now()) / 864e5) : 0;
+  const got = new Set(S.collection.filter(c => c.myth).map(c => c.myth.replace(/\d+$/, '')));
+  const mine = S.collection.filter(c => c.rarity === 'legend' || c.rarity === 'mythic');
+  // les lieux les plus lointains = les plus belles cartes à aller chercher
+  const far = (S.places || []).filter(p => p.name && !S.collection.some(c => c.pid === p.id)).map(p => [tierOf(p), p]).filter(([t]) => t === 'legend' || t === 'epic').sort((a, b) => effortM(b[1]) - effortM(a[1])).slice(0, 6);
+  const P = prog();
+  $('#vit').innerHTML = `
+  <h2>Les cartes les plus rares</h2><p class="lead">Elles ne s'achètent pas : elles se gagnent en courant.</p>
+  <div class="mythhero">
+    <div class="vcard card mythic holo"><div class="in"><span class="ic">${now ? now.ic : nx.ic}</span><b>${esc(now ? now.name : nx.name)}</b><small>Mythique</small></div></div>
+    ${now ? `<div class="when">${esc(now.when)} · c'est maintenant !</div><div class="count">Encore ${Math.ceil((now.b - Date.now()) / 3600e3)} h</div><div style="font-size:13px;color:#c9c2e0">Ouvre l'onglet Quêtes pour la chercher</div>`
+      : `<div class="when">Prochaine apparition mythique · ${esc(nx.when)}</div><div class="count">Dans ${days} jour${days > 1 ? 's' : ''}</div><div style="font-size:13px;color:#c9c2e0">${new Date(nx.a).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })} · 72 h seulement</div>`}
+  </div>
+  <div class="panel odds"><h4>Tes chances</h4>
+    <div class="o">${tierBadge('common')}<span><b>Commune</b>Moins de 6 km aller-retour</span><em>Toujours</em></div>
+    <div class="o">${tierBadge('rare')}<span><b>Rare</b>6 à 12 km, ou un trésor caché</span><em>Chaque semaine</em></div>
+    <div class="o">${tierBadge('epic')}<span><b>Épique</b>12 à 20 km, ou un trésor caché loin</span><em>Si tu progresses</em></div>
+    <div class="o">${tierBadge('legend')}<span><b>Légendaire</b>Plus de 20 km, ou une apparition le week-end (48 h)${(P.okRuns || 0) < 6 ? ` · encore ${6 - (P.okRuns || 0)} sortie${6 - (P.okRuns || 0) > 1 ? 's' : ''} réussie${6 - (P.okRuns || 0) > 1 ? 's' : ''} pour y avoir droit` : ''}</span><em>1 chance sur 3</em></div>
+    <div class="o">${tierBadge('mythic')}<span><b>Mythique</b>Seulement 4 dates par an, 72 h</span><em>4 fois par an</em></div>
+  </div>
+  <div class="panel"><h4>Les 4 cartes mythiques</h4><div class="mythlist">${MYTHS.map(m => `<div class="m ${got.has(m.id) ? 'got' : ''}"><span class="ic">${m.ic}</span><span>${esc(m.name)}<small>${esc(m.when)}</small></span><em>${got.has(m.id) ? 'Gagnée ✓' : 'À gagner'}</em></div>`).join('')}</div></div>
+  ${far.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">À aller chercher près de chez toi</h4>
+  <div class="vrow">${far.map(([t, p]) => `<div class="vcard card ${t} ${t === 'legend' ? 'holo' : ''}"><div class="in"><span class="ic">❓</span><b>${esc(p.rarity === 'rare' ? p.label + ' mystère' : p.name)}</b><small>${TIER_NAME[t]} · ${roundTripKm(p).toFixed(0)} km</small></div></div>`).join('')}</div>` : ''}
+  ${mine.length ? `<h4 style="margin:4px 16px 8px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Tes plus belles cartes</h4><div class="vrow">${mine.map(cardHtml).join('')}</div>` : ''}
+  <div class="panel" style="text-align:center"><div style="font-size:40px">📦</div><h4 style="margin:6px 0">Reçois tes cartes en vrai</h4>
+    <p class="muted" style="font-size:14px;margin:0 0 12px">Un booster imprimé avec ta photo, ton run, la date et l'histoire de chaque lieu.</p>
+    <button class="btn" id="boost" style="width:100%">Je veux être prévenu</button></div>
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 16px 24px">Aucun achat de cartes : chaque carte prouve que tu y as couru.</p>`;
+  fillPhotos($('#vit'));
+  holoTilt($('#vit'));
+  $('#vit').querySelectorAll('.vrow .card[data-pid]').forEach(el => el.onclick = () => showFiche(S.collection.find(c => c.pid === el.dataset.pid)));
+  $('#boost').onclick = () => {
+    S.boosterTaps = (S.boosterTaps || 0) + 1; save(); track('booster_interest', {});
+    sheet(`<div style="text-align:center"><div style="font-size:54px">📦</div><h3>Bientôt disponible !</h3><p class="muted">Les boosters de cartes imprimées arrivent bientôt. On te prévient dès que c'est prêt.</p></div>
+      <div class="row"><button class="btn" id="okb">Super !</button></div>`).querySelector('#okb').onclick = closeSheet;
+  };
+}
+
 /* ---------- mes préférences : changer sa semaine coûte 20 🪙 (28/10, choix de Bazil) ---------- */
 const PREF_COST = 20;
 let prefDraft = null;
@@ -2680,7 +2812,7 @@ function renderSet() {
         <div><b>${x.days}</b><span>jours actifs</span></div>
         <div><b>${x.worst ? x.worst[0].replace('niveau_', 'Niv. ') : '–'}</b><span>niveau le plus bloquant${x.worst ? ' (' + x.worst[1] + ' échecs)' : ''}</span></div>
       </div>`; })()}
-    <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0}</small></span><button class="setbtn" id="give">+100 🪙</button></div>
+    <div class="set"><span>Pièces de test<small class="muted" style="display:block;font-size:13px">Tentatives d'achat en boutique : ${S.shopTaps || 0} · intérêt booster : ${S.boosterTaps || 0}</small></span><button class="setbtn" id="give">+100 🪙</button></div>
     <div class="set"><span>Quitter le mode développeur</span><button class="setbtn" id="lock">Verrouiller</button></div>
   </div>` : ''}
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
@@ -2727,7 +2859,7 @@ let current = 'quests', shopFrom = 'quests';
 function tab(name) {
   current = name;
   if (name === 'shop' && current !== 'shop') shopFrom = current;
-  ['quests', 'coll', 'prof', 'set', 'tro', 'shop', 'pref'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
+  ['quests', 'coll', 'prof', 'set', 'tro', 'shop', 'pref', 'vit'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
   const tb = name === 'set' || name === 'tro' || name === 'pref' ? 'prof' : name === 'shop' ? shopFrom : name;
   document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tb));
   $('#s-' + name).scrollTop = 0;
@@ -2738,6 +2870,7 @@ function tab(name) {
   if (name === 'tro') renderTro();
   if (name === 'shop') renderShop();
   if (name === 'pref') renderPref();
+  if (name === 'vit') renderVit();
 }
 $('#gear').onclick = () => tab('set');
 document.querySelectorAll('[data-back]').forEach(b => b.onclick = () => tab(b.dataset.back === 'shop' ? shopFrom : b.dataset.back === 'set' ? 'set' : 'prof'));
