@@ -45,6 +45,20 @@
 - Écrans de victoire toujours **noirs**, police pixel « Press Start 2P », confettis, carte qui se retourne.
 - Cartes : **argent** = commune, **violet** = rare, **or** = légendaire (plus tard).
 
+## Refonte « quête RPG » (28/10, décidée avec Bazil)
+- **L'essence de l'appli = la quête**, façon RPG (effet World of Warcraft), mais **ultra simple** : on doit comprendre en 3 secondes.
+- **Le vieux sage** (façon Duolingo, mais un vieux sage) donne les quêtes. Bazil dessine des esquisses du personnage à animer ; en attendant, avatar provisoire.
+- **Ton des quêtes : Zelda Minish Cap** (phrases courtes, rumeurs, malice). Exemple : « Hé, toi ! Oui, toi, le coureur ! J'ai entendu dire qu'un vieux château cachait une carte… Va jeter un œil et dis-moi si tu trouves quelque chose ! » **Parler de carte, jamais de coffre.** Textes d'avant-sortie écrits à la main par type de lieu (`QUEST_LINES`), affichés lettre par lettre dans une bulle.
+- **À l'arrivée, le sage raconte la vraie histoire** du lieu (Wikipédia ; l'IA la réécrit dans sa voix, sources Wikipédia seulement).
+- Pas d'ennemi, pas de chapitres pour l'instant (univers « Oubli » / voyage dans le temps jugés trop compliqués).
+- **Partage de carte** en PNG format story (photo, rareté, nom, run, date, 2-3 lignes d'histoire, **logo seul**, pas de lien ni QR). Seulement les cartes débloquées.
+- **Quête entre amis** : « 👥 Partager la quête » → lien ; l'ami reçoit la même quête (sinon accueil puis quête). Sans serveur : pas de suivi en direct (étape 2). Limite iPhone : le lien s'ouvre dans Safari, pas dans l'appli installée.
+- **Vitrine** (pas de boutique d'achat de cartes) : cartes les plus rares, effets holographiques « dingues » sur les Légendaires, taux de chance affichés, **cartes Mythiques** à 4 dates par an (72 h) : week-end du 1er mai, Journée mondiale de la course (1er mercredi de juin), 3e week-end de septembre (pic mondial de course + Journées du patrimoine), 11 novembre. Sources : bilans Strava (pic mi-septembre, jours fériés).
+- **Booster physique** : « 📦 Reçois tes cartes en vrai » = « Bientôt disponible » + compteur (test de porte). Plus tard : pack 9/18 cartes (photo, run, date, description) via imprimeur (Gelato API ; spécialistes holo QP Market Network, Aura Print, UPrinting : minimums de commande).
+- **Rétention** (inspiré Duolingo, Pokémon Go, Strava, Wordle) : série 🔥 (jours de sortie prévus tenus), cadeau du jour (coffre sur 7 jours), défi du mois + badge, bilan de la semaine à partager, **notifs perso uniquement** (1/jour max, heure habituelle, pause après 3 ignorées ; via le relais Cloudflare).
+- **Fait (v40, 28/10)** : sage provisoire 🧙 (`sageBox`, `typeText`), `QUEST_LINES` par type (`questKind`), titre de quête dans la liste + « ! » jaune tant que la quête n'est pas ouverte (`q.seen`), histoire racontée par le sage (`AI_V` 4, voix du sage dans `STORY_RULES`), `shareCard` (PNG 1080×1920 via canvas, menu de partage iPhone), `shareQuest` (lien `#q=` base64, prénom demandé une fois `S.name`), `addFriendQuest` (quête `q.friend`, 7 jours, hors bonus de semaine, lieu gardé au rechargement `keepQuestPlaces`).
+- **DA + typo** : séance avec Bazil le 29/10 à 10 h (rappel Google Agenda). Typo : **une seule police**, plus de police pixel (« ne va pas avec le flat design »). Bazil trouve l'appli « trop basique, trop codée par Claude ».
+
 ## Robot des lieux (27/10)
 - Les serveurs Overpass ne répondaient pas depuis le téléphone de Bazil → les lieux sont **préparés à l'avance**.
 - `data/areas.json` : zones à couvrir (pour l'instant **Boulogne-Billancourt, 10 km**). Seul le centre-ville y figure, jamais l'adresse de Bazil.

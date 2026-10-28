@@ -90,6 +90,25 @@ h2{font-size:22px;margin:4px 16px 12px}
 .quest .num.day{font-size:12px;letter-spacing:.02em}
 .pin.day{font-size:11px}
 .today-tag{color:var(--violet);font-weight:800}
+/* le vieux sage (avatar provisoire en attendant les dessins de Bazil) */
+.sagebox{display:flex;gap:12px;align-items:flex-start;margin:2px 0 14px}
+.sage{flex:none;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-size:34px;background:radial-gradient(circle at 35% 30%,#9B5CFF,#4E12B0);box-shadow:0 4px 14px rgba(123,47,247,.45);animation:sagebob 3s ease-in-out infinite}
+.sage.sm{width:34px;height:34px;font-size:20px;animation:none;box-shadow:none}
+@keyframes sagebob{50%{transform:translateY(-3px)}}
+.bubble{position:relative;flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:12px 14px;min-height:58px}
+.bubble::before{content:"";position:absolute;left:-8px;top:20px;border:8px solid transparent;border-right-color:var(--line);border-left:0}
+.bubble b{display:block;font-size:16px;margin-bottom:4px}
+.bubble p{margin:0;font-size:15px;line-height:1.45}
+.bubble .more{position:absolute;right:10px;bottom:6px;font-size:11px;color:var(--violet);animation:blink 1s infinite}
+.fiche .bubble,#victory .bubble{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#fff}
+.sagehead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sagehead b{font-size:14px;color:#FFD23F}
+.quest .num{position:relative}
+.quest .num.new::after{content:"!";position:absolute;top:-9px;right:-7px;width:18px;height:18px;border-radius:50%;background:#FFD23F;color:#2a1d00;font-size:12px;font-weight:900;display:grid;place-items:center;box-shadow:0 0 0 2px var(--card);animation:sagebob 1.4s ease-in-out infinite}
+.quest.friendq{border:1.5px solid #3BB273}
+.quest.friendq .num{background:linear-gradient(135deg,#3BB273,#1F7A4D)}
+.sharebtn{display:block;margin:0 auto 12px;padding:10px 18px;border-radius:999px;background:rgba(255,255,255,.1);color:#fff;font-weight:800;font-size:15px}
+.qshare{display:block;margin:6px auto 0;color:var(--violet);font-weight:700;font-size:15px;padding:8px}
 .quest.legendq{border:1.5px solid #FFB800;background:linear-gradient(120deg,rgba(255,184,0,.16),var(--card) 60%)}
 .quest.legendq .num{background:linear-gradient(135deg,#FFE27A,#D38E00);color:#2a1d00}
 .legtime{color:#D9A000;font-weight:800}
@@ -538,7 +557,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v39';
+const VERSION = 'v40';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -802,7 +821,7 @@ async function upgradePlaces() {
   const oldEle = new Map(S.places.filter(p => p.ele != null).map(p => [p.id, p.ele]));
   fresh.forEach(p => { if (oldEle.has(p.id)) p.ele = oldEle.get(p.id); });
   // les quêtes déjà faites gardent leur lieu ; celles à faire sur un lieu retiré sont remplacées
-  const done = new Set((S.week ? S.week.quests : []).filter(q => q.status === 'done').map(q => q.pid));
+  const done = new Set((S.week ? S.week.quests : []).filter(q => q.status === 'done' || q.friend || q.legend).map(q => q.pid));
   for (const p of S.places) if (done.has(p.id) && !fresh.some(f => f.id === p.id)) fresh.push(p);
   const added = fresh.length - S.places.length;
   S.places = fresh;
@@ -930,6 +949,79 @@ async function loadElevations() {
 // rayon dans lequel un lieu est validé (27/10 : plus besoin d'être pile dessus)
 const radiusOf = p => p.r || (p.area ? 100 : 50);
 
+/* ---------- le vieux sage : textes des quêtes, façon Zelda (28/10) ---------- */
+// on parle toujours de « carte », jamais de coffre
+const QUEST_LINES = {
+  chateau: [
+    ['Le secret du château', "Hé, toi ! Oui, toi, le coureur ! J'ai entendu dire qu'un vieux château cachait une carte… Va jeter un œil et dis-moi si tu trouves quelque chose !"],
+    ['Le château endormi', "Ah, ce vieux château… Les gens disent qu'il dort depuis des siècles. Mais moi je sais qu'une carte y attend quelqu'un. Peut-être toi ?"],
+    ['Les murs qui se souviennent', "Psst… Les pierres de ce château en ont vu, des choses ! Cours là-bas, et ramène-moi la carte qu'elles gardent."]],
+  eglise: [
+    ['La cloche qui ne sonne plus', "Les gens du village racontent que la cloche de l'église s'est tue… Bizarre, bizarre. Tu veux bien aller voir ce qui se passe là-bas ?"],
+    ['Le vieux clocher', "Hmm… Du haut de son clocher, cette vieille église voit tout le quartier. On dit qu'une carte y est cachée depuis longtemps. Va voir !"],
+    ['Les pierres du pèlerin', "Il y a très longtemps, des voyageurs venaient de loin jusqu'à cette église… Va sur leurs traces, et trouve la carte qu'ils ont laissée !"]],
+  statue: [
+    ['La statue qui regarde', "Psst… Il paraît qu'une statue observe les passants près d'ici. Certains disent qu'elle cache un secret. Trouve-la… si tu l'oses !"],
+    ["L'homme de pierre", "Un homme de pierre se tient quelque part dans le quartier. Il ne bouge jamais… enfin, je crois. Va le trouver, il a une carte pour toi !"],
+    ['Le visage oublié', "Ha ! Un visage de bronze, oublié de tous… Sauf de moi ! Retrouve-le et ramène-moi sa carte, jeune coureur."]],
+  memorial: [
+    ['Le monument silencieux', "Ce monument se souvient de choses que plus personne ne raconte… Va le voir. Il te confiera sa carte, et moi, son histoire."],
+    ['La pierre des souvenirs', "Hé ! Une vieille pierre garde un souvenir important de la ville. Cours jusqu'à elle, je suis sûr qu'une carte t'y attend."]],
+  parc: [
+    ['Le parc aux murmures', "Ah, mes vieilles jambes ne me portent plus… Mais toi, tu pourrais aller jusqu'au parc. On dit qu'on y entend des murmures, le soir."],
+    ['Le jardin secret', "Un jardin… et un secret dedans ! J'ai perdu une carte là-bas, il y a bien longtemps. Tu veux bien aller la chercher ?"],
+    ['Les arbres anciens', "Les arbres de ce parc sont plus vieux que moi ! Et crois-moi, ce n'est pas peu dire. Va leur rendre visite, ils ont une carte pour toi."]],
+  fontaine: [
+    ['La fontaine oubliée', "Une fontaine, quelque part dans le quartier… Plus personne ne s'en souvient. Sauf moi ! Hé hé. Va la retrouver !"],
+    ["L'eau qui chante", "Écoute bien… On dit qu'on entend l'eau chanter près d'ici. Suis le bruit, et trouve la carte cachée au bord de l'eau !"]],
+  musee: [
+    ['Le gardien des trésors', "Ce musée garde mille merveilles… mais une seule carte. La plus belle de toutes, peut-être ! Va voir par toi-même."],
+    ['La salle des curiosités', "Oh oh ! Il paraît que ce musée cache des objets venus du bout du monde. Va jeter un œil, et rapporte-moi sa carte !"]],
+  mairie: [
+    ['Le cœur de la ville', "Toute la ville se retrouve ici depuis des générations… C'est son cœur ! Cours-y, une carte t'attend sur le parvis."],
+    ['La grande horloge', "Tic, tac… Cette vieille maison commune a vu passer bien des maires. Va la voir et ramène-moi sa carte, vite !"]],
+  vue: [
+    ['Le point de vue', "D'en haut, on voit tout le pays… et peut-être même ma maison ! Grimpe jusque-là, une carte t'attend au sommet."],
+    ['Le regard du faucon', "Les faucons adorent cet endroit : on y voit loin, très loin. Va voir la vue, et trouve la carte cachée là-haut !"]],
+  croix: [
+    ['La croix du chemin', "Autrefois, les voyageurs s'arrêtaient ici pour se reposer… Une vieille croix marque encore l'endroit. Trouve-la !"],
+    ['La borne des anciens', "Une petite pierre, toute simple… mais elle était déjà là bien avant moi ! Retrouve-la, elle cache une carte."]],
+  ancien: [
+    ['Les ruines oubliées', "Hmm… Il ne reste presque plus rien de ce lieu. Presque ! Va fouiller, et dis-moi si tu trouves une carte."],
+    ['Le vieux moulin', "Le moulin ne tourne plus depuis longtemps, mais il a encore des choses à raconter. Va le voir, une carte t'y attend !"]],
+  autre: [
+    ['Le lieu mystère', "Hé, toi ! J'ai entendu parler d'un endroit étrange pas loin d'ici… Va voir, et dis-moi si tu trouves une carte !"],
+    ['La rumeur du quartier', "Les gens du quartier murmurent… Il paraît qu'une carte dort quelque part par là. Tu es le seul assez rapide pour la trouver !"]]
+};
+function questKind(p) {
+  const l = (p && p.label) || '';
+  if (/Château|Palais|Manoir/i.test(l)) return 'chateau';
+  if (/Église|Chapelle|Cathédrale|Basilique|Synagogue|Mosquée|Temple|culte/i.test(l)) return 'eglise';
+  if (/Statue|Buste|Sculpture|Stèle|Obélisque/i.test(l)) return 'statue';
+  if (/Mémorial|Monument/i.test(l)) return 'memorial';
+  if (/Parc|Jardin|Square|Bois/i.test(l)) return 'parc';
+  if (/Fontaine|Cascade|Lavoir/i.test(l)) return 'fontaine';
+  if (/Musée/i.test(l)) return 'musee';
+  if (/Mairie|Hôtel de ville/i.test(l)) return 'mairie';
+  if (/vue|Belvédère/i.test(l)) return 'vue';
+  if (/Croix|Borne/i.test(l)) return 'croix';
+  if (/Ruine|Moulin|Tour|Porte/i.test(l)) return 'ancien';
+  return 'autre';
+}
+function questLine(p) {
+  const list = QUEST_LINES[questKind(p)];
+  return list[hash(p.id) % list.length];
+}
+// texte qui s'écrit lettre par lettre ; toucher = tout afficher
+function typeText(el, text, box) {
+  if (!el) return;
+  let i = 0; el.textContent = '';
+  const t = setInterval(() => { i += 2; el.textContent = text.slice(0, i); if (i >= text.length) stop(); }, 22);
+  const stop = () => { clearInterval(t); el.textContent = text; const m = box && box.querySelector('.more'); if (m) m.remove(); };
+  if (box) box.addEventListener('click', stop, { once: true });
+}
+const sageBox = (title, id) => `<div class="sagebox"><div class="sage">🧙</div><div class="bubble" id="${id}b">${title ? `<b>${esc(title)}</b>` : ''}<p id="${id}"></p><span class="more">▼</span></div></div>`;
+
 /* ---------- génération des quêtes ---------- */
 function pickQuests(n, seed, exclude, o = {}) {
   // on vise la distance en EFFORT (montées comprises), pas seulement en km
@@ -982,7 +1074,7 @@ function ensureWeek(force) {
   const free = S.goal.days.filter(d => !used.has(d));
   fresh.forEach((q, i) => q.day = free[i] ?? S.goal.days[i % S.goal.days.length]);
   // l'apparition légendaire encore valable survit au changement de semaine
-  const leg = S.week ? S.week.quests.filter(q => q.legend && q.status === 'todo' && q.until > Date.now() && !keep.includes(q)) : [];
+  const leg = S.week ? S.week.quests.filter(q => (q.legend || q.friend) && q.status === 'todo' && q.until > Date.now() && !keep.includes(q)) : [];
   const quests = keep.concat(fresh).sort((a, b) => (a.day ?? 9) - (b.day ?? 9)).concat(leg);
   S.week = { id, quests, bonus: keep.length > 0 && S.week ? S.week.bonus : false };
   save();
@@ -1042,8 +1134,10 @@ const LEG_MS = 48 * 3600e3;
 function legendQuest() { return S.week && S.week.quests.find(q => q.legend && q.status === 'todo'); }
 function expireLegend() {
   if (!S.week) return false;
+  const f = S.week.quests.findIndex(q => q.friend && q.status === 'todo' && q.until <= Date.now());
+  if (f >= 0) { S.week.quests.splice(f, 1); save(); }
   const i = S.week.quests.findIndex(q => q.legend && q.status === 'todo' && q.until <= Date.now());
-  if (i < 0) return false;
+  if (i < 0) return f >= 0;
   S.week.quests.splice(i, 1); save();
   toast("L'apparition légendaire est repartie… Elle reviendra ✨");
   return true;
@@ -1140,7 +1234,7 @@ function renderQuests() {
   renderPoints();
   $('#testtag').classList.toggle('hidden', !S.testMode);
   expireLegend();
-  const qs = S.week.quests, norm = qs.filter(q => !q.legend), done = norm.filter(q => q.status === 'done').length;
+  const qs = S.week.quests, norm = qs.filter(q => !q.legend && !q.friend), done = norm.filter(q => q.status === 'done').length;
   const dl = daysLeft();
   $('#daysleft').textContent = dl === 1 ? 'Nouvelles quêtes demain' : `Nouvelles dans ${dl} j`;
   $('#bonusfill').style.width = (norm.length ? done / norm.length * 100 : 0) + '%';
@@ -1148,20 +1242,24 @@ function renderQuests() {
   if (!qs.length) {
     $('#qlist').innerHTML = `<div class="empty">Aucun lieu trouvé à la bonne distance.<br>Essaie une autre distance dans le Profil.</div>`;
   } else {
-    const top = q => q.legend && q.status === 'todo' ? 1 : 0;
+    const top = q => q.status !== 'todo' ? 0 : q.legend ? 2 : q.friend ? 1 : 0;
     const order = qs.map((q, i) => i).sort((a, b) => top(qs[b]) - top(qs[a]) || a - b);
     $('#qlist').innerHTML = order.map(i => {
       const q = qs[i], p = placeById(q.pid); if (!p) return '';
       const done = q.status === 'done', td = todayIdx(), t = qTier(q);
+      if (q.friend && !done) return `<button class="quest friendq" data-i="${i}">
+        <div class="num ${q.seen ? '' : 'new'}">👥</div>
+        <div class="t"><b>${esc(questLine(p)[0])}</b><span>Quête de ${esc(q.friend)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        ${tierBadge(t)}</button>`;
       if (q.legend && !done) return `<button class="quest legendq" data-i="${i}">
-        <div class="num">✨</div>
+        <div class="num ${q.seen ? '' : 'new'}">✨</div>
         <div class="t"><b>${esc(shownName(p, false))}</b><span><span class="legtime">⏳ encore ${hoursLeft(q)} h</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
         ${tierBadge('legend')}</button>`;
       const isToday = !done && q.day === td, late = !done && q.day < td;
       const when = isToday ? `<span class="today-tag">Aujourd'hui</span>` : `${DAYS[q.day] || ''}${late ? ' · rattrapable' : ''}`;
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''} ${isToday ? 'today' : ''}" data-i="${i}">
-        <div class="num ${done ? '' : 'day'}">${done ? '✓' : DAYS_S[q.day] || i + 1}</div>
-        <div class="t"><b>${esc(shownName(p, done))}</b><span>${when} · ${esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
+        <div class="num ${done ? '' : 'day'} ${!done && !q.seen ? 'new' : ''}">${done ? '✓' : DAYS_S[q.day] || i + 1}</div>
+        <div class="t"><b>${esc(done ? shownName(p, true) : questLine(p)[0])}</b><span>${when} · ${esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
         ${done ? `<span class="badge b-done">+${PTS[t]}</span>` : tierBadge(t)}
       </button>`;
     }).join('');
@@ -1198,12 +1296,17 @@ function openQuest(i) {
     sh.querySelector('#seecard').onclick = () => { closeSheet(); showFiche(c); };
     return;
   }
-  const sh = sheet(`<div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
+  const [qt, qtxt] = questLine(p);
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  if (!q.seen) { q.seen = true; save(); }
+  const sh = sheet(`${sageBox(qt, 'qsay')}
+    <div class="lockimg ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer son image et son histoire</span></div></div>
     ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
     <h3>${esc(shownName(p, false))}</h3>
     <p class="muted">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
-    ${rare ? `<div class="hint">${hintFor(p)}</div>` : `<p>Cours jusqu'au lieu, valide ton arrivée, prends ta photo et rentre.</p>`}
+    ${rare ? `<div class="hint">${hintFor(p)}</div>` : ''}
     <div class="row"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
+    <button class="qshare" id="qshare">👥 Partager la quête avec un ami</button>
     ${S.testMode ? '<button class="link" id="here" style="margin:4px auto 0">✅ J\'y suis (test)</button>' : ''}
     ${q.easy ? `<div class="row"><button class="btn swap easybtn" id="easy">🎯 Une plus proche · gratuit</button></div>` : ''}
     ${q.legend ? '' : `<div class="row"><button class="btn swap" id="swap">🔄 Changer de mission · ${swapPrice() ? SWAP_COST + ' 🪙' : 'gratuit'}</button></div>`}
@@ -1214,6 +1317,9 @@ function openQuest(i) {
   sh.querySelector('#gorun').onclick = () => { closeSheet(); startRun(i); };
   if (sh.querySelector('#here')) sh.querySelector('#here').onclick = () => { closeSheet(); takePhoto(i); };
   sh.querySelector('#lost').onclick = () => report(i);
+  sh.querySelector('#qshare').onclick = () => shareQuest(q, p);
+  typeText(sh.querySelector('#qsay'), intro, sh.querySelector('#qsayb'));
+  const row = document.querySelector(`#qlist .quest[data-i="${i}"] .num`); if (row) row.classList.remove('new');
 }
 
 // Position fraîche si elle arrive vite, sinon la dernière position suivie (moins de 30 s).
@@ -1287,7 +1393,7 @@ async function award(i, blob) {
   S.collection.push(card);
   track('level_complete', { level: levelOf(S.points).n });
   if (blob) { try { await idb.put(p.id, blob); photoUrls[p.id] = URL.createObjectURL(blob); } catch (e) { card.photo = false; } }
-  const allDone = S.week.quests.filter(x => !x.legend).every(x => x.status === 'done');
+  const allDone = S.week.quests.filter(x => !x.legend && !x.friend).every(x => x.status === 'done');
   let bonus = false;
   if (allDone && !S.week.bonus) { S.week.bonus = true; S.points += WEEK_BONUS; S.coins = (S.coins || 0) + COIN_WEEK; S.weeksCleared++; (S.clearedWeeks = S.clearedWeeks || []).push(S.week.id); bonus = true; }
   save();
@@ -1376,9 +1482,9 @@ async function storyFor(p) {
 }
 // Texte écrit à la demande par Mistral (via le relais Cloudflare), une seule fois par lieu.
 const STORY_API = 'https://questrun-histoires.v5nhskv7zy.workers.dev'; // relais Cloudflare (garde la clé Mistral)
-const AI_V = 3; // version des consignes : les anciens textes sont réécrits
+const AI_V = 4; // version des consignes : les anciens textes sont réécrits (4 = voix du vieux sage, 28/10)
 // consignes pour l'IA (envoyées au relais, modifiables ici sans toucher à Cloudflare)
-const STORY_RULES = `Tu écris la fiche d'un lieu pour Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville.
+const STORY_RULES = `Tu es le vieux sage de Quest Run, un jeu de course à pied qui fait découvrir l'histoire d'une ville. Tu parles comme un vieux sage malicieux et chaleureux d'un jeu Zelda : tu racontes au joueur l'histoire du lieu qu'il vient de trouver en courant. Commence par une courte exclamation (« Ha ! », « Oh oh ! », « Hé hé… »).
 On te donne le nom et le type du lieu, puis des EXTRAITS D'ARTICLES WIKIPÉDIA sur des lieux proches.
 But : un texte PRÉCIS et VRAIMENT INTÉRESSANT, comme une anecdote qu'on a envie de raconter à un ami.
 Règles absolues :
@@ -1583,7 +1689,8 @@ async function victory(card, pts) {
     <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_PLACE} 🪙</div>
     <div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
     <div class="box vstory" id="vstory" style="text-align:left"><span class="pixel">HISTOIRE</span><p style="color:#b9b0d6">✨ On déverrouille l'histoire…</p></div>
-    <div class="v-actions"><button class="btn gold" data-close>Continuer</button></div></div>`, true);
+    <div class="v-actions"><button class="sharebtn" id="vshare">📤 Partager ma carte</button><button class="btn gold" data-close>Continuer</button></div></div>`, true);
+  $('#vshare').onclick = () => shareCard(card);
   fillPhotos($('#vin'));
   fillStory($('#vstory'), place, card);
   countUp($('#vp'), pts);
@@ -1615,12 +1722,123 @@ async function fillStory(box, p, c, retry) {
   }
   if (!box.isConnected) return;
   const facts = osmFacts(p);
-  let h = '<span class="pixel">HISTOIRE</span>';
+  let h = `<div class="sagehead"><span class="sage sm">🧙</span><b>${w && w.text ? 'Ha ! Tu l\'as trouvée ! Laisse-moi te raconter…' : 'Le vieux sage raconte…'}</b></div>`;
   if (w && w.text) h += `<p>${esc(w.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<a href="${esc(w.url)}" target="_blank" rel="noopener">Lire l'article Wikipédia →</a>`;
   else if (ai) h += `<p>${esc(ai.text)}</p>${facts ? `<p style="margin-top:10px">${facts}</p>` : ''}<p style="margin-top:10px;font-size:12px;color:#8f86ad">📚 D'après Wikipédia (${ai.src.map(t => `<a href="https://fr.wikipedia.org/wiki/${encodeURIComponent(t.replace(/ /g, '_'))}" target="_blank" rel="noopener" style="color:#C9A6FF;margin:0;display:inline">${esc(t)}</a>`).join(', ')}), résumé par IA.</p>`;
   else h += `<p>${facts || "Pas d'histoire connue pour ce lieu : aucune source fiable à proximité. À toi de raconter la tienne !"}</p>${aiError && aiError !== 'lieu sans nom' ? `<p style="margin-top:10px;font-size:12px;color:#8f86ad">Histoire IA indisponible : ${esc(aiError)}</p>${retry ? '<button class="link" id="aiRetry" style="color:#C9A6FF;margin:8px 0 0">↻ Réessayer</button>' : ''}` : ''}`;
   box.innerHTML = h;
   const rb = box.querySelector('#aiRetry'); if (rb) rb.onclick = retry;
+}
+
+/* ---------- partager une carte en image (format story, logo seul) ---------- */
+const TIER_COL = { common: ['#D9DDE4', '#9AA1AE', '#E9ECF1'], rare: ['#B07BFF', '#5A12D6', '#C9A6FF'], epic: ['#8EC5FF', '#1559C9', '#BFE0FF'], legend: ['#FFE27A', '#D38E00', '#FFF3B0'] };
+const loadImg = (src, cors) => new Promise((res, rej) => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
+function rrect(x, a, b, w, h, r) { x.beginPath(); x.moveTo(a + r, b); x.arcTo(a + w, b, a + w, b + h, r); x.arcTo(a + w, b + h, a, b + h, r); x.arcTo(a, b + h, a, b, r); x.arcTo(a, b, a + w, b, r); x.closePath(); }
+function wrapLines(x, text, w, max) {
+  const out = []; let line = '';
+  for (const word of text.split(/\s+/)) {
+    const t = line ? line + ' ' + word : word;
+    if (x.measureText(t).width > w && line) { out.push(line); line = word; if (out.length === max) break; } else line = t;
+  }
+  if (out.length < max && line) out.push(line);
+  if (out.length === max && text.length > out.join(' ').length + 1) out[max - 1] = out[max - 1].replace(/[\s,;.]*\S*$/, '') + '…';
+  return out;
+}
+function storyOf(c) {
+  const w = S.wiki[c.pid] || {}; const t = (w.text || w.ai || '').trim();
+  if (!t) return '';
+  const cut = t.slice(0, 230), dot = cut.lastIndexOf('. ');
+  return dot > 80 ? cut.slice(0, dot + 1) : cut;
+}
+async function cardImage(c, withPhoto = true) {
+  const W = 1080, H = 1920, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), col = TIER_COL[c.rarity] || TIER_COL.common, F = '-apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif';
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#16102a'); bg.addColorStop(1, '#05040a'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  const glow = x.createRadialGradient(W / 2, 820, 80, W / 2, 820, 760); glow.addColorStop(0, col[1] + 'aa'); glow.addColorStop(1, 'transparent'); x.fillStyle = glow; x.fillRect(0, 0, W, H);
+  try { const logo = await loadImg('icon-512.png'); x.drawImage(logo, W / 2 - 70, 110, 140, 140); } catch (e) {}
+  // la carte
+  const cx = 150, cy = 330, cw = 780, ch = 1090;
+  const fr = x.createLinearGradient(cx, cy, cx + cw, cy + ch); fr.addColorStop(0, col[0]); fr.addColorStop(.5, col[1]); fr.addColorStop(1, col[2]);
+  x.save(); x.shadowColor = col[1]; x.shadowBlur = 60; rrect(x, cx, cy, cw, ch, 44); x.fillStyle = fr; x.fill(); x.restore();
+  const ix = cx + 18, iy = cy + 18, iw = cw - 36, ih = 820;
+  x.save(); rrect(x, ix, iy, iw, ch - 36, 30); x.clip();
+  x.fillStyle = '#2a2140'; x.fillRect(ix, iy, iw, ih);
+  let src = null;
+  if (withPhoto) { src = c.photo ? await photoUrl(c.pid) : null; if (!src) src = c.img || (S.wiki[c.pid] && S.wiki[c.pid].img); }
+  if (src) { try { const im = await loadImg(src, !/^blob:|^data:/.test(src)); const k = Math.max(iw / im.width, ih / im.height); x.drawImage(im, ix + (iw - im.width * k) / 2, iy + (ih - im.height * k) / 2, im.width * k, im.height * k); } catch (e) {} }
+  x.fillStyle = '#fff'; x.fillRect(ix, iy + ih, iw, ch - 36 - ih);
+  x.fillStyle = '#16131F'; x.font = `800 54px ${F}`; x.textBaseline = 'top';
+  wrapLines(x, c.name, iw - 60, 2).forEach((l, k) => x.fillText(l, ix + 30, iy + ih + 34 + k * 62));
+  x.fillStyle = '#6E6982'; x.font = `600 34px ${F}`; x.fillText(`${c.label} · ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`, ix + 30, iy + ch - 36 - 64);
+  x.restore();
+  // pastille de rareté
+  x.font = `900 34px ${F}`; const tag = (TIER_NAME[c.rarity] || 'Commune').toUpperCase(), tw = x.measureText(tag).width + 48;
+  rrect(x, ix + 24, iy + 24, tw, 62, 31); x.fillStyle = 'rgba(0,0,0,.65)'; x.fill(); x.fillStyle = col[0]; x.textBaseline = 'middle'; x.fillText(tag, ix + 48, iy + 56);
+  // le run
+  const r = runOf(c); x.textAlign = 'center'; x.textBaseline = 'top';
+  x.fillStyle = '#fff'; x.font = `800 48px ${F}`;
+  x.fillText(r ? `${sportOf(r).ic} ${km(r.dist)} km · ${dur(r.time)}${r.dplus ? ' · ↗ ' + r.dplus + ' m' : ''}` : `+${c.pts} ★`, W / 2, 1475);
+  // l'histoire
+  const st = storyOf(c);
+  if (st) { x.fillStyle = '#d9d2ef'; x.font = `italic 500 38px ${F}`; wrapLines(x, '« ' + st + ' »', 860, 4).forEach((l, k) => x.fillText(l, W / 2, 1575 + k * 52)); }
+  return new Promise((res, rej) => { try { cv.toBlob(b => b ? res(b) : rej(new Error('image')), 'image/png'); } catch (e) { rej(e); } });
+}
+async function shareCard(c) {
+  toast('Création de ton image…');
+  let blob;
+  try { blob = await cardImage(c, true); } catch (e) { try { blob = await cardImage(c, false); } catch (e2) { toast('Impossible de créer l\'image'); return; } }
+  const file = new File([blob], 'quest-run-' + (c.name || 'carte').replace(/[^\w-]+/g, '-').slice(0, 40) + '.png', { type: 'image/png' });
+  track('share_card', { rarity: c.rarity });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  zoomImg(URL.createObjectURL(blob)); toast('Appui long sur l\'image pour l\'enregistrer');
+}
+
+/* ---------- quête entre amis : un lien qui donne la même quête ---------- */
+const b64e = o => btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const b64d = t => JSON.parse(decodeURIComponent(escape(atob(t.replace(/-/g, '+').replace(/_/g, '/')))));
+async function shareQuest(q, p) {
+  if (!S.name) { const n = (prompt('Ton prénom (pour que ton ami sache qui l\'invite) :') || '').trim().slice(0, 20); if (!n) return; S.name = n; save(); }
+  const d = { i: p.id, n: p.name, l: p.label, r: p.rarity, a: +p.lat.toFixed(6), o: +p.lng.toFixed(6), f: S.name };
+  if (p.area) d.ar = 1; if (p.r) d.rr = p.r;
+  if (p.zlat) { d.za = +p.zlat.toFixed(6); d.zo = +p.zlng.toFixed(6); }
+  const url = location.origin + location.pathname + '#q=' + b64e(d);
+  const text = `${S.name} t'invite à une quête Quest Run : « ${questLine(p)[0]} ». Viens chercher la carte avec moi ! 🏃`;
+  track('share_quest', {});
+  try { if (navigator.share) { await navigator.share({ title: 'Quest Run', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(text + ' ' + url); toast('Lien copié ! Colle-le à ton ami.'); } catch (e) { prompt('Copie ce lien :', url); }
+}
+// lien reçu : on garde la quête en attente (ajoutée après l'accueil si besoin)
+function readFriendLink() {
+  const m = /[#&]q=([\w-]+)/.exec(location.hash || '');
+  if (!m) return;
+  try { S.pendingFriend = b64d(m[1]); save(); } catch (e) {}
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+}
+async function addFriendQuest() {
+  const d = S.pendingFriend; if (!d || !S.week || !S.home) return;
+  S.pendingFriend = null; save();
+  if (S.collection.some(c => c.pid === d.i)) { toast(`${d.f} t'a envoyé une quête… mais tu as déjà cette carte !`); return; }
+  let p = placeById(d.i);
+  if (!p) {
+    p = { id: d.i, name: d.n, label: d.l, rarity: d.r, lat: d.a, lng: d.o, src: 'friend' };
+    if (d.ar) p.area = true; if (d.rr) p.r = d.rr; if (d.za) { p.zlat = d.za; p.zlng = d.zo; }
+    p.dist = dist(S.home, p);
+    S.places.push(p);
+  }
+  let i = S.week.quests.findIndex(q => q.pid === p.id && q.status === 'todo');
+  if (i < 0) { S.week.quests.push({ pid: p.id, status: 'todo', day: todayIdx(), friend: d.f, until: Date.now() + 7 * 864e5, tier: tierOf(p) }); i = S.week.quests.length - 1; }
+  save(); wikiFor(p);
+  await overlay(`<div class="v-title pixel" style="color:#7CE0A8">QUÊTE<br>ENTRE AMIS !</div>
+    <div style="font-size:60px;margin:14px 0">👥</div>
+    <div class="v-sub"><b style="color:#fff">${esc(d.f)}</b> t'a envoyé une quête :<br><b style="color:#FFD23F">« ${esc(questLine(p)[0])} »</b><br>${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour depuis chez toi.<br><br><span style="opacity:.75">Allez chercher la carte ensemble !</span></div>
+    <button class="btn gold" data-close>Voir la quête</button>`);
+  tab('quests'); setTimeout(() => openQuest(i), 300);
+}
+// les lieux des quêtes en cours (amis, légendaire) survivent au rechargement des lieux
+function keepQuestPlaces(list) {
+  const ids = new Set(list.map(p => p.id));
+  (S.week ? S.week.quests : []).forEach(q => { const p = placeById(q.pid); if (p && !ids.has(p.id)) list.push(p); });
+  return list;
 }
 
 // photo en plein écran : toucher ou glisser vers le bas pour fermer
@@ -1643,7 +1861,7 @@ function showFiche(c) {
   const pr = overlay(`<div class="fiche">
     <div class="flipcard" id="fcard"><div class="fi peek"><div class="face front">${cardHtml(c)}</div><div class="face back">${backHtml(c)}</div></div></div>
     <div class="fliphint"><span class="hand">👆</span>Glisse pour retourner la carte</div>
-    <button class="favbtn ${c.fav ? 'on' : ''}" id="favbtn">${c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris'}</button>
+    <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="favbtn ${c.fav ? 'on' : ''}" id="favbtn">${c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris'}</button><button class="favbtn" id="cshare">📤 Partager</button></div>
     <h2>${esc(c.name)}</h2>
     <p class="sub">${esc(c.label)} · trouvé le ${new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     ${r ? `<div class="box"><span class="pixel">TA SORTIE · ${sportOf(r).ic} ${esc(sportOf(r).name.toUpperCase())}</span>
@@ -1671,6 +1889,7 @@ function showFiche(c) {
   const putBack = img => { const el = $('#vin [data-back]'); if (el && img) { el.style.backgroundImage = `url("${img}")`; el.innerHTML = ''; } };
   putBack((S.wiki[c.pid] && S.wiki[c.pid].img) || (c.photo ? null : c.img));
   wikiFor(p).then(w => w && putBack(w.img));
+  $('#cshare').onclick = () => shareCard(c);
   $('#favbtn').onclick = () => {
     c.fav = !c.fav; save(); vibrate(20);
     $('#favbtn').classList.toggle('on', c.fav); $('#favbtn').textContent = c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris';
@@ -2496,7 +2715,7 @@ function renderSet() {
 async function loadPlaces() {
   toast('Recherche des lieux…');
   try {
-    S.places = await fetchPlaces(S.home, S.goal.km);
+    S.places = keepQuestPlaces(await fetchPlaces(S.home, S.goal.km));
     S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
     save();
     toast(`${S.places.length} lieux trouvés`);
@@ -2706,7 +2925,7 @@ function onboarding(step = 0) {
       o.querySelector('.scan .ic').textContent = '🗺️';
       vibrate([40, 40, 80]);
       $('#go').classList.remove('hidden');
-      $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); Metrics.askConsent(); };
+      $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); Metrics.askConsent(); if (S.pendingFriend) setTimeout(addFriendQuest, 600); };
     })();
   }
 }
@@ -2832,6 +3051,7 @@ function track(name, data) { Metrics.track(name, data); }
 
 /* ---------- démarrage ---------- */
 applyTheme();
+readFriendLink();
 if (typeof L === 'undefined') {
   document.body.innerHTML = '<div class="empty" style="margin-top:40vh">Pas de connexion : la carte ne peut pas se charger.<br><br><button class="btn" onclick="location.reload()">Réessayer</button></div>';
 } else if (!S.onboarded || !S.home) {
@@ -2839,7 +3059,7 @@ if (typeof L === 'undefined') {
 } else {
   ensureWeek(); fixDays(); initProgress(); comeback();
   tab('quests');
-  setTimeout(() => maybeLegend(), 1500);
+  setTimeout(() => S.pendingFriend ? addFriendQuest() : maybeLegend(), 1500);
   upgradePlaces().catch(() => {});
   dailyBonus();
   loadElevations().then(() => current === 'quests' && renderQuests()).catch(() => {});
