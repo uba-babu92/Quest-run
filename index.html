@@ -683,7 +683,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v52';
+const VERSION = 'v53';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -773,7 +773,7 @@ function dailyGift() {
     <button class="btn gold hidden" data-close id="gok">Super !</button>`);
   const open = () => {
     const b = $('#giftbox'); if (!b || b.classList.contains('open')) return;
-    b.classList.add('open'); b.textContent = '🪙'; vibrate([30, 30, 60]);
+    b.classList.add('open'); b.textContent = '🪙'; vibrate([30, 30, 60]); sfx('coin');
     S.coins = (S.coins || 0) + amount; save(); renderPoints();
     $('#gtxt').innerHTML = `<b style="color:#FFD23F;font-size:28px">+${amount} 🪙</b><br>Jour ${n} sur 7`;
     confetti(['#FFD23F', '#FFB800', '#fff']); $('#gok').classList.remove('hidden');
@@ -801,7 +801,7 @@ function bumpStreak() {
   const k = dayKey(), st = S.streak = S.streak && streakNow() ? S.streak : { n: 0, best: (S.streak && S.streak.best) || 0, last: null };
   if (st.last === k) return 0;
   st.n++; st.last = k; st.best = Math.max(st.best || 0, st.n); save();
-  const c = $('#firechip'); if (c) { c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); }
+  const c = $('#firechip'); if (c) { c.classList.remove('pop'); void c.offsetWidth; c.classList.add('pop'); } setTimeout(() => sfx('streak'), 300);
   return st.n;
 }
 
@@ -1297,7 +1297,8 @@ function typeText(el, text, box) {
   el.classList.add('tt'); el.innerHTML = `<span class="tt-ghost">${esc(text)}</span><span class="tt-live"></span>`;
   const live = el.querySelector('.tt-live');
   let i = 0;
-  const t = setInterval(() => { i += 2; live.textContent = text.slice(0, i); if (i >= text.length) stop(); }, 22);
+  let k = 0;
+  const t = setInterval(() => { i += 2; live.textContent = text.slice(0, i); if (++k % 3 === 1 && /\S/.test(text[i - 1] || '')) sfx('blip'); if (i >= text.length) stop(); }, 22);
   const stop = () => { clearInterval(t); live.textContent = text; const m = box && box.querySelector('.more'); if (m) m.remove(); };
   if (box) box.addEventListener('click', stop, { once: true });
 }
@@ -2052,6 +2053,70 @@ function countUp(el, to, ms = 900) {
   (function f(t) { const k = Math.min(1, (t - t0) / ms); el.textContent = '+' + fmt(Math.round(to * (1 - Math.pow(1 - k, 3)))) + ' ★'; if (k < 1) requestAnimationFrame(f); })(t0);
 }
 function vibrate(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+
+/* ---------- bruitages façon Duolingo (30/10) : sons fabriqués dans le code, aucun fichier ---------- */
+const Sfx = (() => {
+  let ctx = null, out = null;
+  const on = () => S.sfx !== false;
+  function init() {
+    if (ctx) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); return; }
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return;
+    try {
+      ctx = new AC(); out = ctx.createGain(); out.gain.value = 0.7;
+      const comp = ctx.createDynamicsCompressor(); out.connect(comp); comp.connect(ctx.destination);
+    } catch (e) { ctx = null; }
+  }
+  // l'iPhone n'autorise le son qu'après un premier toucher
+  ['pointerdown', 'touchend', 'keydown'].forEach(ev => document.addEventListener(ev, init, { passive: true }));
+  function tone(f, t, d, o = {}) {
+    const g = ctx.createGain(), osc = ctx.createOscillator(), at = ctx.currentTime + t, v = o.v || 0.2;
+    osc.type = o.type || 'triangle'; osc.frequency.setValueAtTime(f, at);
+    if (o.to) osc.frequency.exponentialRampToValueAtTime(o.to, at + d);
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(v, at + Math.min(0.012, d / 4));
+    g.gain.exponentialRampToValueAtTime(0.0001, at + d);
+    osc.connect(g); g.connect(out); osc.start(at); osc.stop(at + d + 0.02);
+  }
+  function whoosh(t, d, v = 0.25) {
+    const n = Math.floor(ctx.sampleRate * d), b = ctx.createBuffer(1, n, ctx.sampleRate), x = b.getChannelData(0);
+    for (let i = 0; i < n; i++) x[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain(), at = ctx.currentTime + t;
+    src.buffer = b; f.type = 'bandpass'; f.Q.value = 1.2;
+    f.frequency.setValueAtTime(400, at); f.frequency.exponentialRampToValueAtTime(3500, at + d);
+    g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(v, at + d * 0.5); g.gain.exponentialRampToValueAtTime(0.0001, at + d);
+    src.connect(f); f.connect(g); g.connect(out); src.start(at); src.stop(at + d + 0.02);
+  }
+  const N = { C5: 523.3, D5: 587.3, E5: 659.3, G5: 784, A5: 880, B5: 987.8, C6: 1046.5, D6: 1174.7, E6: 1318.5, G6: 1568, C7: 2093 };
+  const arp = (notes, gap, d, o) => notes.forEach((n, i) => tone(N[n] || n, i * gap, d, o));
+  const SOUNDS = {
+    tap: () => tone(620, 0, 0.05, { type: 'sine', v: 0.07, to: 520 }),
+    blip: () => tone(480 + Math.random() * 120, 0, 0.035, { type: 'square', v: 0.018 }),
+    pop: () => tone(420, 0, 0.09, { type: 'sine', v: 0.2, to: 980 }),
+    ok: () => { tone(N.E6, 0, 0.12, { v: 0.16 }); tone(N.A5 * 2, 0.09, 0.22, { v: 0.16 }); },
+    fav: () => { tone(N.G5, 0, 0.08, { type: 'sine', v: 0.14 }); tone(N.C6, 0.07, 0.14, { type: 'sine', v: 0.14 }); },
+    coin: () => { tone(N.B5, 0, 0.08, { type: 'square', v: 0.07 }); tone(N.E6, 0.08, 0.35, { type: 'square', v: 0.07 }); },
+    whoosh: () => whoosh(0, 0.28, 0.18),
+    flip: () => { whoosh(0, 0.32); arp(['C6', 'E6', 'G6', 'C7'], 0.05, 0.3, { v: 0.1, type: 'sine' }); },
+    found: () => { arp(['C5', 'E5', 'G5', 'C6'], 0.09, 0.18, { v: 0.17 }); ['C6', 'E6', 'G6'].forEach(n => tone(N[n], 0.38, 0.6, { v: 0.09 })); },
+    level: () => { arp(['C5', 'E5', 'G5', 'C6', 'E6'], 0.08, 0.16, { v: 0.15, type: 'square' }); ['C6', 'E6', 'G6', 'C7'].forEach(n => tone(N[n], 0.42, 0.8, { v: 0.06, type: 'square' })); },
+    trophy: () => { arp(['G5', 'C6', 'E6'], 0.1, 0.2, { v: 0.15 }); tone(N.G6, 0.32, 0.5, { v: 0.14 }); arp(['C7', 'G6', 'C7'], 0.06, 0.1, { v: 0.05, type: 'sine' }); },
+    clear: () => { arp(['C5', 'C5', 'C5', 'G5'], 0.12, 0.12, { v: 0.15, type: 'square' }); arp(['E5', 'G5', 'C6'], 0.14, 0.2, { v: 0.14, type: 'square' }); ['C6', 'E6', 'G6'].forEach(n => tone(N[n], 0.98, 0.9, { v: 0.07, type: 'square' })); },
+    streak: () => { tone(300, 0, 0.18, { type: 'sawtooth', v: 0.05, to: 900 }); tone(N.E6, 0.14, 0.22, { v: 0.14 }); },
+    go: () => { tone(N.G5, 0, 0.12, { v: 0.15 }); tone(N.G5, 0.2, 0.12, { v: 0.15 }); tone(N.G6, 0.4, 0.35, { v: 0.17 }); },
+    ready: () => arp(['G5', 'C6', 'E6', 'G6'], 0.07, 0.25, { v: 0.13 }),
+    soft: () => { tone(N.E5, 0, 0.2, { type: 'sine', v: 0.12 }); tone(N.C5, 0.16, 0.35, { type: 'sine', v: 0.12 }); }
+  };
+  function play(name) {
+    if (!on()) return; init(); if (!ctx || !SOUNDS[name]) return;
+    try { SOUNDS[name](); } catch (e) {}
+  }
+  // petit « tic » sur les boutons (les gros moments ont leur propre son)
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('button, .btn, [data-close]');
+    if (b && !b.dataset.nosfx) play('tap');
+  }, true);
+  return { play };
+})();
+const sfx = n => Sfx.play(n);
 function overlay(html, scroll) {
   const v = $('#victory'); $('#vin').innerHTML = html; v.classList.remove('hidden'); v.classList.toggle('scroll', !!scroll); v.scrollTop = 0;
   return new Promise(res => {
@@ -2074,9 +2139,9 @@ async function victory(card, pts) {
   fillPhotos($('#vin'));
   fillStory($('#vstory'), place, card);
   countUp($('#vp'), pts);
-  vibrate([30, 40, 30]);
+  vibrate([30, 40, 30]); sfx('found');
   setTimeout(() => {
-    $('#flip').classList.add('on'); vibrate(60);
+    $('#flip').classList.add('on'); vibrate(60); sfx('flip');
     confetti({ rare: ['#7B2FF7', '#B07BFF', '#FFD23F', '#fff'], epic: ['#1559C9', '#8EC5FF', '#FFD23F', '#fff'], legend: ['#FFD23F', '#FFB800', '#FFF3B0', '#fff'], mythic: ['#FF5FD2', '#FFD23F', '#5FFFD0', '#5F9DFF', '#fff'] }[card.rarity] || ['#FFD23F', '#FFB800', '#fff', '#C0C6D0']);
   }, 900);
   return p;
@@ -2088,7 +2153,7 @@ async function questClear() {
     <button class="btn gold" data-close>Génial</button>`);
   countUp($('#vp'), WEEK_BONUS, 1300);
   confetti(['#FFD23F', '#FFB800', '#7B2FF7', '#fff']);
-  vibrate([60, 60, 60, 60, 120]);
+  vibrate([60, 60, 60, 60, 120]); sfx('clear');
   return p;
 }
 /* ---------- histoire d'un lieu (fiche et écran de victoire) ---------- */
@@ -2255,7 +2320,7 @@ function showFiche(c) {
   fillPhotos($('#vin'));
   // retourner la carte dans le sens du doigt ; toucher = photo en grand
   const fc = $('#fcard'), fi = fc.querySelector('.fi'); let x0 = null, ang = 0;
-  const flip = dir => { fi.classList.remove('peek'); ang += dir * 180; fi.style.transform = `rotateY(${ang}deg)`; vibrate(15); };
+  const flip = dir => { fi.classList.remove('peek'); ang += dir * 180; fi.style.transform = `rotateY(${ang}deg)`; vibrate(15); sfx('whoosh'); };
   fc.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
   fc.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 30) { flip(dx > 0 ? 1 : -1); fc.dataset.swiped = '1'; } });
   fc.addEventListener('click', () => {
@@ -2272,7 +2337,7 @@ function showFiche(c) {
   if (!c.welcome) wikiFor(p).then(w => w && putBack(w.img));
   $('#cshare').onclick = () => shareCard(c);
   $('#favbtn').onclick = () => {
-    c.fav = !c.fav; save(); vibrate(20);
+    c.fav = !c.fav; save(); vibrate(20); if (c.fav) sfx('fav');
     $('#favbtn').classList.toggle('on', c.fav); $('#favbtn').textContent = c.fav ? '♥ Dans tes favoris' : '♡ Ajouter aux favoris';
     const card = fc.querySelector('.face.front .card .in'); const h = card && card.querySelector('.fav');
     if (c.fav && !h && card) card.insertAdjacentHTML('beforeend', '<span class="fav">♥</span>'); else if (!c.fav && h) h.remove();
@@ -2337,7 +2402,7 @@ async function celebrate() {
       <div class="v-sub" style="font-size:24px;color:#fff;font-weight:900;margin:4px 0 6px">${esc(lv.name)}</div>
       <div class="v-sub">${lv.to ? `Prochain titre : <b style="color:#FFD23F">${esc(lv.nextName)}</b> à ${fmt(lv.to)} ★` : 'Tu as atteint le titre suprême !'}</div>
       <button class="btn gold" data-close>Trop bien</button>`);
-    confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); vibrate([60, 40, 120]);
+    confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); vibrate([60, 40, 120]); sfx('level');
     await lp;
   }
   const t = tstats();
@@ -2347,7 +2412,7 @@ async function celebrate() {
     const p = overlay(`<div class="v-title gold pixel">TROPHÉE !</div><div class="big-ic">${ic}</div>
       <div class="v-sub" style="font-size:24px;color:#fff;font-weight:900;margin:4px 0 6px">${esc(name)}</div>
       <div class="v-sub">${esc(desc)}</div><button class="btn gold" data-close>Génial</button>`);
-    confetti(['#FFD23F', '#FFB800', '#fff']); vibrate([40, 40, 80]);
+    confetti(['#FFD23F', '#FFB800', '#fff']); vibrate([40, 40, 80]); sfx('trophy');
     await p;
   }
 }
@@ -2539,7 +2604,7 @@ function goRun() {
   const R0 = RUN.route, t0 = R0 && R0.real && (R0.turns || [])[0];
   speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.'
     + (t0 ? ` Tout droit sur ${t0.along >= 1000 ? (t0.along / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(t0.along / 50) * 50 + ' mètres'}, puis ${turnText(t0.d).t}.` : ''));
-  vibrate(60);
+  vibrate(60); sfx('go');
   RUN.nav = true;
   if (lastPos) followMe([lastPos.lat, lastPos.lng], 17);
   drawRun();
@@ -2656,7 +2721,7 @@ function checkArrival(pos) {
     const p = placeById(RUN.pid); if (!p) return;
     if (dist(pos, p) <= radiusOf(p) + Math.min(pos.acc || 0, 40)) arrive();
   } else if (dist(pos, S.home) <= 80 + Math.min(pos.acc || 0, 40)) {
-    arriving = true; stopSim(); speak('Bienvenue à la maison. Bravo !'); vibrate([80, 60, 80]);
+    arriving = true; stopSim(); speak('Bienvenue à la maison. Bravo !'); vibrate([80, 60, 80]); sfx('ok');
     setTimeout(() => { arriving = false; finishRun(); }, 600);
   }
 }
@@ -2836,8 +2901,8 @@ async function finishRun() {
   if (keep && r.dist >= 50) S.runs.push(r); else if (card) delete card.run;
   RUN = null; saveRun(); save();
   await celebrate();
-  if (ad && ad.up) { vibrate([40, 40, 80]); toast(`💪 Tu progresses ! Tes prochaines quêtes : ${String(ad.up).replace('.', ',')} km`); }
-  if (ad && ad.down) toast('On ajuste ta prochaine quête pour que tu la plies 💪');
+  if (ad && ad.up) { vibrate([40, 40, 80]); sfx('ok'); toast(`💪 Tu progresses ! Tes prochaines quêtes : ${String(ad.up).replace('.', ',')} km`); }
+  if (ad && ad.down) { sfx('soft'); toast('On ajuste ta prochaine quête pour que tu la plies 💪'); }
   await checkMonthly();
   maybeLegend();
   if (current === 'prof') renderProf(); else renderQuests();
@@ -3235,7 +3300,8 @@ function renderSet() {
   $('#set').innerHTML = `
   <div class="panel"><button class="trorow" id="gopref"><div style="flex:none"><h4 style="margin:0 0 4px">Mes préférences</h4><span class="muted" style="font-size:14px">Jours, distance, sport</span></div><span style="flex:1"></span><span class="setbtn">Ouvrir ›</span></button></div>
   <div class="panel"><h4>Apparence</h4>
-    <div class="set"><span>Mode sombre</span>${sw('swdark', S.theme === 'dark')}</div></div>
+    <div class="set"><span>Mode sombre</span>${sw('swdark', S.theme === 'dark')}</div>
+    <div class="set"><span>Bruitages<small class="muted" style="display:block;font-size:13px">Sons des victoires, des cartes et du sage</small></span>${sw('swsfx', S.sfx !== false)}</div></div>
   <div class="panel"><h4>Sorties</h4>
     <div class="set"><span>Voix pendant la sortie<small class="muted" style="display:block;font-size:13px">Annonce chaque kilomètre</small></span>${sw('swvoice', S.voice)}</div></div>
   <div class="panel"><h4>Lieux</h4>
@@ -3265,6 +3331,7 @@ function renderSet() {
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
   $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
+  $('#swsfx').onclick = () => { S.sfx = S.sfx === false; save(); renderSet(); if (S.sfx) sfx('pop'); };
   $('#gopref').onclick = () => tab('pref');
   $('#home').onclick = () => onboarding(7);
   $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
@@ -3495,7 +3562,7 @@ function onboarding(step = 0) {
       <button class="btn" id="go">Merci, Sage !</button>`;
     fillPhotos(o);
     typeText($('#say8'), "Avant de partir… prends ceci. Mon grimoire ! C'est ta toute première carte. Il y en a des centaines d'autres qui t'attendent dehors.", $('#say8b'));
-    setTimeout(() => { const f = $('#gflip'); if (f) { f.classList.add('on'); vibrate([30, 40, 60]); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
+    setTimeout(() => { const f = $('#gflip'); if (f) { f.classList.add('on'); vibrate([30, 40, 60]); sfx('flip'); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
     $('#go').onclick = () => {
       if (isIOS() && !isStandalone()) return onboarding(9); // pas de notifs possibles dans Safari sur iPhone
       // puis il propose les rappels
@@ -3550,7 +3617,7 @@ function onboarding(step = 0) {
       mark(5);
       $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span><div style="font-size:15px;color:var(--muted);margin-top:10px">🧙 « Va, Élu Runner. La ville compte sur toi ! »</div>`;
       o.querySelector('.scan .ic').textContent = '🗺️';
-      vibrate([40, 40, 80]);
+      vibrate([40, 40, 80]); sfx('ready');
       $('#go').classList.remove('hidden');
       $('#go').onclick = () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); Metrics.askConsent(); if (S.pendingFriend) setTimeout(addFriendQuest, 600); };
     })();
