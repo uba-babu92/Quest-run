@@ -745,7 +745,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v73';
+const VERSION = 'v74';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -4021,7 +4021,11 @@ function quizFor(sp) {
   ];
 }
 let onbMap = null;
+let onbTok = 0;
 function onboarding(step = 0) {
+  // 29/10 : chaque écran a son jeton ; un minuteur ou un double appui d'un écran précédent ne fait plus revenir en arrière
+  const tok = ++onbTok, go = n => { if (tok === onbTok) onboarding(n); };
+  let once = false; const first = () => { if (once || tok !== onbTok) return false; return once = true; };
   const o = $('#onb'); o.classList.remove('hidden');
   setTimeout(() => bindBack && bindBack(), 0);
   // en-tête : bouton retour discret (étapes 1 à 3) + points de progression
@@ -4088,7 +4092,7 @@ function onboarding(step = 0) {
     typeText($('#say1'), `Enchanté, ${S.name || 'Élu'} ! Pars-tu au galop sur ton destrier, ou tes bottes de cuir te suffisent-elles ?`, $('#say1b'));
     o.querySelectorAll('[data-sp]').forEach(b => b.onclick = () => {
       S.sport = b.dataset.sp; S.goal.km = KM_LVL[S.sport].inter; save();
-      b.classList.add('on'); setTimeout(() => onboarding(2), 180);
+      if (!first()) return; b.classList.add('on'); setTimeout(() => go(2), 180);
     });
   }
   if (step === 2) {
@@ -4097,9 +4101,10 @@ function onboarding(step = 0) {
       <div class="sportpick">${LEVELS_ONB.map(([v, ic, t, d]) => `<button data-lv="${v}"><span>${ic}</span><div>${t}<small>${d} · on commence à ${KM_LVL[sp][v]} km</small></div></button>`).join('')}</div></div>`;
     typeText($('#say2'), "Es-tu un petit paladin, un aventurier aguerri… ou un grand chevalier ? Sois honnête, hé hé.", $('#say2b'));
     o.querySelectorAll('[data-lv]').forEach(b => b.onclick = () => {
+      if (!first()) return;
       S.skill = b.dataset.lv; S.goal.km = KM_LVL[sp][S.skill]; S.prog = { credits: 0, fails: 0, okRuns: 0 }; save();
       (S.quiz = S.quiz || {}).niveau = S.skill; track('quiz', { id: 'niveau', value: S.skill });
-      b.classList.add('on'); setTimeout(() => onboarding(3), 180);
+      b.classList.add('on'); setTimeout(() => go(3), 180);
     });
   }
   if (step >= 3 && step <= 5) {
@@ -4108,6 +4113,7 @@ function onboarding(step = 0) {
       <div class="sportpick quiz">${q.opts.map(([v, ic, t]) => `<button data-v="${v}"><span>${ic}</span><div>${t}</div></button>`).join('')}</div></div>`;
     typeText($('#sayq'), q.q, $('#sayqb'));
     o.querySelectorAll('[data-v]').forEach(b => b.onclick = () => {
+      if (!first()) return;
       const v = b.dataset.v, opt = q.opts.find(x => x[0] === v);
       (S.quiz = S.quiz || {})[q.id] = v; save();
       track('quiz', { id: q.id, value: v });
@@ -4116,8 +4122,8 @@ function onboarding(step = 0) {
       setTimeout(() => {
         const body = o.querySelector('.body');
         body.innerHTML = `<div class="reassure"><div class="sage big">🧙</div><div class="bubble" style="flex:none;text-align:left"><b>${opt[3]}</b><p>${opt[4]}</p></div><p class="muted" style="font-size:13px;margin-top:14px">Touche pour continuer</p></div>`;
-        setTimeout(() => { if ($('#onb .reassure')) onboarding(step + 1); }, 3600);
-        body.onclick = () => onboarding(step + 1);
+        setTimeout(() => go(step + 1), 3600);
+        body.onclick = () => go(step + 1);
       }, 200);
     });
   }
@@ -4127,7 +4133,7 @@ function onboarding(step = 0) {
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
     goalPicker($('#ogoal'), null, null, true);
     typeText($('#say6'), "Quels jours partiras-tu en quête, Élu ? Je m'occupe de la distance.", $('#say6b'));
-    $('#go').onclick = () => { save(); onboarding(7); };
+    $('#go').onclick = () => { if (!first()) return; save(); onboarding(7); };
   }
   if (step === 7) {
     o.innerHTML = `${dots(6)}<div class="body">${sageBox('', 'say7')}
@@ -4153,7 +4159,7 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      S.home = chosen; save(); onboarding(S.onboarded ? 9 : 8);
+      if (!first()) return; S.home = chosen; save(); onboarding(S.onboarded ? 9 : 8);
     };
   }
   if (step === 8) {
@@ -4202,7 +4208,9 @@ function onboarding(step = 0) {
     const job = fetchPlaces(S.home, S.goal.km).then(pl => ({ pl }), err => ({ err }));
     (async () => {
       await wait(1300); mark(1);
+      if (tok !== onbTok) return;
       const [res] = await Promise.all([job, wait(1500)]);
+      if (tok !== onbTok) return;
       if (res.err) {
         li[1].classList.remove('on');
         $('#lt').textContent = 'Les serveurs de cartes ne répondent pas';
@@ -4214,14 +4222,19 @@ function onboarding(step = 0) {
       const pl = res.pl, r = pl.filter(p => p.rarity === 'rare').length;
       $('#st1').innerHTML = `<b>${fmt(pl.length)} lieux</b> trouvés autour de toi`;
       mark(2); await wait(1500);
+      if (tok !== onbTok) return;
       $('#st2').innerHTML = `<b>${fmt(r)} lieux secrets</b> repérés`;
       mark(3); await wait(1400);
+      if (tok !== onbTok) return;
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
       S.homeEle = null;
       try { await Promise.race([loadElevations(), wait(6000)]); } catch (e) {}
+      if (tok !== onbTok) return;
       try { await Promise.race([Promise.all([loadGreen(), loadTrails()]), wait(7000)]); } catch (e) {}
+      if (tok !== onbTok) return;
       S.week = null; S.onboarded = true; ensureWeek(); initProgress(); save();
       mark(4); await wait(1200);
+      if (tok !== onbTok) return;
       mark(5);
       $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span><div style="font-size:15px;color:var(--muted);margin-top:10px">🧙 « Va, Élu Runner. La ville compte sur toi ! »</div>`;
       o.querySelector('.scan .ic').textContent = '🗺️';
