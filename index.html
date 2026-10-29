@@ -745,7 +745,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v72';
+const VERSION = 'v73';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1069,7 +1069,7 @@ function shrink(file) {
 }
 
 /* ---------- lieux (OpenStreetMap) ---------- */
-const FEM = new Set(['Statue', 'Sculpture', 'Fresque', 'Mosaïque', 'Installation', 'Fontaine', 'Croix', 'Borne ancienne', 'Stèle', "Œuvre d'art", 'Mairie', 'Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Cascade']);
+const FEM = new Set(['Écluse', 'Passerelle', 'Statue', 'Sculpture', 'Fresque', 'Mosaïque', 'Installation', 'Fontaine', 'Croix', 'Borne ancienne', 'Stèle', "Œuvre d'art", 'Mairie', 'Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Cascade']);
 function article(label) { return label === 'Ruines' ? 'Des ruines' : (FEM.has(label) ? 'Une ' : 'Un ') + label.toLowerCase(); }
 
 function classify(t) {
@@ -1105,6 +1105,9 @@ function classify(t) {
     label = t.religion === 'christian' ? (t.building === 'chapel' ? 'Chapelle' : 'Église')
       : ({ jewish: 'Synagogue', muslim: 'Mosquée', buddhist: 'Temple' }[t.religion] || 'Lieu de culte');
   }
+  if (!label && (t.waterway === 'lock_gate' || t.lock === 'yes')) label = 'Écluse';
+  if (!label && (t.bridge || t.man_made === 'bridge') && /^passerelle/i.test(name)) label = 'Passerelle';
+  if (!label && t.bridge && /^pont/i.test(name) && /^(footway|pedestrian|path|cycleway)$/.test(t.highway || '')) label = 'Pont';
   if (!label) return null;
   // Lieux vérifiables seulement (27/10) : un nom obligatoire, pas d'œuvres éphémères
   if (!name) return null;
@@ -1188,7 +1191,7 @@ async function fetchPlaces(home, km, onSlow) {
 }
 
 // À chaque ouverture : si le robot a ajouté des cases, on ajoute leurs lieux.
-const PARSE_V = 2; // à changer quand le tri des lieux change : force un nouveau tri
+const PARSE_V = 3; // à changer quand le tri des lieux change : force un nouveau tri
 async function upgradePlaces() {
   if (!S.home || !S.places.length) return;
   const local = await fetchLocal(S.home, Math.min(9000, Math.round(Math.max(S.goal.km, 6) * 900)));
@@ -1371,6 +1374,12 @@ const QUEST_LINES = {
   ancien: [
     ['Les ruines oubliées', "Hmm… Il ne reste presque plus rien de ce lieu. Presque ! Va fouiller, et dis-moi si tu trouves une carte."],
     ['Le vieux moulin', "Le moulin ne tourne plus depuis longtemps, mais il a encore des choses à raconter. Va le voir, une carte t'y attend !"]],
+  ecluse: [
+    ['', "Psst… Au bord du canal, une vieille écluse fait monter et descendre les bateaux depuis des siècles. Cours-y le long de l'eau, une carte t'attend !"],
+    ['', "Écoute l'eau gronder derrière les portes de l'écluse… On dit qu'une carte y dort. File la chercher, jeune coureur !"]],
+  pont: [
+    ['', "Hé ! Une passerelle enjambe l'eau pas loin d'ici. Du milieu, la vue est magnifique… et une carte t'y attend !"],
+    ['', "Les amoureux, les pêcheurs, les rêveurs… tout le monde s'arrête sur cette passerelle. Va voir pourquoi, et rapporte-moi sa carte !"]],
   autre: [
     ['Le lieu mystère', "Hé, toi ! J'ai entendu parler d'un endroit étrange pas loin d'ici… Va voir, et dis-moi si tu trouves une carte !"],
     ['La rumeur du quartier', "Les gens du quartier murmurent… Il paraît qu'une carte dort quelque part par là. Tu es le seul assez rapide pour la trouver !"]]
@@ -1387,6 +1396,8 @@ function questKind(p) {
   if (/Mairie|Hôtel de ville/i.test(l)) return 'mairie';
   if (/vue|Belvédère/i.test(l)) return 'vue';
   if (/Croix|Borne/i.test(l)) return 'croix';
+  if (/Écluse/i.test(l)) return 'ecluse';
+  if (/Passerelle|Pont/i.test(l)) return 'pont';
   if (/Ruine|Moulin|Tour|Porte/i.test(l)) return 'ancien';
   return 'autre';
 }
@@ -1436,7 +1447,8 @@ const GREEN_KEY = 'questrun.green';
 try { const g = JSON.parse(localStorage.getItem(GREEN_KEY) || 'null'); if (g) GREEN = greenDecode(g); } catch (e) {}
 function greenDecode(g) {
   const tiles = {};
-  for (const [k, t] of Object.entries(g.tiles || {})) { const bin = atob(t.b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); tiles[k] = { s: t.s, w: t.w, u }; }
+  const dec = b => { const bin = atob(b), u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
+  for (const [k, t] of Object.entries(g.tiles || {})) tiles[k] = { s: t.s, w: t.w, u: dec(t.b), wu: t.wb ? dec(t.wb) : null };
   return { ...g, tiles };
 }
 async function loadGreen() {
@@ -1452,7 +1464,7 @@ async function loadGreen() {
   const raw = { updated: idx.updated, home: tileKey(S.home.lat, S.home.lng), dlat: idx.dlat, dlng: idx.dlng, nr: idx.nr, nc: idx.nc, tiles: {} };
   need.forEach((k, i) => { if (parts[i]) raw.tiles[k] = parts[i]; });
   try { localStorage.setItem(GREEN_KEY, JSON.stringify(raw)); } catch (e) {}
-  GREEN = greenDecode(raw); for (const k in greenPathCache) delete greenPathCache[k];
+  GREEN = greenDecode(raw); for (const k in greenPathCache) delete greenPathCache[k]; for (const k in waterCache) delete waterCache[k];
   return true;
 }
 function greenAt(lat, lng) {
@@ -1479,7 +1491,7 @@ async function loadTrails() {
   const parts = await Promise.all(need.map(k => fetch(`data/trails/${k}.json`).then(r => r.ok ? r.json() : null).catch(() => null)));
   const raw = { updated: idx.updated, dlat: idx.dlat, dlng: idx.dlng, nr: idx.nr, nc: idx.nc, tiles: {} };
   const pts = [];
-  need.forEach((k, i) => { const t = parts[i]; if (!t) return; raw.tiles[k] = { s: t.s, w: t.w, b: t.b }; (t.l || []).forEach(l => l.forEach(([a, b]) => pts.push({ lat: a, lng: b }))); });
+  need.forEach((k, i) => { const t = parts[i]; if (!t) return; raw.tiles[k] = { s: t.s, w: t.w, b: t.b }; (t.l || []).forEach(l => { let L = 0; for (let i = 1; i < l.length; i++) L += dist({ lat: l[i - 1][0], lng: l[i - 1][1] }, { lat: l[i][0], lng: l[i][1] }); if (L >= 500) l.forEach(([a, b]) => pts.push({ lat: a, lng: b })); }); });
   const fresh = !TRAIL || TRAIL.updated !== idx.updated;
   try { localStorage.setItem(TRAIL_KEY, JSON.stringify(raw)); } catch (e) {}
   TRAIL = greenDecode(raw); TRAIL_PTS = pts; for (const k in greenPathCache) delete greenPathCache[k];
@@ -1492,18 +1504,38 @@ function trailAt(lat, lng) {
   const x = r * TRAIL.nc + c; return (t.u[x >> 3] >> (x & 7)) & 1;
 }
 // lieu à moins de ~150 m d'un parcours de runners
+// bord de l'eau (29/10, Bazil : « privilégier les quais, l'eau à 50 % ») : Seine, canaux, étangs (calque « eau » du robot)
+function waterAt(lat, lng) {
+  const t = GREEN && GREEN.tiles[tileKey(lat, lng)]; if (!t || !t.wu) return 0;
+  const r = Math.floor((lat - t.s) / GREEN.dlat), c = Math.floor((lng - t.w) / GREEN.dlng);
+  if (r < 0 || c < 0 || r >= GREEN.nr || c >= GREEN.nc) return 0;
+  const x = r * GREEN.nc + c; return (t.wu[x >> 3] >> (x & 7)) & 1;
+}
+const waterCache = {};
+// lieu à moins de ~150 m de l'eau
+const nearWater = p => { if (!GREEN || !p) return false; if (waterCache[p.id] != null) return waterCache[p.id]; for (let a = -3; a <= 3; a++) for (let b = -3; b <= 3; b++) if (a * a + b * b <= 10 && waterAt(p.lat + a * GREEN.dlat, p.lng + b * GREEN.dlng)) return waterCache[p.id] = true; return waterCache[p.id] = false; };
 const nearTrail = p => { if (!TRAIL) return false; for (let a = -3; a <= 3; a++) for (let b = -3; b <= 3; b++) if (a * a + b * b <= 10 && trailAt(p.lat + a * TRAIL.dlat, p.lng + b * TRAIL.dlng)) return true; return false; };
 // points de passage pour suivre les parcours : on rejoint le parcours le plus proche, on le suit, on en sort au lieu
 function trailVia(from, to) {
+  // 29/10 : seulement des vrais parcours (≥ 500 m, pas les allées de square), toujours vers l'avant, l'eau d'abord
   if (!TRAIL_PTS || !TRAIL_PTS.length) return null;
   const D = dist(from, to); if (D < 500) return null;
-  const near = (q, max) => { let best = null, bd = max; for (const t of TRAIL_PTS) { if (Math.abs(t.lat - q.lat) > 0.006) continue; const d = dist(q, t); if (d < bd) { bd = d; best = t; } } return best; };
+  const k = Math.cos(from.lat * Math.PI / 180), vx = (to.lng - from.lng) * k, vy = to.lat - from.lat, v2 = vx * vx + vy * vy;
+  const prog = q => ((q.lng - from.lng) * k * vx + (q.lat - from.lat) * vy) / v2; // 0 = départ, 1 = arrivée
+  const wet = q => q.w ?? (q.w = waterAt(q.lat, q.lng) || waterAt(q.lat + 0.0006, q.lng) || waterAt(q.lat - 0.0006, q.lng) || waterAt(q.lat, q.lng + 0.0009) || waterAt(q.lat, q.lng - 0.0009) ? 1 : 0);
+  const near = (q, max) => { let best = null, bd = max; for (const t of TRAIL_PTS) { if (Math.abs(t.lat - q.lat) > 0.006) continue; const d = dist(q, t) - (wet(t) ? 60 : 0); if (d < bd) { bd = d; best = t; } } return best; };
   const X = near(to, 220); if (!X) return null;
-  // entrée : le point de parcours le plus proche de chez toi qui ne fait pas un trop grand détour
+  // entrée : le point de parcours le plus proche de chez toi qui ne fait pas un trop grand détour (bonus au bord de l'eau)
   let E = null, be = Infinity;
-  for (const t of TRAIL_PTS) { if (Math.abs(t.lat - from.lat) > 0.03) continue; const a = dist(from, t); if (a < be && a + dist(t, to) <= D * 1.35) { be = a; E = t; } }
+  for (const t of TRAIL_PTS) { if (Math.abs(t.lat - from.lat) > 0.03) continue; const a = dist(from, t), pr = prog(t); if (pr < -0.05 || pr > 0.9) continue; const sc = a - (wet(t) ? 250 : 0); if (sc < be && a + dist(t, to) <= D * 1.25) { be = sc; E = t; } }
   if (!E || dist(E, X) < 300) return [X];
-  const mids = [0.25, 0.5, 0.75].map(f => near({ lat: E.lat + (X.lat - E.lat) * f, lng: E.lng + (X.lng - E.lng) * f }, 250)).filter(Boolean);
+  let last = prog(E);
+  const mids = [];
+  for (const f of [0.25, 0.5, 0.75]) {
+    const m = near({ lat: E.lat + (X.lat - E.lat) * f, lng: E.lng + (X.lng - E.lng) * f }, 200);
+    if (!m) continue; const pr = prog(m); if (pr <= last + 0.05 || pr >= prog(X)) continue; // jamais en arrière ni de côté
+    mids.push(m); last = pr;
+  }
   return [E, ...mids, X];
 }
 const greenPathCache = {};
@@ -1537,11 +1569,17 @@ function pickQuests(n, seed, exclude, o = {}) {
       if (all.length >= Math.max(n * 2, 3)) { pool = all; break; }
     }
   }
+  // quête « au bord de l'eau » (29/10) : la moitié des quêtes de la semaine, quitte à viser 50-130 % de la distance
+  if (o.water && GREEN) {
+    const wideW = S.places.filter(p => ok(p) && effortM(p) >= target * 0.5 && effortM(p) <= target * 1.3 && nearWater(p));
+    const wp = pool.filter(nearWater).concat(wideW.filter(p => !pool.includes(p)));
+    if (wp.length >= 1) pool = wp;
+  }
   // priorité aux lieux qui ont une histoire vérifiable (article Wikipédia, puis faits sur l'objet)
   const told = pool.filter(p => (p.st || 0) >= 2);
-  if (told.length >= Math.max(n * 2, 3)) pool = told;
+  if (told.length >= Math.max(n * 2, 3) || (o.water && told.length >= 1)) pool = told;
   const r = rng(seed);
-  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0) - (pathGreen(p) ?? 0) * 0.8 - (nearTrail(p) ? 0.4 : 0);
+  const score = p => Math.abs(effortM(p) - target) / target + r() * 0.6 - (p.st === 3 ? 0.3 : 0) - (isGreen(p) ? 0.25 : 0) - (pathGreen(p) ?? 0) * 0.8 - (nearTrail(p) ? 0.4 : 0) - (nearWater(p) ? 0.35 : 0);
   const rares = pool.filter(p => p.rarity === 'rare').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const commons = pool.filter(p => p.rarity === 'common').map(p => [score(p), p]).sort((a, b) => a[0] - b[0]).map(x => x[1]);
   const wantRare = o.hidden === true ? n : o.hidden === false ? 0 : n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
@@ -1571,6 +1609,7 @@ function ensureWeek(force, opt = {}) {
   const seed = id + '|' + Date.now() + '|' + Math.random(), r = rng(seed);
   const fac = weekFactors(n), nh = n >= 2 ? Math.max(1, Math.round(n / 3)) : 0;
   const hid = new Set(); while (hid.size < nh) hid.add(Math.floor(r() * n));
+  const wet = new Set(); while (wet.size < Math.ceil(n / 2)) wet.add(Math.floor(r() * n)); // au moins la moitié au bord de l'eau
   const fresh = [], others = [];
   // plus une carte est rare, plus sa quête est dure (28/10) : la rareté la plus haute prend la sortie la plus longue
   const RANK = { common: 0, rare: 1, epic: 2, legend: 3, mythic: 4 };
@@ -1579,7 +1618,7 @@ function ensureWeek(force, opt = {}) {
   fac.forEach((f, k) => {
     const tier = tiers[k];
     const qkm = Math.round(S.goal.km * f * TIER_KM[tier] * 2) / 2;
-    const [p] = pickQuests(1, seed + k, exclude, { km: qkm, others, hidden: hid.has(k) });
+    const [p] = pickQuests(1, seed + k, exclude, { km: qkm, others, hidden: wet.has(k) ? undefined : hid.has(k), water: wet.has(k) });
     if (!p) return;
     exclude.add(p.id); others.push(p);
     fresh.push({ pid: p.id, status: 'todo', km: qkm, tier });
@@ -1724,12 +1763,14 @@ const MYS_NOUNS = {
   mairie: [['le Palais', 'm'], ['la Maison commune', 'f'], ['le Siège', 'm']],
   monument: [['la Pierre', 'f'], ["l'Aiguille", 'f'], ['le Colosse', 'm']],
   memoire: [['la Pierre', 'f'], ['le Monument', 'm']],
+  eau: [["l'Écluse", 'f'], ["la Porte d'eau", 'f'], ['le Gardien des eaux', 'm']],
+  pont: [['la Passerelle', 'f'], ["l'Arche", 'f'], ['le Pont', 'm']],
   croix: [['la Croix', 'f']], borne: [['la Borne', 'f']], ruines: [['les Vestiges', 'mp']]
 };
 const MYS_KIND = { Statue: 'statue', Sculpture: 'statue', Buste: 'statue', 'Bas-relief': 'statue', "Œuvre d'art": 'statue', Fresque: 'statue', 'Mosaïque': 'statue', 'Mémorial': 'statue', 'Stèle': 'statue',
   Fontaine: 'fontaine', Parc: 'parc', Jardin: 'parc', 'Église': 'eglise', Chapelle: 'eglise', Synagogue: 'culte', 'Mosquée': 'culte', Temple: 'culte', 'Lieu de culte': 'culte',
   'Château': 'chateau', Manoir: 'chateau', 'Point de vue': 'vue', 'Musée': 'musee', Mairie: 'mairie', Monument: 'monument', 'Obélisque': 'monument', 'Monument aux morts': 'memoire',
-  Croix: 'croix', 'Borne ancienne': 'borne', Ruines: 'ruines' };
+  'Écluse': 'eau', Passerelle: 'pont', Pont: 'pont', Croix: 'croix', 'Borne ancienne': 'borne', Ruines: 'ruines' };
 // [masculin, féminin]
 const MYS_ADJ = [['oublié', 'oubliée'], ['endormi', 'endormie'], ['secret', 'secrète'], ['caché', 'cachée'], ['perdu', 'perdue'], ['ancien', 'ancienne'], ['silencieux', 'silencieuse'], ['mystérieux', 'mystérieuse'],
   ['éternel', 'éternelle'], ['légendaire', 'légendaire'], ['solitaire', 'solitaire'], ['enchanté', 'enchantée'], ['discret', 'discrète'], ['immobile', 'immobile'], ['intrigant', 'intrigante'],
@@ -2235,6 +2276,8 @@ const KIND_LORE = {
   croix: "Ces croix et bornes marquaient les chemins d'autrefois : limites de paroisse, carrefours, ou lieux de prière pour les voyageurs.",
   ancien: "Ce qui reste d'un lieu ancien raconte souvent plusieurs vies : construit, abandonné, puis redécouvert.",
   vue: "Les points de vue comme celui-ci attiraient déjà les promeneurs et les peintres il y a plus de cent ans.",
+  ecluse: "Les écluses font passer les bateaux d'un niveau d'eau à l'autre : on ferme les portes, on remplit ou on vide le bassin, et le bateau monte ou descend comme dans un ascenseur.",
+  pont: "Les passerelles ont souvent été construites pour relier deux quartiers séparés par l'eau ; certaines sont devenues des lieux de rendez-vous pour les promeneurs.",
   autre: "Chaque recoin de la ville cache une histoire, et celui-ci a choisi de garder la sienne pour toi."
 };
 function sageFallback(p) { return `Hé hé… ce lieu garde bien ses secrets ! ${KIND_LORE[questKind(p)] || KIND_LORE.autre} Regarde-le bien : à toi de percer son mystère.`; }
@@ -2850,10 +2893,12 @@ async function niceRoute(points, prof) {
   const get = async alt => { try { return await brouter(points, prof, alt, await niceProfile(prof)); } catch (e) { delete niceId[prof]; return brouter(points, prof, alt, await niceProfile(prof)); } };
   const res = (await Promise.allSettled(points.length === 2 ? [get(0), get(1)] : [get(0)])).filter(x => x.status === 'fulfilled').map(x => x.value);
   if (!res.length) throw new Error('brouter');
+  const out = res.map(despur);
   let straight = 0; for (let i = 1; i < points.length; i++) straight += dist(points[i - 1], points[i]);
-  const cap = straight * 1.3 * 1.4;
-  res.sort((a, b) => (a.dist > cap) - (b.dist > cap));
-  return res;
+  const cap = straight * 1.3 * 1.25, best = Math.min(...out.map(r => r.dist));
+  const bad = r => (r.dist > cap) + (r.dist > best * 1.15);
+  out.sort((a, b) => bad(a) - bad(b));
+  return out;
 }
 async function routeVia(points, prof = 'routed-foot') {
   try {
@@ -2866,7 +2911,27 @@ async function osrmVia(points, prof = 'routed-foot') {
   const coords = points.map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';');
   const j = await getJSON(`${ROUTER(prof)}${coords}?overview=full&geometries=geojson&alternatives=${points.length === 2 ? 'true' : 'false'}`, 12000);
   if (j.code !== 'Ok' || !j.routes?.length) throw new Error(j.code || 'itinéraire');
-  return j.routes.map(r => ({ pts: r.geometry.coordinates.map(c => [c[1], c[0]]), dist: r.distance, engine: 'OSRM' }));
+  return j.routes.map(r => despur({ pts: r.geometry.coordinates.map(c => [c[1], c[0]]), dist: r.distance, engine: 'OSRM' }));
+}
+// lisse un itinéraire (29/10) : si le trajet repasse à moins de 15 m d'un point déjà passé, on coupe la boucle
+// ou l'aller-retour entre les deux (impasse vers un point de passage, petit tour de square…)
+function despur(r) {
+  const P = r.pts, E = r.ele; if (!P || P.length < 4) return r;
+  const d2 = (a, b) => { const dy = (a[0] - b[0]) * 111320, dx = (a[1] - b[1]) * 73000; return dx * dx + dy * dy; };
+  const keep = []; let i = 0;
+  while (i < P.length) {
+    keep.push(i);
+    let along = 0, jump = -1;
+    for (let j = i + 1; j < P.length && along < 1500; j++) {
+      along += Math.sqrt(d2(P[j - 1], P[j]));
+      if (along > 60 && d2(P[i], P[j]) < 225) jump = j; // revient au même endroit : tout ce qui est entre les deux est inutile
+    }
+    i = jump > 0 ? jump : i + 1;
+  }
+  if (keep.length === P.length) return r;
+  const pts = keep.map(k => P[k]);
+  let d = 0; for (let k = 1; k < pts.length; k++) d += Math.sqrt(d2(pts[k - 1], pts[k]));
+  return Object.assign({}, r, { pts, ele: E ? keep.map(k => E[k]) : E, dist: d, smoothed: true });
 }
 function withCum(pts) { let c = 0; return pts.map((p, i) => { if (i) c += dist({ lat: pts[i - 1][0], lng: pts[i - 1][1] }, { lat: p[0], lng: p[1] }); return [p[0], p[1], c]; }); }
 // part d'un trajet qui passe à moins de 30 m d'un autre trajet
@@ -2879,12 +2944,13 @@ function overlap(a, b) {
 async function makeRoute(from, to, avoid, prof) {
   try {
     // suivre les parcours de runners quand il y en a (sinon itinéraire agréable direct)
+    // 29/10 : le trajet par les parcours n'est gardé que s'il fait au plus +15 % par rapport au trajet agréable direct
     let cands = null;
     const via = trailVia(from, to);
-    if (via) {
-      try { const t = await routeVia([from, ...via, to], prof); if (t.length && t[0].dist <= dist(from, to) * 1.3 * 1.6) { cands = t; t.forEach(c => c.engine += ' + parcours'); } } catch (e) {}
-    }
-    if (!cands) cands = await routeVia([from, to], prof);
+    const [direct, viaT] = await Promise.all([routeVia([from, to], prof).catch(() => null), via ? routeVia([from, ...via, to], prof).catch(() => null) : null]);
+    if (viaT && viaT.length && (!direct || !direct.length || viaT[0].dist <= direct[0].dist * 1.15)) { cands = viaT; viaT.forEach(c => c.engine += ' + parcours'); }
+    if (!cands) cands = direct;
+    if (!cands || !cands.length) throw new Error('itinéraire');
     if (avoid && avoid.length > 4) {
       // détour par un point du côté opposé à l'aller, pour faire une boucle
       const mid = avoid[Math.floor(avoid.length / 2)], cx = (from.lat + to.lat) / 2, cy = (from.lng + to.lng) / 2;

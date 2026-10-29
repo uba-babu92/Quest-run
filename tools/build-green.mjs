@@ -26,7 +26,7 @@ way["landuse"~"^(forest|grass|meadow|recreation_ground|village_green|allotments)
 relation["landuse"~"^(forest|meadow|recreation_ground)$"];
 way["natural"~"^(wood|scrub|grassland|heath|water)$"];
 relation["natural"~"^(wood|water)$"];
-way["waterway"~"^(river|canal|riverbank)$"];
+way["waterway"~"^(river|canal|riverbank)$"]["tunnel"!~"."];
 relation["waterway"="riverbank"];
 way["highway"="pedestrian"];
 );out geom qt;`;
@@ -83,9 +83,11 @@ function inside(r, lat, lng) {
   return ok;
 }
 
+// renvoie deux grilles : tout ce qui est agréable (vert + eau) et l'eau seule (29/10 : quais, canaux, Seine, étangs)
 function rasterTile(i, j, els) {
-  const s = i * STEP, w = j * STEP, grid = new Uint8Array(NR * NC);
-  const set = (r, c) => { if (r >= 0 && r < NR && c >= 0 && c < NC) grid[r * NC + c] = 1; };
+  const s = i * STEP, w = j * STEP, all = new Uint8Array(NR * NC), water = new Uint8Array(NR * NC);
+  let grid = all;
+  const set = (r, c) => { if (r >= 0 && r < NR && c >= 0 && c < NC) { all[r * NC + c] = 1; if (grid === water) water[r * NC + c] = 1; } };
   const fillPoly = ring => {
     let a = Infinity, b = -Infinity, c0 = Infinity, c1 = -Infinity;
     for (const [la, lo] of ring) { a = Math.min(a, la); b = Math.max(b, la); c0 = Math.min(c0, lo); c1 = Math.max(c1, lo); }
@@ -111,7 +113,7 @@ function rasterTile(i, j, els) {
     const smallOk = !/^(grass|meadow|village_green|grassland)$/.test(t.landuse || t.natural || ''); // petits carrés d'herbe = ronds-points
     const isWater = t.natural === 'water' || t.waterway === 'riverbank' || t.water;
     if (t.highway === 'pedestrian') { if (el.geometry) strokeLine(pts(el.geometry), 15); continue; }
-    if (t.waterway === 'river' || t.waterway === 'canal') { if (el.geometry) strokeLine(pts(el.geometry), t.waterway === 'river' ? 110 : 60); continue; }
+    if (t.waterway === 'river' || t.waterway === 'canal') { if (el.geometry) { grid = water; strokeLine(pts(el.geometry), t.waterway === 'river' ? 110 : 60); grid = all; } continue; }
     let rs = [];
     if (el.type === 'way' && el.geometry) { const p = pts(el.geometry); if (p.length >= 4) rs = [p]; }
     else if (el.type === 'relation') rs = rings((el.members || []).filter(m => m.type === 'way' && m.role !== 'inner').map(m => pts(m.geometry)));
@@ -119,11 +121,11 @@ function rasterTile(i, j, els) {
       const A = areaM2(r);
       if (!smallOk && A < 3000) continue;
       if (A < 400) continue;
-      fillPoly(r);
-      if (isWater) strokeLine(r, 50); // le bord de l'eau compte aussi
+      if (isWater) { if (A < 1500) continue; grid = water; fillPoly(r); strokeLine(r, 50); grid = all; } // le bord de l'eau compte aussi (pas les bassins de 30 m)
+      else fillPoly(r);
     }
   }
-  return grid;
+  return { all, water };
 }
 
 fs.mkdirSync('data/green', { recursive: true });
@@ -142,14 +144,13 @@ for (const [k, [i, j]] of tiles) {
   const s = (i * STEP).toFixed(1), w = (j * STEP).toFixed(1), n = ((i + 1) * STEP).toFixed(1), e = ((j + 1) * STEP).toFixed(1);
   console.log(`Case ${k}`);
   // déjà faite il y a moins de 25 jours : on passe (le robot peut être coupé, il reprend où il en était)
-  try { if (!process.env.FORCE && k in old.tiles && fs.existsSync(`data/green/${k}.json`) && Date.now() - fs.statSync(`data/green/${k}.json`).mtimeMs < 25 * 864e5 && old.done && old.done[k] && Date.now() - old.done[k] < 25 * 864e5) { console.log('  déjà faite, on passe'); continue; } } catch (e) {}
+  try { if (!process.env.FORCE && fs.existsSync(`data/green/${k}.json`) && JSON.parse(fs.readFileSync(`data/green/${k}.json`, 'utf8')).wb && k in old.tiles && fs.existsSync(`data/green/${k}.json`) && Date.now() - fs.statSync(`data/green/${k}.json`).mtimeMs < 25 * 864e5 && old.done && old.done[k] && Date.now() - old.done[k] < 25 * 864e5) { console.log('  déjà faite, on passe'); continue; } } catch (e) {}
   const els = await overpass(query(s, w, n, e));
   if (!els) { console.log('  sautée'); continue; }
-  const grid = rasterTile(i, j, els), share = grid.reduce((a, b) => a + b, 0) / grid.length;
+  const { all: grid, water } = rasterTile(i, j, els), share = grid.reduce((a, b) => a + b, 0) / grid.length;
   // bits compressés en base64 (1 bit par carré)
-  const bytes = new Uint8Array(Math.ceil(grid.length / 8));
-  grid.forEach((v, x) => { if (v) bytes[x >> 3] |= 1 << (x & 7); });
-  fs.writeFileSync(`data/green/${k}.json`, JSON.stringify({ s: +s, w: +w, b: Buffer.from(bytes).toString('base64') }));
+  const pack = g => { const bytes = new Uint8Array(Math.ceil(g.length / 8)); g.forEach((v, x) => { if (v) bytes[x >> 3] |= 1 << (x & 7); }); return Buffer.from(bytes).toString('base64'); };
+  fs.writeFileSync(`data/green/${k}.json`, JSON.stringify({ s: +s, w: +w, b: pack(grid), wb: pack(water) }));
   (index.done = index.done || {})[k] = Date.now();
   index.tiles[k] = Math.round(share * 100);
   fs.writeFileSync('data/green/index.json', JSON.stringify(index, null, 1));

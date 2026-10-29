@@ -19,7 +19,7 @@ const SERVERS = [
   'https://overpass.kumi.systems/api/interpreter',
   'https://overpass.private.coffee/api/interpreter'
 ];
-const KEEP = ['name', 'name:fr', 'amenity', 'historic', 'tourism', 'leisure', 'memorial', 'artwork_type',
+const KEEP = ['name', 'name:fr', 'lock_name', 'lock', 'waterway', 'bridge', 'man_made', 'highway', 'amenity', 'historic', 'tourism', 'leisure', 'memorial', 'artwork_type',
   'fountain', 'drinking_water', 'access', 'garden', 'garden:type', 'religion', 'building', 'artist_name',
   'wikipedia', 'wikidata', 'image', 'wikimedia_commons', 'start_date', 'inscription',
   'artist:wikidata', 'subject', 'subject:wikidata', 'name:etymology:wikidata', 'material', 'architect', 'ref:mhs', 'heritage'];
@@ -38,6 +38,10 @@ nwr["tourism"~"^(museum|viewpoint)$"];
 node["amenity"="fountain"]["drinking_water"!="yes"];
 way["leisure"~"^(park|garden)$"]["name"];
 nwr["amenity"="place_of_worship"]["name"];
+node["waterway"="lock_gate"]["name"];
+way["lock"="yes"]["lock_name"];
+way["bridge"]["highway"~"^(footway|pedestrian|path|cycleway)$"]["name"~"^(Passerelle|Pont)"];
+way["man_made"="bridge"]["name"~"^Passerelle"];
 );out center tags qt;`;
 }
 
@@ -69,6 +73,7 @@ function slim(el) {
   if (lat == null || lon == null) return null;
   const tags = {};
   for (const k of KEEP) if (el.tags?.[k] != null) tags[k] = el.tags[k];
+  if (!tags.name && tags.lock_name) tags.name = tags.lock_name; // écluses : le nom est souvent dans lock_name
   return { type: el.type, id: el.id, lat: +lat.toFixed(6), lon: +lon.toFixed(6), tags };
 }
 
