@@ -163,6 +163,14 @@ h2{font-size:22px;margin:4px 16px 12px}
 .tt .tt-ghost{visibility:hidden}
 .tt .tt-live{position:absolute;left:0;top:0;right:0}
 .bubble p{margin:0;font-size:15px;line-height:1.45}
+#tour{position:fixed;inset:0;z-index:490;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;padding:0 12px calc(76px + var(--safe-b))}
+#tour .tourbox{width:100%;max-width:520px;margin:0 auto;background:var(--bg);border:1.5px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#tour .tourrow{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+#tour .tourdots{display:flex;gap:5px}#tour .tourdots i{width:6px;height:6px;border-radius:50%;background:var(--line)}#tour .tourdots i.on{background:var(--violet);width:16px;border-radius:3px}
+#tour .tourin{animation:rise .3s ease-out}
+#tour .bubble b{display:inline;font-size:inherit;margin:0;color:var(--violet)}#tour .bubble p{font-size:16px}
+body.touring .tabbar{pointer-events:none}.tabbar button.tourhi{color:var(--violet);animation:tourpulse 1.2s ease-in-out infinite}
+@keyframes tourpulse{50%{transform:scale(1.15)}}
 .bubble .more{position:absolute;right:10px;bottom:6px;font-size:11px;color:var(--violet);animation:blink 1s infinite}
 .fiche .bubble,#victory .bubble{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14);color:#fff}
 .sagehead{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -735,7 +743,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v70';
+const VERSION = 'v71';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -783,7 +791,7 @@ function fixTiers() {
 const tierBadge = (t, extra = '') => `<span class="badge b-${t}">${TIER_NAME[t] || 'Commune'}${extra}</span>`;
 const WEEK_BONUS = 500;
 const LEVELS = [[0, 'Promeneur'], [300, 'Curieux'], [800, 'Coureur du quartier'], [1500, 'Éclaireur'], [2500, 'Pisteur'], [4000, 'Explorateur'],
-  [6000, 'Aventurier'], [8500, 'Chasseur de trésors'], [12000, 'Gardien de la ville'], [16000, 'Légende du quartier'], [21000, 'Maître des cartes'], [27000, 'Mythe urbain']];
+  [6000, 'Aventurier'], [8500, 'Chasseur de cartes'], [12000, 'Gardien de la ville'], [16000, 'Légende du quartier'], [21000, 'Maître des cartes'], [27000, 'Mythe urbain']];
 function levelOf(pts) {
   let i = 0; while (i + 1 < LEVELS.length && pts >= LEVELS[i + 1][0]) i++;
   const next = LEVELS[i + 1];
@@ -876,7 +884,7 @@ const MONTH_IC = ['👑', '🕯️', '🌧️', '🐟', '🍒', '🍓', '🌊', 
 // carte du mois (28/10) : offerte quand le défi du mois est réussi, Épique, illustrée, sans lieu
 const MONTH_PTS = 300;
 const deM = m => (/^[aeiou]/.test(m) ? "d'" : 'de ') + m;
-const MONTHLY_DONE = { km: n => `${n} km courus`, cards: n => `${n} cartes gagnées`, dplus: n => `${n} m de D+ grimpés`, rares: n => `${n} cartes Rares ou mieux`, hidden: n => `${n} trésors cachés trouvés` };
+const MONTHLY_DONE = { km: n => `${n} km courus`, cards: n => `${n} cartes gagnées`, dplus: n => `${n} m de D+ grimpés`, rares: n => `${n} cartes Rares ou mieux`, hidden: n => `${n} lieux secrets trouvés` };
 const MONTH_CARDS = [
   ['La Galette de Janvier', "Chaque janvier, les rois de la ville se disputaient la fève… Moi, je l'ai gardée dans ma poche pendant trois cents ans. Cette carte, c'est ta couronne, Élu : tu as tenu ton défi quand tous les autres rangeaient leurs baskets !"],
   ['La Chandelle de Février', "À la Chandeleur, on dit que la lumière revient. Cette chandelle ne s'éteint jamais : elle brûle pour ceux qui courent même quand il fait nuit à 18 h. Comme toi."],
@@ -888,11 +896,11 @@ const MONTH_CARDS = [
   ['Le Tournesol d\'Août', "Le tournesol suit le soleil, toi tu suis tes quêtes. En août, même sous la chaleur, tu n'as rien lâché. Le sage est fier de toi !"],
   ['Le Cartable de Septembre', "C'est la rentrée ! Les écoliers ont leurs cahiers, toi tu as tes cartes. Range celle-ci bien au chaud : elle prouve que tu as repris du bon pied."],
   ['La Châtaigne d\'Octobre', "Les feuilles tombent, les châtaignes aussi. Attention, elle pique un peu… comme tes mollets après ce défi. Bravo, Élu !"],
-  ['La Feuille de Novembre', "Rouge, or, cuivre… en novembre, la ville se couvre de feuilles. Celle-ci, je l'ai ramassée pour toi : un trésor d'automne pour un coureur qui ne se cache pas sous la couette."],
+  ['La Feuille de Novembre', "Rouge, or, cuivre… en novembre, la ville se couvre de feuilles. Celle-ci, je l'ai ramassée pour toi : un souvenir d'automne pour un coureur qui ne se cache pas sous la couette."],
   ['Le Sapin de Décembre', "Le froid, la nuit, les fêtes… et pourtant, tu as couru. Ce sapin, c'est mon cadeau avant l'heure. Ho ho… euh, pardon, je me suis trompé de vieux barbu !"]
 ];
 const MONTHLY = ['km', 'cards', 'dplus', 'rares', 'km', 'cards', 'hidden', 'km', 'rares', 'dplus', 'hidden', 'cards'];
-const MONTHLY_TXT = { km: n => `Cours ${n} km ce mois-ci`, cards: n => `Gagne ${n} cartes`, dplus: n => `Grimpe ${n} m de dénivelé`, rares: n => `Gagne ${n} cartes Rares ou mieux`, hidden: n => `Trouve ${n} trésors cachés` };
+const MONTHLY_TXT = { km: n => `Cours ${n} km ce mois-ci`, cards: n => `Gagne ${n} cartes`, dplus: n => `Grimpe ${n} m de dénivelé`, rares: n => `Gagne ${n} cartes Rares ou mieux`, hidden: n => `Trouve ${n} lieux secrets` };
 function monthlyNow() {
   const d = new Date(), key = d.getFullYear() + '-' + (d.getMonth() + 1);
   if (!S.monthly || S.monthly.key !== key) {
@@ -1347,7 +1355,7 @@ const QUEST_LINES = {
     ['La fontaine oubliée', "Une fontaine, quelque part dans le quartier… Plus personne ne s'en souvient. Sauf moi ! Hé hé. Va la retrouver !"],
     ["L'eau qui chante", "Écoute bien… On dit qu'on entend l'eau chanter près d'ici. Suis le bruit, et trouve la carte cachée au bord de l'eau !"]],
   musee: [
-    ['Le gardien des trésors', "Ce musée garde mille merveilles… mais une seule carte. La plus belle de toutes, peut-être ! Va voir par toi-même."],
+    ['Le gardien des merveilles', "Ce musée garde mille merveilles… mais une seule carte. La plus belle de toutes, peut-être ! Va voir par toi-même."],
     ['La salle des curiosités', "Oh oh ! Il paraît que ce musée cache des objets venus du bout du monde. Va jeter un œil, et rapporte-moi sa carte !"]],
   mairie: [
     ['Le cœur de la ville', "Toute la ville se retrouve ici depuis des générations… C'est son cœur ! Cours-y, une carte t'attend sur le parvis."],
@@ -1697,7 +1705,7 @@ const MYS_NOUNS = {
   culte: [['le Sanctuaire', 'm'], ['la Maison de prière', 'f']],
   chateau: [['la Demeure', 'f'], ['le Domaine', 'm'], ['la Tour', 'f']],
   vue: [['le Belvédère', 'm'], ['le Regard', 'm'], ["l'Œil", 'm']],
-  musee: [['le Cabinet', 'm'], ['la Galerie', 'f'], ['le Trésor', 'm']],
+  musee: [['le Cabinet', 'm'], ['la Galerie', 'f'], ['la Réserve', 'f']],
   mairie: [['le Palais', 'm'], ['la Maison commune', 'f'], ['le Siège', 'm']],
   monument: [['la Pierre', 'f'], ["l'Aiguille", 'f'], ['le Colosse', 'm']],
   memoire: [['la Pierre', 'f'], ['le Monument', 'm']],
@@ -2207,7 +2215,7 @@ const KIND_LORE = {
   chateau: "Les châteaux autour de Paris servaient souvent de résidence d'été aux nobles et aux rois, loin de l'agitation de la capitale.",
   parc: "Beaucoup de parcs de la région sont d'anciens domaines privés, ouverts au public au XIXe ou au XXe siècle.",
   fontaine: "Avant l'eau courante dans les maisons, les fontaines étaient le cœur du quartier : on venait y chercher l'eau et les nouvelles.",
-  musee: "Chaque musée est né d'une passion : un collectionneur, une ville ou un artiste qui voulait partager ses trésors.",
+  musee: "Chaque musée est né d'une passion : un collectionneur, une ville ou un artiste qui voulait partager sa collection.",
   mairie: "Beaucoup de mairies ont été construites à la fin du XIXe siècle, quand chaque commune voulait un bel hôtel de ville.",
   croix: "Ces croix et bornes marquaient les chemins d'autrefois : limites de paroisse, carrefours, ou lieux de prière pour les voyageurs.",
   ancien: "Ce qui reste d'un lieu ancien raconte souvent plusieurs vies : construit, abandonné, puis redécouvert.",
@@ -2683,7 +2691,7 @@ const TROPHIES = [
   ['card50', '👑', 'Musée vivant', '50 cartes', t => t.cards >= 50],
   ['rare1', '💎', 'Œil de lynx', 'Ton premier lieu rare', t => t.rares >= 1],
   ['rare5', '🔮', 'Chasseur de rares', '5 lieux rares', t => t.rares >= 5],
-  ['rare15', '🐉', 'Trésor caché', '15 lieux rares', t => t.rares >= 15],
+  ['rare15', '🐉', 'Chasseur de lieux secrets', '15 lieux secrets', t => t.rares >= 15],
   ['km10', '👟', 'Premiers pas', '10 km au total', t => t.km >= 10],
   ['km50', '🔥', 'Moteur chaud', '50 km au total', t => t.km >= 50],
   ['km100', '🚀', 'Centurion', '100 km au total', t => t.km >= 100],
@@ -3340,16 +3348,16 @@ async function sha256(t) {
 }
 
 /* ---------- choix des jours + distance ---------- */
-function goalPicker(el, onChange, goal) {
+function goalPicker(el, onChange, goal, noKm) {
   const draw = () => {
     const g = goal || S.goal, tot = g.days.length * g.km, sp = S.sport || 'run', mx = KM_MAX[sp] || 30;
     if (g.km > mx) g.km = mx;
     el.innerHTML = `<div class="picklabel">Quels jours tu ${VERB[sp] || 'cours'} ?</div>
       <div class="days">${DAYS_1.map((d, i) => `<button data-d="${i}" class="${g.days.includes(i) ? 'on' : ''}" aria-label="${DAYS[i]}">${d}</button>`).join('')}</div>
-      <div class="picklabel">Quelle distance par sortie ?</div>
+      ${noKm ? '' : `<div class="picklabel">Quelle distance par sortie ?</div>
       <div class="kmval"><b id="kmv">${g.km}</b> km</div>
       <input type="range" class="slider" id="kmr" min="1" max="${mx}" step="0.5" value="${g.km}">
-      <div class="slidelegend"><span>1 km</span><span>${mx} km</span></div>
+      <div class="slidelegend"><span>1 km</span><span>${mx} km</span></div>`}
       <div class="goalsum">${g.days.length} sortie${g.days.length > 1 ? 's' : ''} · ${tot} km par semaine</div>`;
     el.querySelectorAll('[data-d]').forEach(b => b.onclick = () => {
       const d = +b.dataset.d, has = g.days.includes(d);
@@ -3358,6 +3366,7 @@ function goalPicker(el, onChange, goal) {
       save(); draw(); onChange && onChange();
     });
     const r = el.querySelector('#kmr');
+    if (!r) return;
     const paint = () => r.style.setProperty('--p', ((r.value - 1) / (r.max - 1) * 100) + '%');
     paint();
     r.oninput = () => {
@@ -3797,7 +3806,7 @@ let campMap = null;
 function renderCamp() {
   $('#camp').innerHTML = `<div class="panel">${sageBox('', 'sayc')}
     <div id="campmap" style="height:46vh;border-radius:14px;margin:12px 0 0"></div>
-    <p class="muted" style="font-size:13px;margin:10px 0 0">Touche la carte pour placer ton camp. Tes cartes sont gardées ; les quêtes pas encore faites sont refaites autour du nouveau camp, avec la même rareté. Gratuit.</p></div>
+    <p class="muted" style="font-size:13px;margin:10px 0 0">Touche le plan pour placer ton camp. Tes cartes sont gardées ; les quêtes pas encore faites sont refaites autour du nouveau camp, avec la même rareté. Gratuit.</p></div>
     <div style="display:flex;gap:10px;margin:0 16px 24px"><button class="btn ghost" id="campgps" style="flex:1">📍 Je suis ici</button><button class="btn" id="campok" style="flex:1">Valider</button></div>`;
   typeText($('#sayc'), "Tu as déménagé ton campement, Élu ? Montre-moi où tu dors ce soir.", $('#saycb'));
   if (campMap) { campMap.remove(); campMap = null; }
@@ -3869,6 +3878,42 @@ document.querySelectorAll('[data-shop]').forEach(b => b.onclick = () => tab('sho
 document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => tab(b.dataset.tab));
 
 /* ---------- onboarding ---------- */
+/* ---------- visite du sage (29/10, Bazil : « quand on arrive on comprend rien ») : une fois, après l'accueil ---------- */
+const TOUR = [
+  ['quests', n => `Bienvenue dans Quest Run, <b>${n}</b> ! Ici, chaque sortie devient une quête.`],
+  ['quests', () => 'Chaque semaine, je te confie des quêtes vers des <b>lieux secrets</b> de ton quartier : monuments, parcs, statues…'],
+  ['quests', () => 'Cours jusqu\'au lieu, <b>prends-le en photo</b>, puis rentre chez toi. Et hop, <b>sa carte est à toi</b> !'],
+  ['quests', () => 'Des milliers de cartes t\'attendent. Viens, je te montre où on les range…'],
+  ['coll', () => 'Voici ta <b>Collection</b>. Chaque carte gagnée y est rangée avec ta photo, la date, <b>l\'histoire du lieu</b>… et ton run !'],
+  ['vit', () => 'Et voici la <b>Vitrine</b> : les cartes <b>les plus rares</b> de la ville.'],
+  ['vit', () => 'Plus tu cours, plus elles se dévoilent. Certaines n\'apparaissent que lors d\'<b>événements</b> dans l\'année. Tu peux aussi y débloquer une quête avec tes <b>pièces</b> 🪙.'],
+  ['quests', () => 'Ta première quête t\'attend, Élu. Touche-la pour commencer !']
+];
+function sageTour() {
+  if (S.tourDone) return Promise.resolve();
+  return new Promise(done => {
+    const el = document.createElement('div'); el.id = 'tour';
+    el.innerHTML = `<div class="tourbox"><div class="sagebox" style="margin:0"><div class="sage">🧙</div><div class="bubble"><p id="tourt"></p></div></div>
+      <div class="tourrow"><span class="tourdots">${TOUR.map(() => '<i></i>').join('')}</span><button class="btn" id="tourgo" style="flex:none;width:auto;padding:12px 22px">Suivant</button></div></div>`;
+    document.body.appendChild(el); document.body.classList.add('touring');
+    let k = 0;
+    const show = () => {
+      const [t, f] = TOUR[k];
+      if (current !== t) tab(t);
+      document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('tourhi', b.dataset.tab === t));
+      const p = el.querySelector('#tourt'); p.innerHTML = f(esc(S.name || 'Élu')); p.classList.remove('tourin'); void p.offsetWidth; p.classList.add('tourin');
+      el.querySelectorAll('.tourdots i').forEach((d, j) => d.classList.toggle('on', j === k));
+      el.querySelector('#tourgo').textContent = k === TOUR.length - 1 ? "C'est parti !" : 'Suivant';
+      sfx('blip');
+    };
+    el.querySelector('#tourgo').onclick = () => {
+      if (++k < TOUR.length) return show();
+      el.remove(); document.body.classList.remove('touring'); document.querySelectorAll('#tabbar .tourhi').forEach(b => b.classList.remove('tourhi'));
+      S.tourDone = true; save(); done();
+    };
+    show();
+  });
+}
 // questions sur ce qui freine les coureurs, avec la réponse de Quest Run
 // questions de l'accueil, adaptées au sport (27/10)
 const LEVELS_ONB = [['debutant', '🌱', 'Débutant', 'Je débute ou je reprends'], ['inter', '💪', 'Intermédiaire', 'Je sors régulièrement'], ['confirme', '🔥', 'Confirmé', "J'ai de l'expérience"]];
@@ -3885,8 +3930,8 @@ function quizFor(sp) {
     W ? ['temps', '⏳', 'Je ne trouve pas le temps', 'Même une petite quête compte, jeune voyageur !', 'Tu choisis tes jours et ta distance, même courte.']
       : ['lache', '📉', 'Je commence fort, puis je lâche', "C'est en forgeant qu'on devient forgeron !", `Des quêtes à ton niveau qui montent petit à petit, et un bonus quand tu tiens ta semaine.`]] },
   { id: 'parcours', q: "Ton chemin… est-il toujours le même ?", opts: [
-    ['meme', '🔂', W ? 'Toujours la même balade' : 'Toujours le même', "Tu n'as lu qu'une page de mon grimoire !", 'Statues, fontaines, châteaux : des dizaines de lieux près de chez toi.'],
-    ['deux', '↔️', "J'en ai 2 ou 3", 'Le royaume est bien plus vaste que ça !', 'Chaque semaine, des quêtes dans des coins où tu ne vas jamais.'],
+    ['meme', '🔂', W ? 'Toujours la même balade' : 'Toujours le même', "Tu n'as vu qu'une rue de ta ville !", 'Statues, fontaines, châteaux : des dizaines de lieux près de chez toi.'],
+    ['deux', '↔️', "J'en ai 2 ou 3", 'Ta ville est bien plus vaste que ça !', 'Chaque semaine, des quêtes dans des coins où tu ne vas jamais.'],
     ['varie', '🧭', 'Je varie souvent', "Une âme d'explorateur !", 'En plus, tu collectionnes chaque lieu et tu découvres son histoire.']] },
   { id: 'regularite', q: "Et tes serments d'entraînement… les tiens-tu ?", opts: [
     ['rarement', '😅', 'Rarement', 'Pas de honte, Élu.', `Tu choisis tes jours, on te rappelle tes quêtes. Une semaine complète = +${WEEK_BONUS} ★.`],
@@ -3999,8 +4044,8 @@ function onboarding(step = 0) {
     o.innerHTML = `${dots(5)}<div class="body scrolly">${sageBox('', 'say6')}
       <div id="ogoal"></div></div>
       <button class="btn" id="go" style="margin-top:16px">Suivant</button>`;
-    goalPicker($('#ogoal'));
-    typeText($('#say6'), "Quels jours partiras-tu en quête ? Et jusqu'où tes jambes peuvent-elles te porter ?", $('#say6b'));
+    goalPicker($('#ogoal'), null, null, true);
+    typeText($('#say6'), "Quels jours partiras-tu en quête, Élu ? Je m'occupe de la distance.", $('#say6b'));
     $('#go').onclick = () => { save(); onboarding(7); };
   }
   if (step === 7) {
@@ -4009,7 +4054,7 @@ function onboarding(step = 0) {
       </div>
       <div class="acts"><button class="btn ghost" id="locate">📍 Utiliser ma position</button>
       <button class="btn" id="go">Valider</button></div>`;
-    typeText($('#say7'), "Où se trouve ton camp de base, Élu ? Touche la carte… ou laisse-moi te trouver.", $('#say7b'));
+    typeText($('#say7'), "Où se trouve ton camp de base, Élu ? Touche le plan… ou laisse-moi te trouver.", $('#say7b'));
     if (onbMap) { onbMap.remove(); onbMap = null; }
     const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
     let chosen = S.home ? { ...S.home } : null;
@@ -4042,7 +4087,7 @@ function onboarding(step = 0) {
       <div class="v-pts" style="color:#D9A000;font-weight:900;font-size:22px">+100 ★</div></div>
       <button class="btn" id="go">Merci, Sage !</button>`;
     fillPhotos(o);
-    typeText($('#say8'), "Avant de partir… prends ceci. Mon grimoire ! C'est ta toute première carte. Il y en a des centaines d'autres qui t'attendent dehors.", $('#say8b'));
+    typeText($('#say8'), "Avant de partir… prends ceci. Mon grimoire ! C'est ta toute première carte. Il y en a des milliers d'autres qui t'attendent dehors.", $('#say8b'));
     setTimeout(() => { const f = $('#gflip'); if (f) { f.classList.add('on'); vibrate([30, 40, 60]); sfx('flip'); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
     $('#go').onclick = () => {
       if (isIOS() && !isStandalone()) return onboarding(9); // pas de notifs possibles dans Safari sur iPhone
@@ -4058,11 +4103,11 @@ function onboarding(step = 0) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
     o.innerHTML = `${dots(8)}<div class="body" style="text-align:center">
       <div class="scan"><div class="ic">🧙</div></div>
-      <h1 id="lt" style="font-size:22px">Hmm… je cherche les cartes cachées autour de chez toi…</h1>
+      <h1 id="lt" style="font-size:22px">Hmm… je cherche les lieux autour de chez toi…</h1>
       <ul class="steps" id="steps">
         <li><i></i><span>Analyse de ta semaine : <b>${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} de ${S.goal.km} km</b> ${sp.ic}</span></li>
-        <li><i></i><span id="st1">Recherche des lieux historiques autour de toi…</span></li>
-        <li><i></i><span id="st2">Repérage des trésors cachés…</span></li>
+        <li><i></i><span id="st1">Recherche des lieux autour de toi…</span></li>
+        <li><i></i><span id="st2">Repérage des lieux secrets…</span></li>
         <li><i></i><span>${(S.quiz || {}).parcours === 'meme' ? 'Calcul de parcours loin de ton tour habituel' : 'Calcul des meilleurs parcours'}</span></li>
         <li><i></i><span>Préparation de tes quêtes</span></li>
       </ul>
@@ -4088,7 +4133,7 @@ function onboarding(step = 0) {
       const pl = res.pl, r = pl.filter(p => p.rarity === 'rare').length;
       $('#st1').innerHTML = `<b>${fmt(pl.length)} lieux</b> trouvés autour de toi`;
       mark(2); await wait(1500);
-      $('#st2').innerHTML = `<b>${fmt(r)} trésors cachés</b> repérés`;
+      $('#st2').innerHTML = `<b>${fmt(r)} lieux secrets</b> repérés`;
       mark(3); await wait(1400);
       S.places = pl; S.placesFor = { lat: S.home.lat, lng: S.home.lng, km: S.goal.km, at: Date.now() };
       S.homeEle = null;
@@ -4101,7 +4146,7 @@ function onboarding(step = 0) {
       o.querySelector('.scan .ic').textContent = '🗺️';
       vibrate([40, 40, 80]); sfx('ready');
       $('#go').classList.remove('hidden');
-      $('#go').onclick = async () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); await wait(500); await dailyGift(); Metrics.askConsent(); if (S.pendingFriend) setTimeout(addFriendQuest, 600); };
+      $('#go').onclick = async () => { o.classList.add('hidden'); o.innerHTML = ''; if (onbMap) { onbMap.remove(); onbMap = null; } tab('quests'); await wait(500); await dailyGift(); await sageTour(); Metrics.askConsent(); if (S.pendingFriend) setTimeout(addFriendQuest, 600); };
     })();
   }
 }
@@ -4242,7 +4287,7 @@ if (typeof L === 'undefined') {
   S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'rare') c.rarity = 'rare'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
   tab('quests');
-  setTimeout(async () => { await dailyGift(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else { maybeStar(); await maybeLegend(); } if (current === 'quests') renderQuests(); }, 1200);
+ setTimeout(async () => { await dailyGift(); if (!S.tourDone) await sageTour(); await weeklyRecap(); await checkMonthly(); if (S.pendingFriend) await addFriendQuest(); else { maybeStar(); await maybeLegend(); } if (current === 'quests') renderQuests(); }, 1200);
   upgradePlaces().catch(() => {});
   checkStreakBreak();
   loadElevations().then(() => current === 'quests' && renderQuests()).catch(() => {});
