@@ -4362,8 +4362,9 @@ if (typeof L === 'undefined') {
   ensureWeek(); fixDays(); fixTiers(); initProgress(); comeback(); pushSync();
   // 1re fois avec les zones vertes : les quêtes pas encore faites sont refaites, plus vertes
   Promise.all([loadGreen().catch(() => false), loadTrails().catch(() => false)]).then(() => {
-    const v = TRAIL ? 2 : GREEN ? 1 : 0;
-    if (v > (S.greenV || 0) && S.week) { S.greenV = v; ensureWeek(true); save(); if (current === 'quests') renderQuests(); toast(TRAIL ? '🌳 Nouvelles quêtes le long des quais, des bois et des sentiers !' : '🌳 Nouvelles quêtes : plus de parcs et de bords de Seine !'); }
+    const wet = GREEN && Object.values(GREEN.tiles).some(t => t.wu);
+    const v = wet ? 3 : TRAIL ? 2 : GREEN ? 1 : 0;
+    if (v > (S.greenV || 0) && S.week) { S.greenV = v; ensureWeek(true, { keepTiers: true }); save(); if (current === 'quests') renderQuests(); toast(wet ? '🌊 Nouvelles quêtes : la moitié au bord de l’eau !' : TRAIL ? '🌳 Nouvelles quêtes le long des quais, des bois et des sentiers !' : '🌳 Nouvelles quêtes : plus de parcs et de bords de Seine !'); }
   });
   S.collection.forEach(c => { if (c.welcome && c.img === 'icon-512.png') c.img = 'grimoire.svg'; if ((c.welcome || c.month) && c.rarity !== 'rare') c.rarity = 'rare'; });
   if ((S.bugQueue || []).length) setTimeout(flushBugs, 4000);
