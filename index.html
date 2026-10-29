@@ -735,7 +735,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v69';
+const VERSION = 'v70';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3204,9 +3204,12 @@ function drawRun() {
       const tt = turnText(nx.d), dd = Math.round((nx.along - cur) / 10) * 10;
       ar = tt.ar; big = dd <= 15 ? 'Maintenant' : `Dans ${fmtKm(dd)}`; small = tt.t;
       const key = R.pts.length + ':' + nx.along, said = RUN.said = RUN.said || [];
-      // 1) « Dans 150 mètres… »  2) « Tourne à gauche. » au moment de tourner
-      if (dd <= 170 && dd > 80 && !said.includes(key + 'far')) { said.push(key + 'far'); speak(`Dans ${Math.round(dd / 50) * 50} mètres, ${tt.t}.`); }
-      else if (dd <= 30 && !said.includes(key + 'now')) { said.push(key + 'now', key + 'far'); speak(tt.t.charAt(0).toUpperCase() + tt.t.slice(1) + '.'); }
+      // 1) « Dans 200 mètres… » (29/10 : annoncé dès ~220 m et rattrapé jusqu'à 60 m, même si le GPS saute)
+      // 2) « Tourne à gauche. » à 40 m ; deux virages collés : « …, puis tout de suite à droite »
+      const nx2 = (R.turns || []).find(x => x.along > nx.along + 3);
+      const then = nx2 && nx2.along - nx.along < 60 ? `, puis tout de suite ${turnText(nx2.d).t.replace(/^tourne (franchement )?/, '')}` : '';
+      if (dd <= 220 && dd > 60 && !said.includes(key + 'far')) { said.push(key + 'far'); speak(`Dans ${dd >= 100 ? Math.round(dd / 50) * 50 : Math.round(dd / 10) * 10} mètres, ${tt.t}${then}.`); }
+      else if (dd <= 40 && !said.includes(key + 'now')) { said.push(key + 'now', key + 'far'); speak(tt.t.charAt(0).toUpperCase() + tt.t.slice(1) + then + '.'); }
       // 3) après un virage : « Continue tout droit sur 400 mètres »
       if (RUN.nextKey && RUN.nextKey !== key && !said.includes(key + 'cont') && dd > 250) { said.push(key + 'cont'); speak(`Continue tout droit sur ${dd >= 1000 ? (dd / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(dd / 50) * 50 + ' mètres'}, puis ${tt.t}.`); }
       RUN.nextKey = key;
