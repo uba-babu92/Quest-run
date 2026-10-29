@@ -263,7 +263,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .mythhero .st-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ff5fd2,#ffd23f,#5fffd0,#5f9dff)}
 .mythhero .st-k{font-size:13px;font-weight:700;color:#e8e3f6}
 .vh{margin:8px 16px 10px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-.card.mys .ph{position:relative;overflow:hidden;background:radial-gradient(circle at 50% 40%,#3b2a63,#140f22)}
+.card.mys .ph{position:relative;overflow:hidden;isolation:isolate;transform:translateZ(0);background:radial-gradient(circle at 50% 40%,#3b2a63,#140f22)}
 .card.mys .ph i{position:absolute;inset:-14px;background-size:cover;background-position:center;filter:blur(9px) saturate(.7) brightness(.75)}
 .card.mys .ph .q{position:relative;font-size:46px;font-weight:900;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.6)}
 .tro small{font-size:11px;color:var(--muted);line-height:1.2}
@@ -310,7 +310,7 @@ h2{font-size:22px;margin:4px 16px 12px}
 .mythlist .m span small{display:block;color:var(--muted)}
 .mythlist .m em{font-style:normal;font-size:12px;font-weight:800;color:var(--muted)}
 .mythlist .m.got em{color:#3BB273}
-.card .in{position:relative;height:100%;border-radius:12px;overflow:hidden;background:#1a1525;display:flex;flex-direction:column}
+.card .in{position:relative;height:100%;border-radius:12px;overflow:hidden;-webkit-mask-image:-webkit-radial-gradient(white,black);background:#1a1525;display:flex;flex-direction:column}
 .card .ph{flex:1;background-size:cover;background-position:center;display:grid;place-items:center;color:rgba(255,255,255,.85);font-size:34px;
   background-color:#2a2140;background-image:radial-gradient(circle at 30% 20%,rgba(155,92,255,.5),transparent 60%)}
 .card .ph svg{width:38%;opacity:.85}
@@ -679,6 +679,10 @@ button.chip{cursor:pointer}
   <div class="topbar"><div class="logo pixel">VITRINE</div><div style="display:flex;gap:8px;align-items:center"><button class="chip" data-shop><span class="coin">🪙</span><span class="coinsmirror">0</span></button><div class="chip"><span class="star">★</span><span class="ptsmirror">0</span></div></div></div>
   <div id="vit" class="vit"></div>
 </section>
+<section id="s-camp" class="screen hidden">
+  <div class="topbar"><button class="backbtn" data-back="set">‹ Paramètres</button><div class="logo pixel">CAMP DE BASE</div></div>
+  <div id="camp"></div>
+</section>
 <section id="s-pref" class="screen hidden">
   <div class="topbar"><button class="backbtn" data-back="set">‹ Paramètres</button><div class="logo pixel">PRÉFÉRENCES</div></div>
   <div id="pref"></div>
@@ -731,7 +735,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v67';
+const VERSION = 'v68';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1535,7 +1539,7 @@ function pickQuests(n, seed, exclude, o = {}) {
   return picked;
 }
 
-function ensureWeek(force) {
+function ensureWeek(force, opt = {}) {
   const id = weekId();
   if (!force && S.week && S.week.id === id) return;
   const keep = force && S.week && S.week.id === id ? S.week.quests.filter(q => q.status === 'done') : [];
@@ -1547,7 +1551,8 @@ function ensureWeek(force) {
   const fresh = [], others = [];
   // plus une carte est rare, plus sa quête est dure (28/10) : la rareté la plus haute prend la sortie la plus longue
   const RANK = { common: 0, rare: 1, epic: 2, legend: 3, mythic: 4 };
-  const tiers = fac.map(() => rollTier(r)).sort((a, b) => RANK[a] - RANK[b]);
+  const oldT = opt.keepTiers && S.week ? S.week.quests.filter(q => q.status !== 'done' && !q.legend && !q.friend && q.tier).map(q => q.tier) : [];
+  const tiers = fac.map((_, i) => oldT[i] || rollTier(r)).sort((a, b) => RANK[a] - RANK[b]);
   fac.forEach((f, k) => {
     const tier = tiers[k];
     const qkm = Math.round(S.goal.km * f * TIER_KM[tier] * 2) / 2;
@@ -3704,8 +3709,7 @@ function renderSet() {
   <div class="panel"><h4>Sorties</h4>
     <div class="set"><span>Voix pendant la sortie<small class="muted" style="display:block;font-size:13px">Annonce chaque kilomètre</small></span>${sw('swvoice', S.voice)}</div></div>
   <div class="panel"><h4>Lieux</h4>
-    <div class="set"><span>Point de départ</span><button class="setbtn" id="home">Changer</button></div>
-    <div class="set"><span>Recharger les lieux</span><button class="setbtn" id="reload">Recharger</button></div>
+    <div class="set"><span>Camp de base<small class="muted" style="display:block;font-size:13px">Là où tu dors en ce moment</small></span><button class="setbtn" id="home">Changer</button></div>
     <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div></div>
   ${S.dev ? `<div class="panel"><h4>Développeur</h4>
     <div class="set"><span>Mode test<small class="muted" style="display:block;font-size:13px">« J'y suis » valide sans GPS</small></span>${sw('test', S.testMode)}</div>
@@ -3733,8 +3737,7 @@ function renderSet() {
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
   $('#swsfx').onclick = () => { S.sfx = S.sfx === false; save(); renderSet(); if (S.sfx) sfx('pop'); };
   $('#gopref').onclick = () => tab('pref');
-  $('#home').onclick = () => onboarding(7);
-  $('#reload').onclick = async () => { await loadPlaces(); ensureWeek(true); tab('quests'); };
+  $('#home').onclick = () => tab('camp');
   if ($('#devbtn')) $('#devbtn').onclick = async () => {
     const pw = prompt('Mot de passe développeur');
     if (!pw) return;
@@ -3758,6 +3761,49 @@ function renderSet() {
   };
 }
 
+/* ---------- camp de base (29/10, Bazil : « si tu dors pas tout le temps chez toi ») : page à part, sans refaire l'accueil.
+   Gratuit. Les quêtes pas encore faites sont refaites autour du nouveau camp, chacune garde sa rareté. ---------- */
+let campMap = null;
+function renderCamp() {
+  $('#camp').innerHTML = `<div class="panel">${sageBox('', 'sayc')}
+    <div id="campmap" style="height:46vh;border-radius:14px;margin:12px 0 0"></div>
+    <p class="muted" style="font-size:13px;margin:10px 0 0">Touche la carte pour placer ton camp. Tes cartes sont gardées ; les quêtes pas encore faites sont refaites autour du nouveau camp, avec la même rareté. Gratuit.</p></div>
+    <div style="display:flex;gap:10px;margin:0 16px 24px"><button class="btn ghost" id="campgps" style="flex:1">📍 Je suis ici</button><button class="btn" id="campok" style="flex:1">Valider</button></div>`;
+  typeText($('#sayc'), "Tu as déménagé ton campement, Élu ? Montre-moi où tu dors ce soir.", $('#saycb'));
+  if (campMap) { campMap.remove(); campMap = null; }
+  const start = S.home ? [S.home.lat, S.home.lng] : DEFAULT_CENTER;
+  let chosen = S.home ? { ...S.home } : null;
+  campMap = L.map('campmap', { zoomControl: false }).setView(start, 14);
+  setTiles(campMap);
+  const mk = L.marker(start, { icon: L.divIcon({ className: '', html: '<div class="pin home">⌂</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) });
+  if (chosen) mk.addTo(campMap);
+  setTimeout(() => campMap && campMap.invalidateSize(), 60);
+  const setPt = (lat, lng) => { chosen = { lat, lng }; mk.setLatLng([lat, lng]).addTo(campMap); };
+  campMap.on('click', e => setPt(e.latlng.lat, e.latlng.lng));
+  $('#campgps').onclick = async () => {
+    const b = $('#campgps'); b.textContent = 'Localisation…';
+    try { const p = await getPos(); setPt(p.lat, p.lng); campMap.setView([p.lat, p.lng], 15); }
+    catch (e) { toast('Position indisponible : touche la carte.'); }
+    b.textContent = '📍 Je suis ici';
+  };
+  $('#campok').onclick = async () => {
+    if (!chosen) return toast('Place ton camp sur la carte');
+    if (S.home && dist(S.home, chosen) < 200) { S.home = chosen; save(); toast('Camp de base enregistré ⌂'); return tab('quests'); }
+    const b = $('#campok'); b.disabled = true; b.textContent = 'Le sage cherche…';
+    try {
+      const pl = await fetchPlaces(chosen, S.goal.km);
+      if (!pl || !pl.length) throw new Error('aucun lieu');
+      S.home = chosen; S.homeEle = null;
+      S.places = keepQuestPlaces(pl); S.placesFor = { lat: chosen.lat, lng: chosen.lng, km: S.goal.km, at: Date.now() };
+      for (const k in greenPathCache) delete greenPathCache[k];
+      try { await Promise.race([Promise.all([loadElevations(), loadGreen(), loadTrails()]), new Promise(r => setTimeout(r, 7000))]); } catch (e) {}
+      for (const k in greenPathCache) delete greenPathCache[k];
+      ensureWeek(true, { keepTiers: true }); save(); pushSync();
+      if (campMap) { campMap.remove(); campMap = null; }
+      tab('quests'); toast('⌂ Nouveau camp : tes quêtes sont prêtes !'); sfx('ready');
+    } catch (e) { b.disabled = false; b.textContent = 'Valider'; toast('Pas de lieux trouvés ici pour l’instant. Réessaie dans une minute.'); }
+  };
+}
 async function loadPlaces() {
   toast('Recherche des lieux…');
   try {
@@ -3773,8 +3819,8 @@ let current = 'quests', shopFrom = 'quests';
 function tab(name) {
   current = name;
   if (name === 'shop' && current !== 'shop') shopFrom = current;
-  ['quests', 'coll', 'prof', 'set', 'tro', 'shop', 'pref', 'vit'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
-  const tb = name === 'set' || name === 'tro' || name === 'pref' ? 'prof' : name === 'shop' ? shopFrom : name;
+  ['quests', 'coll', 'prof', 'set', 'tro', 'shop', 'pref', 'vit', 'camp'].forEach(n => $('#s-' + n).classList.toggle('hidden', n !== name));
+  const tb = name === 'set' || name === 'tro' || name === 'pref' || name === 'camp' ? 'prof' : name === 'shop' ? shopFrom : name;
   document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.tab === tb));
   $('#s-' + name).scrollTop = 0;
   if (name === 'quests') { initMap(); renderQuests(); setTimeout(() => map && map.invalidateSize(), 50); }
@@ -3784,6 +3830,7 @@ function tab(name) {
   if (name === 'tro') renderTro();
   if (name === 'shop') renderShop();
   if (name === 'pref') renderPref();
+  if (name === 'camp') renderCamp();
   if (name === 'vit') renderVit();
 }
 $('#gear').onclick = () => tab('set');
