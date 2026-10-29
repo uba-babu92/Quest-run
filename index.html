@@ -29,6 +29,8 @@
   --violet-soft:#22163A; --gold-text:#FFC933; --shadow:none;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* coupures de lignes harmonieuses (29/10) : pas de mot ou de ponctuation seuls en bas */
+p,div,span,b,small,button,li,label{text-wrap:pretty}h1,h2,h3,h4,.v-title,.v-sub{text-wrap:balance}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;overscroll-behavior:none}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
@@ -743,7 +745,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v71';
+const VERSION = 'v72';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1395,6 +1397,7 @@ function questLine(p) {
 // texte qui s'écrit lettre par lettre ; toucher = tout afficher
 function typeText(el, text, box) {
   if (!el) return;
+  text = frTypo(text);
   // la bulle prend tout de suite sa taille finale : le texte complet (invisible) réserve la place
   el.classList.add('tt'); el.innerHTML = `<span class="tt-ghost">${esc(text)}</span><span class="tt-live"></span>`;
   const live = el.querySelector('.tt-live');
@@ -1406,6 +1409,18 @@ function typeText(el, text, box) {
 }
 const sageBox = (title, id) => `<div class="sagebox"><div class="sage">🧙</div><div class="bubble" id="${id}b">${title ? `<b>${esc(title)}</b>` : ''}<p id="${id}"></p><span class="more">▼</span></div></div>`;
 
+/* ---------- typographie française (29/10, Bazil) : espace insécable avant ? ! : ; » et après «,
+   pour ne jamais laisser un point d'interrogation seul en début de ligne. Appliquée à tout le texte affiché. ---------- */
+const frTypo = t => String(t).replace(/[ \u00A0]([?!:;»])/g, '\u202F$1').replace(/«[ \u00A0]/g, '«\u202F').replace(/ (…)/g, '\u00A0$1');
+const TYPO_RE = /[ \u00A0][?!:;»]|«[ \u00A0]| …/;
+function fixTypo(root) {
+  const fix = n => { if (n.nodeType === 3) { if (TYPO_RE.test(n.data) && !/^(TEXTAREA|SCRIPT|STYLE|INPUT)$/.test(n.parentNode && n.parentNode.nodeName)) n.data = frTypo(n.data); return; }
+    if (n.nodeType === 1 && !/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.nodeName)) { const w = document.createTreeWalker(n, NodeFilter.SHOW_TEXT); let t; while ((t = w.nextNode())) fix(t); } };
+  fix(root);
+}
+new MutationObserver(ms => { for (const m of ms) { if (m.type === 'characterData') fixTypo(m.target); else m.addedNodes.forEach(fixTypo); } })
+  .observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+fixTypo(document.body); document.addEventListener('DOMContentLoaded', () => fixTypo(document.body));
 /* ---------- génération des quêtes ---------- */
 // lieu dans ou près d'un parc, d'un jardin ou d'un point de vue (28/10) : des sorties plus agréables
 const greenCache = {};
