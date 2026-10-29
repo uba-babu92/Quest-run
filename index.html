@@ -735,7 +735,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v68';
+const VERSION = 'v69';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1267,7 +1267,7 @@ function parsePlaces(els, home) {
 
 const placeById = id => S.places.find(p => p.id === id);
 function shownName(p, found) {
-  if (p.rarity === 'rare' && !found) return p.label + ' mystère';
+  if (!found) return mysteryName(p);
   return p.name || p.label;
 }
 function hintFor(p) {
@@ -1382,7 +1382,7 @@ function questKind(p) {
 }
 function questLine(p) {
   const list = QUEST_LINES[questKind(p)];
-  return list[hash(p.id) % list.length];
+  return [mysteryName(p), list[hash(p.id) % list.length][1]];
 }
 // texte qui s'écrit lettre par lettre ; toucher = tout afficher
 function typeText(el, text, box) {
@@ -1687,17 +1687,43 @@ async function maybeMythic() {
 function legendQuest() { return S.week && S.week.quests.find(q => q.legend && !q.star && !q.bought && q.status === 'todo'); }
 /* ---------- la carte vedette de la Vitrine (28/10) : le lieu le plus prestigieux de la zone, nom caché,
    confié par le sage comme quête Mythique après 6 sorties réussies ---------- */
-// noms de lieux secrets variés (28/10, Bazil : pas que « Le Mystérieux… »), toujours le même pour un lieu donné
-const NOUN = { "Œuvre d'art": 'Œuvre', 'Borne ancienne': 'Borne', 'Monument aux morts': 'Monument', 'Point de vue': 'Belvédère', 'Lieu de culte': 'Sanctuaire' };
+// noms de lieux secrets (29/10, Bazil) : 30 noms selon le type × 30 adjectifs = 900 combinaisons.
+// Toujours le même pour un lieu donné ; utilisé partout tant que le lieu n'est pas trouvé, le vrai nom se révèle à l'arrivée.
+const MYS_NOUNS = {
+  statue: [['la Sentinelle', 'f'], ['le Gardien', 'm'], ['la Silhouette', 'f']],
+  fontaine: [['la Source', 'f'], ["l'Onde", 'f'], ['le Bassin', 'm']],
+  parc: [['le Bosquet', 'm'], ['le Jardin', 'm'], ['le Refuge', 'm']],
+  eglise: [['le Clocher', 'm'], ['la Nef', 'f'], ['le Sanctuaire', 'm']],
+  culte: [['le Sanctuaire', 'm'], ['la Maison de prière', 'f']],
+  chateau: [['la Demeure', 'f'], ['le Domaine', 'm'], ['la Tour', 'f']],
+  vue: [['le Belvédère', 'm'], ['le Regard', 'm'], ["l'Œil", 'm']],
+  musee: [['le Cabinet', 'm'], ['la Galerie', 'f'], ['le Trésor', 'm']],
+  mairie: [['le Palais', 'm'], ['la Maison commune', 'f'], ['le Siège', 'm']],
+  monument: [['la Pierre', 'f'], ["l'Aiguille", 'f'], ['le Colosse', 'm']],
+  memoire: [['la Pierre', 'f'], ['le Monument', 'm']],
+  croix: [['la Croix', 'f']], borne: [['la Borne', 'f']], ruines: [['les Vestiges', 'mp']]
+};
+const MYS_KIND = { Statue: 'statue', Sculpture: 'statue', Buste: 'statue', 'Bas-relief': 'statue', "Œuvre d'art": 'statue', Fresque: 'statue', 'Mosaïque': 'statue', 'Mémorial': 'statue', 'Stèle': 'statue',
+  Fontaine: 'fontaine', Parc: 'parc', Jardin: 'parc', 'Église': 'eglise', Chapelle: 'eglise', Synagogue: 'culte', 'Mosquée': 'culte', Temple: 'culte', 'Lieu de culte': 'culte',
+  'Château': 'chateau', Manoir: 'chateau', 'Point de vue': 'vue', 'Musée': 'musee', Mairie: 'mairie', Monument: 'monument', 'Obélisque': 'monument', 'Monument aux morts': 'memoire',
+  Croix: 'croix', 'Borne ancienne': 'borne', Ruines: 'ruines' };
+// [masculin, féminin]
+const MYS_ADJ = [['oublié', 'oubliée'], ['endormi', 'endormie'], ['secret', 'secrète'], ['caché', 'cachée'], ['perdu', 'perdue'], ['ancien', 'ancienne'], ['silencieux', 'silencieuse'], ['mystérieux', 'mystérieuse'],
+  ['éternel', 'éternelle'], ['légendaire', 'légendaire'], ['solitaire', 'solitaire'], ['enchanté', 'enchantée'], ['discret', 'discrète'], ['immobile', 'immobile'], ['intrigant', 'intrigante'],
+  ['insoupçonné', 'insoupçonnée'], ['méconnu', 'méconnue'], ['fabuleux', 'fabuleuse'], ['majestueux', 'majestueuse'], ['paisible', 'paisible'], ['vénérable', 'vénérable'], ['noble', 'noble'],
+  ['fier', 'fière'], ['patient', 'patiente'], ['rêveur', 'rêveuse'], ['lointain', 'lointaine'], ['mélancolique', 'mélancolique'], ['lumineux', 'lumineuse'], ['invisible', 'invisible'], ['énigmatique', 'énigmatique']];
+// lieux de culte et monuments aux morts : seulement des adjectifs respectueux
+const MYS_GRAVE = new Set(['intrigant', 'fabuleux', 'rêveur', 'invisible', 'perdu', 'enchanté', 'énigmatique', 'insoupçonné', 'caché', 'mystérieux', 'lumineux']);
 function mysteryName(p) {
-  const n = NOUN[p.label] || p.label, f = (FEM.has(p.label) && !['Point de vue', 'Lieu de culte', 'Monument aux morts'].includes(p.label)), v = /^[AEIOUYÉÈÊŒ]/i.test(n);
-  const k = [...(p.id || n)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-  if (p.label === 'Ruines') return ['Les Ruines oubliées', 'La Légende des Ruines', 'Le Secret des Ruines', 'Les Mystérieuses Ruines', 'La Rumeur des Ruines', "L'Énigme des Ruines"][k % 6];
-  const de = v ? "de l'" : f ? 'de la ' : 'du ', le = v ? "L'" : f ? 'La ' : 'Le ', e = f ? 'e' : '';
-  const T = [`${f ? 'La Mystérieuse' : 'Le Mystérieux'} ${n}`, `La Légende ${de}${n}`, `La Rumeur ${de}${n}`, `${f ? "L'Intrigante" : "L'Intrigant"} ${n}`, `Le Secret ${de}${n}`, `L'Énigme ${de}${n}`, `${le}${n} oublié${e}`, `Le Murmure ${de}${n}`, `${le}${n} des ombres`, `${f ? 'La Fabuleuse' : 'Le Fabuleux'} ${n}`];
-  // lieux de culte : seulement des formules respectueuses
-  const L = ['Église', 'Chapelle', 'Synagogue', 'Mosquée', 'Temple', 'Lieu de culte'].includes(p.label) ? T.filter((_, j) => j !== 6 && j !== 8) : T;
-  return L[k % L.length];
+  if (!p) return 'Lieu secret';
+  const kind = MYS_KIND[p.label] || 'statue';
+  const id = String(p.id || p.name || p.label);
+  const h = salt => [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, salt);
+  const nouns = MYS_NOUNS[kind], [noun, g] = nouns[h(7) % nouns.length];
+  const adjs = kind === 'eglise' || kind === 'culte' || kind === 'memoire' ? MYS_ADJ.filter(a => !MYS_GRAVE.has(a[0])) : MYS_ADJ;
+  let adj = adjs[h(13) % adjs.length][g[0] === 'f' ? 1 : 0];
+  if (g === 'mp' && !/[sx]$/.test(adj)) adj += 's';
+  return noun[0].toUpperCase() + noun.slice(1) + ' ' + adj;
 }
 const STAR_W = { 'Château': 6, 'Manoir': 5, 'Ruines': 5, 'Monument': 4, 'Musée': 4, 'Obélisque': 3, 'Point de vue': 3, 'Église': 2, 'Chapelle': 2, 'Mairie': 1, 'Monument aux morts': 1 };
 function starPlace() {
@@ -1845,12 +1871,12 @@ function renderQuests() {
         ${tierBadge(t)}</button>`;
       if (q.legend && !done && !q.bought) return `<button class="quest legendq ${q.mythic || q.star ? 'mythq' : ''}" data-i="${i}">
         <div class="num ${q.seen ? '' : 'new'}">${q.star ? '🌈' : q.mythic ? (evOf(q.mythic) || {}).ic || '✨' : '✨'}</div>
-        <div class="t"><b>${esc(q.mythName || shownName(p, false))}</b><span><span class="legtime">${q.star ? 'Quête du sage' : `⏳ encore ${hoursLeft(q)} h`}</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        <div class="t"><b>${esc(q.mythic ? q.mythName : mysteryName(p))}</b><span><span class="legtime">${q.star ? 'Quête du sage' : `⏳ encore ${hoursLeft(q)} h`}</span> · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
         ${tierBadge(q.mythic || q.star ? 'mythic' : 'legend')}</button>`;
       // plus de jours (28/10) : on fait ses quêtes dans l'ordre qu'on veut ; un « ? » de la couleur de la rareté
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''}" data-i="${i}">
         <div class="num ${done ? '' : 'qm t-' + t} ${!done && !q.seen ? 'new' : ''}">${done ? '✓' : '?'}</div>
-        <div class="t"><b>${esc(done ? shownName(p, true) : q.bought ? q.mythName : questLine(p)[0])}</b><span>${q.bought && !done ? '🪙 Achetée' : esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
+        <div class="t"><b>${esc(done ? shownName(p, true) : mysteryName(p))}</b><span>${q.bought && !done ? '🪙 Achetée' : esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
         ${done ? `<span class="badge b-done">+${PTS[t]}</span>` : tierBadge(t)}
       </button>`;
     }).join('');
@@ -1889,16 +1915,16 @@ function openQuest(i) {
   }
   const [qt, qtxt0] = questLine(p);
   const qtxt = S.name ? qtxt0.replace(/^Hé, toi !( Oui, toi, le coureur !)?/, `Hé, ${S.name} !`) : qtxt0;
-  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.star ? `Enfin… tu es prêt. Voici mon plus grand secret : ${q.mythName.replace(/^L/, 'l')}. Personne ne sait vraiment ce qu'il cache… Rapporte-moi sa carte MYTHIQUE, Élu !` : q.mythic ? `${(evOf(q.mythic) || {}).line || 'Par ma barbe ! Une carte MYTHIQUE !'} Une carte MYTHIQUE t'y attend… mais seulement 72 h !` : q.bought ? `Ah ! Tu m'as acheté ce secret… ${q.mythName.replace(/^L/, 'l')} t'attend. Mais il faudra courir pour gagner sa carte !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
+  const intro = q.friend ? `${q.friend} t'a envoyé cette quête ! ${qtxt}` : q.star ? `Enfin… tu es prêt. Voici mon plus grand secret : ${mysteryName(p).replace(/^L/, 'l')}. Personne ne sait vraiment ce qu'il cache… Rapporte-moi sa carte MYTHIQUE, Élu !` : q.mythic ? `${(evOf(q.mythic) || {}).line || 'Par ma barbe ! Une carte MYTHIQUE !'} Une carte MYTHIQUE t'y attend… mais seulement 72 h !` : q.bought ? `Ah ! Tu m'as acheté ce secret… ${q.mythName.replace(/^L/, 'l')} t'attend. Mais il faudra courir pour gagner sa carte !` : q.legend ? `Oh oh oh ! Une carte LÉGENDAIRE vient d'apparaître… mais elle ne restera pas longtemps ! ${qtxt}` : qtxt;
   if (!q.seen) { q.seen = true; save(); }
   // trésor caché : les indices sont donnés par le sage, dans sa bulle (29/10)
   const say = rare && !q.legend && !q.friend ? `Psst… ${article(p.label).replace(/^./, c => c.toLowerCase())} se cache dans cette zone.${p.name ? ` Son nom commence par « ${p.name.slice(0, 3)}… ».` : ''}${p.artist ? ` Une œuvre de ${p.artist}.` : ''} Trouve-la, jeune coureur !` : intro;
   const sh = sheet(`<div class="lockimg sm ${rare ? 'rare' : ''}"><div class="bg" id="lbg"></div><div class="lk">${LOCK_SVG}<span>Trouve le lieu pour débloquer sa carte</span></div>
       <button class="qsharei" id="qshare" aria-label="Partager la quête avec un ami"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
     ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend && !q.star && !q.bought ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
-    <h3 style="margin:8px 0 2px">${esc(q.star || q.bought ? q.mythName : shownName(p, false))}</h3>
+    <h3 style="margin:8px 0 2px">${esc(q.mythic ? q.mythName : mysteryName(p))}</h3>
     <p class="muted" style="margin:0 0 12px">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
-    ${sageBox(qt, 'qsay')}
+    ${sageBox('', 'qsay')}
     <div class="row" style="margin-top:0"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
     ${S.testMode ? '<button class="link" id="here" style="margin:4px auto 0">✅ J\'y suis (test)</button>' : ''}
     ${q.easy ? `<div class="row"><button class="btn swap easybtn" id="easy">🎯 Une plus proche · gratuit</button></div>` : ''}
@@ -1955,6 +1981,7 @@ function takePhoto(i) {
   const q = S.week.quests[i], p = placeById(q.pid);
   // la photo du lieu, pour le repérer et le prendre en photo (28/10, demande de Bazil)
   const sh = sheet(`<div style="text-align:center"><div class="pixel" style="color:var(--violet);font-size:14px;line-height:1.6;margin:8px 0 10px">TU Y ES PRESQUE !</div>
+    <p class="muted" style="margin:0 0 2px">🧙 ${esc(mysteryName(p))}… c'était en fait</p>
     <h3 style="margin-bottom:4px">${esc(shownName(p, true))}</h3>
     <div class="arrph" id="arrph"><span class="muted">Je cherche à quoi il ressemble…</span></div>
     <p class="muted" style="margin:10px 0 0">Repère-le autour de toi, puis prends ta photo : elle devient l'image de ta carte.</p></div>
