@@ -731,7 +731,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v66';
+const VERSION = 'v67';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3374,7 +3374,7 @@ function renderProf() {
     <span style="flex:1"></span><span class="setbtn">Voir tout ›</span></button></div>
   <div class="panel"><h4>Dernières sorties</h4>${S.runs.length ? `<div class="runlist">${S.runs.slice(-5).reverse().map(r => `<div class="r"><span>${new Date(r.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}</span><b>${sportOf(r).ic} ${km(r.dist)} km${r.dplus ? ' · ↗' + r.dplus + ' m' : ''} · ${dur(r.time)} · ${rate(r.time, r.dist, r.sport)} ${rateUnit(r.sport)}</b></div>`).join('')}</div>` : '<p class="muted" style="margin:0">Touche « J\'y vais ! » sur une quête pour lancer ta première sortie.</p>'}</div>
   <button class="btn ghost" id="bugbtn" style="display:block;width:calc(100% - 32px);margin:0 16px 12px">🐞 Signaler un bug ou une idée</button>
-  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION}</p>`;
+  <div style="height:24px"></div>`;
   $('#bugbtn').onclick = openBugReport;
   $('#prefbtn').onclick = () => tab('pref');
   $('#trobtn').onclick = () => tab('tro');
@@ -3728,7 +3728,7 @@ function renderSet() {
   </div>` : ''}
   <div class="panel"><div class="set"><span>Tout effacer</span><button class="danger" id="wipe">Effacer</button></div></div>
   ${S.dev ? '' : `<button class="link" id="devbtn" style="margin:0 auto 10px">🔒 Mode développeur</button>`}
-  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">Quest Run ${VERSION} · lieux © OpenStreetMap</p>`;
+  <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">${S.dev ? 'Quest Run ' + VERSION + ' · ' : ''}lieux © OpenStreetMap</p>`;
   $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
   $('#swsfx').onclick = () => { S.sfx = S.sfx === false; save(); renderSet(); if (S.sfx) sfx('pop'); };
@@ -3990,7 +3990,7 @@ function onboarding(step = 0) {
         <li><i></i><span>Préparation de tes quêtes</span></li>
       </ul>
       <div class="pbar"><i id="pb"></i></div>
-      <p class="muted" style="font-size:12px;margin-top:14px">${VERSION}</p></div>
+      </div>
       <button class="btn hidden" id="go">Voir mes quêtes</button>`;
     const li = [...o.querySelectorAll('#steps li')];
     const mark = k => { li.forEach((x, j) => { x.classList.toggle('ok', j < k); x.classList.toggle('on', j === k); if (j < k) x.querySelector('i').textContent = '✓'; }); $('#pb').style.width = (k / li.length * 100) + '%'; };
