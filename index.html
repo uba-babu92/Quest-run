@@ -801,6 +801,10 @@ h2{font-weight:800;font-size:23px}
 .quest.done .num{background:#22C55E;color:#04210f}
 .quest .num.qm,.pin.qm{text-shadow:none}
 .sageimg{width:82%;height:82%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
+.vstats .vmore{font-family:var(--fb);font-weight:800;font-size:13px;color:var(--text);background:var(--bg);border:2px solid var(--bl);border-radius:10px;padding:6px 10px;box-shadow:2px 2px 0 #3B0A94}
+.vstats .big.more{display:none;margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,.3)}
+.vstats.open .big.more{display:grid;animation:rise .3s ease-out}
+.vstats .big b{font-size:clamp(20px,6.6vw,28px)}
 /* écrans de victoire : titres en Bricolage, plus grands */
 .v-title{font-weight:800;font-size:34px;line-height:1.05}
 .v-title.gold{font-size:40px}
@@ -915,7 +919,7 @@ h2{font-weight:800;font-size:23px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v80';
+const VERSION = 'v81';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3757,16 +3761,18 @@ function renderProf() {
     <div class="muted" style="font-size:13px;margin-top:2px">${lv.to ? `${fmt(lv.to - S.points)} ★ avant <b>${esc(lv.nextName)}</b>` : 'Titre suprême atteint !'}</div>
     <div class="xp"><i style="width:${pct}%"></i></div></div></div></div>
   <div class="panel"><button class="trorow" id="prefbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Ma semaine</h4><b style="font-size:16px">${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} · ${String(S.goal.km).replace('.', ',')} km</b></div><span style="flex:1"></span><span class="setbtn">Modifier ›</span></button></div>
-  <div class="vstats"><div class="hd"><b>Mes stats</b><span>depuis le début</span></div>
+  <div class="vstats ${S.statsOpen ? 'open' : ''}" id="vstats"><div class="hd"><b>Mes stats</b><button class="vmore" id="vmore">${S.statsOpen ? 'Voir moins' : 'Voir plus'}</button></div>
     <div class="big">
       <div><div class="ic">🃏</div><b>${placeCards().length}</b><span>Lieux</span></div>
       <div><div class="ic">👟</div><b>${st.n}</b><span>Sorties</span></div>
       <div><div class="ic">📍</div><b>${kmTxt(st.km)}</b><span>Km</span></div>
       <div><div class="ic">⏱️</div><b>${st.n ? hm(st.time).replace(' min', '′').replace(' h ', 'h') : '0'}</b><span>De sport</span></div>
     </div>
-    <div class="small">
-      ${tile(st.runPace || '–:––', 'allure (/km)')}${tile(kmTxt(st.longest) + ' km', 'plus longue sortie')}${tile(fmt(st.dplus) + ' m', 'de D+ au total')}
-      ${tile(placeCards().filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}${st.bikeSpeed ? tile(st.bikeSpeed, 'vitesse vélo (km/h)') : tile(fmt(st.maxDplus) + ' m', 'plus gros D+')}
+    <div class="big more">
+      <div><div class="ic">⚡</div><b>${st.runPace || '–:––'}</b><span>Allure /km</span></div>
+      <div><div class="ic">🏃</div><b>${kmTxt(st.longest)}</b><span>Km max</span></div>
+      <div><div class="ic">💎</div><b>${placeCards().filter(c => c.rarity === 'rare').length}</b><span>Lieux rares</span></div>
+      <div><div class="ic">✅</div><b>${S.weeksCleared || 0}</b><span>Semaines</span></div>
     </div></div>
   <div class="panel"><button class="trorow" id="shopbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Boutique</h4><b style="font-size:18px">${fmt(S.coins || 0)} 🪙</b></div><span style="flex:1"></span><span class="setbtn">Ouvrir ›</span></button></div>
   <div class="panel"><button class="trorow" id="trobtn"><div style="flex:none"><h4 style="margin:0 0 6px">Trophées · ${got.length}/${TROPHIES.length}</h4>
@@ -3776,6 +3782,7 @@ function renderProf() {
   <button class="btn ghost" id="bugbtn" style="display:block;width:calc(100% - 32px);margin:0 16px 12px">🐞 Signaler un bug ou une idée</button>
   <div style="height:24px"></div>`;
   $('#bugbtn').onclick = openBugReport;
+  $('#vmore').onclick = () => { S.statsOpen = !S.statsOpen; save(); $('#vstats').classList.toggle('open', S.statsOpen); $('#vmore').textContent = S.statsOpen ? 'Voir moins' : 'Voir plus'; sfx('tap'); };
   $('#prefbtn').onclick = () => tab('pref');
   $('#trobtn').onclick = () => tab('tro');
   $('#shopbtn').onclick = () => tab('shop');
