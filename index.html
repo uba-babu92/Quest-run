@@ -788,6 +788,18 @@ h2{font-weight:800;font-size:23px}
 #run .sports button.on{background:var(--violet);color:#fff}
 #onb .intro .bubble::before{border-bottom-color:var(--bl)!important}
 .sage{border:var(--bw) solid var(--bl)}
+/* pastilles de mission (carte + liste) : couleurs pleines, plus de dégradés (02/11) */
+.t-common{background:#6B7280!important;color:#fff!important}
+.t-rare{background:#7B2FF7!important;color:#fff!important}
+.t-epic{background:#2563EB!important;color:#fff!important}
+.t-legend{background:#FFB800!important;color:#1a1200!important}
+.t-mythic{background:#FF4FC8!important;color:#1a0b2e!important}
+.pin,.pin.rare,.pin.legend,.pin.done{background-image:none}
+.pin.rare{background:#7B2FF7}.pin.legend{background:#FFB800;color:#1a1200}.pin.done{background:#22C55E;color:#04210f}
+.pin{border:2.5px solid #fff;box-shadow:2px 2px 0 #16131F}
+.quest.rare .num{background:#7B2FF7}
+.quest.done .num{background:#22C55E;color:#04210f}
+.quest .num.qm,.pin.qm{text-shadow:none}
 /* écrans de victoire : titres en Bricolage, plus grands */
 .v-title{font-weight:800;font-size:34px;line-height:1.05}
 .v-title.gold{font-size:40px}
@@ -902,7 +914,7 @@ h2{font-weight:800;font-size:23px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v78';
+const VERSION = 'v79';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
