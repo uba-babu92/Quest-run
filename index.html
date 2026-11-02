@@ -768,7 +768,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v75';
+const VERSION = 'v76';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -2843,9 +2843,28 @@ function pace(ms, m) { if (m < 50) return '–:––'; const s = Math.round(ms 
 const runOf = c => c && c.run ? S.runs.find(r => r.id === c.run) : null;
 const elapsed = () => RUN ? RUN.elapsed + (RUN.paused ? 0 : Date.now() - RUN.resumedAt) : 0;
 function saveRun() { try { RUN ? localStorage.setItem(RUN_KEY, JSON.stringify(RUN)) : localStorage.removeItem(RUN_KEY); } catch (e) {} }
+// 02/11 (Bazil : pas de son en mode silencieux, ni au départ) :
+// - au 1er toucher, on « réveille » la voix (l'iPhone perd souvent la toute première annonce) ;
+// - pendant une sortie, la voix passe même en silencieux (Safari 17+ : audioSession « playback »), option
+//   « Voix même en silencieux » (S.voiceLoud, activée par défaut). Limite iPhone : la musique peut se mettre en pause.
+let voicePrimed = false, loudTimer = null;
+function primeVoice() {
+  if (voicePrimed || !('speechSynthesis' in window)) return; voicePrimed = true;
+  try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; u.lang = 'fr-FR'; speechSynthesis.speak(u); } catch (e) {}
+}
+['pointerdown', 'touchend'].forEach(ev => document.addEventListener(ev, primeVoice, { passive: true }));
+function loudOn(on) {
+  try { if (navigator.audioSession) navigator.audioSession.type = on ? 'playback' : 'auto'; } catch (e) {}
+}
 function speak(t) {
   if (!S.voice || !('speechSynthesis' in window)) return;
-  try { const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1.05; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {}
+  try {
+    const loud = RUN && !RUN.ready && S.voiceLoud !== false;
+    if (loud) { clearTimeout(loudTimer); loudOn(true); }
+    const u = new SpeechSynthesisUtterance(t); u.lang = 'fr-FR'; u.rate = 1.05;
+    if (loud) u.onend = u.onerror = () => { clearTimeout(loudTimer); loudTimer = setTimeout(() => { if (!speechSynthesis.speaking) loudOn(false); }, 600); };
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) {}
 }
 async function keepAwake() {
   try { if ('wakeLock' in navigator && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => wakeLock = null); } } catch (e) {}
@@ -3091,8 +3110,10 @@ function goRun() {
   RUN.ready = false; RUN.paused = false; RUN.start = Date.now(); RUN.resumedAt = Date.now();
   saveRun();
   const R0 = RUN.route, t0 = R0 && R0.real && (R0.turns || [])[0];
-  speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.'
-    + (t0 ? ` Tout droit sur ${t0.along >= 1000 ? (t0.along / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(t0.along / 50) * 50 + ' mètres'}, puis ${turnText(t0.d).t}.` : ''));
+  primeVoice();
+  const go0 = (RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.'
+    + (t0 ? ` Tout droit sur ${t0.along >= 1000 ? (t0.along / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(t0.along / 50) * 50 + ' mètres'}, puis ${turnText(t0.d).t}.` : '');
+  setTimeout(() => speak(go0), 400);
   vibrate(60); sfx('go');
   compassOn(); RUN.showMap = false;
   RUN.nav = true;
@@ -3929,7 +3950,8 @@ function renderSet() {
     <div class="set"><span>Mode sombre</span>${sw('swdark', S.theme === 'dark')}</div>
     <div class="set"><span>Bruitages<small class="muted" style="display:block;font-size:13px">Sons des victoires, des cartes et du sage</small></span>${sw('swsfx', S.sfx !== false)}</div></div>
   <div class="panel"><h4>Sorties</h4>
-    <div class="set"><span>Voix pendant la sortie<small class="muted" style="display:block;font-size:13px">Annonce chaque kilomètre</small></span>${sw('swvoice', S.voice)}</div></div>
+    <div class="set"><span>Voix pendant la sortie<small class="muted" style="display:block;font-size:13px">Annonce chaque kilomètre</small></span>${sw('swvoice', S.voice)}</div>
+    <div class="set"><span>Voix même en silencieux<small class="muted" style="display:block;font-size:13px">Sur iPhone, ta musique peut se mettre en pause pendant l'annonce</small></span>${sw('swloud', S.voiceLoud !== false)}</div></div>
   <div class="panel"><h4>Lieux</h4>
     <div class="set"><span>Camp de base<small class="muted" style="display:block;font-size:13px">Là où tu dors en ce moment</small></span><button class="setbtn" id="home">Changer</button></div>
     <div class="set"><span>Lieux signalés</span><b>${S.reports.length}</b></div></div>
@@ -3957,6 +3979,7 @@ function renderSet() {
   <p class="muted" style="text-align:center;font-size:12px;margin:0 0 24px">${S.dev ? 'Quest Run ' + VERSION + ' · ' : ''}lieux © OpenStreetMap</p>`;
   $('#swdark').onclick = () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; save(); applyTheme(); renderSet(); };
   $('#swvoice').onclick = () => { S.voice = !S.voice; save(); renderSet(); };
+  $('#swloud').onclick = () => { S.voiceLoud = S.voiceLoud === false; save(); renderSet(); };
   $('#swsfx').onclick = () => { S.sfx = S.sfx === false; save(); renderSet(); if (S.sfx) sfx('pop'); };
   $('#gopref').onclick = () => tab('pref');
   $('#home').onclick = () => tab('camp');
