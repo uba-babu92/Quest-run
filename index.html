@@ -800,6 +800,7 @@ h2{font-weight:800;font-size:23px}
 .quest.rare .num{background:#7B2FF7}
 .quest.done .num{background:#22C55E;color:#04210f}
 .quest .num.qm,.pin.qm{text-shadow:none}
+.sageimg{width:82%;height:82%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
 /* écrans de victoire : titres en Bricolage, plus grands */
 .v-title{font-weight:800;font-size:34px;line-height:1.05}
 .v-title.gold{font-size:40px}
@@ -914,7 +915,7 @@ h2{font-weight:800;font-size:23px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v79';
+const VERSION = 'v80';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1106,7 +1107,7 @@ async function checkMonthly() {
     <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
       <button class="qsharei vshare" id="vshare" aria-label="Partager ma carte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
     <div class="v-sub">${MONTHLY_TXT[m.type](m.target)} : c'est fait !<br>${MONTH_IC[mo]} Trophée <b style="color:#FFD23F">${esc(name)}</b> gagné</div>
-    <div class="box vstory" style="text-align:left"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p></div>
+    <div class="box vstory" style="text-align:left"><div class="sagehead"><span class="sage sm"><img class="sageimg" src="sage.png" alt=""></span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Génial</button></div></div>`, true);
   $('#vshare').onclick = () => shareCard(card); fillPhotos($('#vin')); countUp($('#vp'), MONTH_PTS); vibrate([30, 40, 30]); sfx('trophy');
   setTimeout(() => { const f = $('#flip'); if (f) { f.classList.add('on'); vibrate(60); sfx('flip'); confetti(['#7B2FF7', '#B07BFF', '#FFD23F', '#fff']); } }, 900);
@@ -1587,7 +1588,7 @@ function typeText(el, text, box) {
   const stop = () => { clearInterval(t); live.textContent = text; const m = box && box.querySelector('.more'); if (m) m.remove(); };
   if (box) box.addEventListener('click', stop, { once: true });
 }
-const sageBox = (title, id) => `<div class="sagebox"><div class="sage">🧙</div><div class="bubble" id="${id}b">${title ? `<b>${esc(title)}</b>` : ''}<p id="${id}"></p><span class="more">▼</span></div></div>`;
+const sageBox = (title, id) => `<div class="sagebox"><div class="sage"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble" id="${id}b">${title ? `<b>${esc(title)}</b>` : ''}<p id="${id}"></p><span class="more">▼</span></div></div>`;
 
 /* ---------- typographie française (29/10, Bazil) : espace insécable avant ? ! : ; » et après «,
    pour ne jamais laisser un point d'interrogation seul en début de ligne. Appliquée à tout le texte affiché. ---------- */
@@ -1909,7 +1910,7 @@ async function maybeMythic() {
   await overlay(`<div class="v-title gold pixel">ÉVÉNEMENT<br>MYTHIQUE !</div>
     <div class="big-ic" style="margin:18px 0 6px">${w.ic}</div>
     <div class="v-sub" style="font-size:24px;color:#fff;font-weight:900;margin:0 0 10px">Événement ${esc(w.name)}</div>
-    <div class="box" style="text-align:left;margin:0 0 18px"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage</b></div><p>${esc(w.line)}</p></div>
+    <div class="box" style="text-align:left;margin:0 0 18px"><div class="sagehead"><span class="sage sm"><img class="sageimg" src="sage.png" alt=""></span><b>Le vieux sage</b></div><p>${esc(w.line)}</p></div>
     <div class="v-sub">Une carte <b style="color:#FF8FE0">Mythique</b> t'attend à <b style="color:#FFD23F">${roundTripKm(p).toFixed(1).replace('.', ',')} km</b> aller-retour.<br>Elle disparaît dans <b style="color:#FFD23F">${Math.ceil((w.b - Date.now()) / 3600e3)} h</b> · ${PTS.mythic} ★</div>
     <button class="btn gold" data-close>Voir la quête</button>`);
   if (current === 'quests') renderQuests();
@@ -2214,7 +2215,7 @@ function takePhoto(i) {
   const q = S.week.quests[i], p = placeById(q.pid);
   // la photo du lieu, pour le repérer et le prendre en photo (28/10, demande de Bazil)
   const sh = sheet(`<div style="text-align:center"><div class="pixel" style="color:var(--violet);font-size:14px;line-height:1.6;margin:8px 0 10px">TU Y ES PRESQUE !</div>
-    <p class="muted" style="margin:0 0 2px">🧙 ${esc(mysteryName(p))}… c'était en fait</p>
+    <p class="muted" style="margin:0 0 2px"><img src="sage.png" alt="" style="width:1.3em;height:1.3em;vertical-align:-.3em"> ${esc(mysteryName(p))}… c'était en fait</p>
     <h3 style="margin-bottom:4px">${esc(shownName(p, true))}</h3>
     <div class="arrph" id="arrph"><span class="muted">Je cherche à quoi il ressemble…</span></div>
     <p class="muted" style="margin:10px 0 0">Repère-le autour de toi, puis prends ta photo : elle devient l'image de ta carte.</p></div>
@@ -2681,7 +2682,7 @@ async function victory(card, pts) {
     <div class="v-pts pixel" id="vp">+0 ★</div><div class="v-coins">+${COIN_PLACE} 🪙</div>
     <div class="vcardwrap"><div class="flip small" id="flip"><div class="fi"><div class="face back">${LOCK_SVG.replace('<svg ', '<svg style="width:64px;height:64px" ')}</div><div class="face front">${cardHtml(card)}</div></div></div>
       <button class="qsharei vshare" id="vshare" aria-label="Partager ma carte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
-    <div class="box vstory" id="vstory" style="text-align:left"><div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p style="color:#b9b0d6">Hmm… je feuillette mon grimoire…</p></div>
+    <div class="box vstory" id="vstory" style="text-align:left"><div class="sagehead"><span class="sage sm"><img class="sageimg" src="sage.png" alt=""></span><b>Le vieux sage raconte…</b></div><p style="color:#b9b0d6">Hmm… je feuillette mon grimoire…</p></div>
     <div class="v-actions"><button class="btn gold" data-close>Continuer</button></div></div>`, true);
   $('#vshare').onclick = () => shareCard(card);
   fillPhotos($('#vin'));
@@ -2707,9 +2708,9 @@ async function questClear() {
 /* ---------- histoire d'un lieu (fiche et écran de victoire) ---------- */
 async function fillStory(box, p, c, retry) {
   if (!box) return;
-  if (c && c.month) { const mo = +c.month.split('-')[1] - 1; box.innerHTML = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p>`; return; }
-  if (c && c.welcome) { box.innerHTML = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div><p>Ce grimoire, je l'écris depuis des siècles. Chaque page garde l'histoire d'un lieu de la ville. Mais les pages se sont envolées… À toi de les retrouver, Élu Runner. Chaque carte que tu gagnes en est une !</p>`; return; }
-  const head = `<div class="sagehead"><span class="sage sm">🧙</span><b>Le vieux sage raconte…</b></div>`;
+  if (c && c.month) { const mo = +c.month.split('-')[1] - 1; box.innerHTML = `<div class="sagehead"><span class="sage sm"><img class="sageimg" src="sage.png" alt=""></span><b>Le vieux sage raconte…</b></div><p>${esc(MONTH_CARDS[mo][1])}</p>`; return; }
+  if (c && c.welcome) { box.innerHTML = `<div class="sagehead"><span class="sage sm"><img class="sageimg" src="sage.png" alt=""></span><b>Le vieux sage raconte…</b></div><p>Ce grimoire, je l'écris depuis des siècles. Chaque page garde l'histoire d'un lieu de la ville. Mais les pages se sont envolées… À toi de les retrouver, Élu Runner. Chaque carte que tu gagnes en est une !</p>`; return; }
+  const head = `<div class="sagehead"><span class="sage sm"><img class="sageimg" src="sage.png" alt=""></span><b>Le vieux sage raconte…</b></div>`;
   if (!(S.wiki[p.id] && S.wiki[p.id].aiV === AI_V && S.wiki[p.id].ai)) box.innerHTML = head + '<p style="color:#b9b0d6">Hmm… je feuillette mon grimoire…</p>';
   const w = await wikiFor(p);
   const ai = await aiStory(p);
@@ -4250,7 +4251,7 @@ function sageTour() {
   if (S.tourDone) return Promise.resolve();
   return new Promise(done => {
     const el = document.createElement('div'); el.id = 'tour';
-    el.innerHTML = `<div class="tourbox"><div class="sagebox" style="margin:0"><div class="sage">🧙</div><div class="bubble"><p id="tourt"></p></div></div>
+    el.innerHTML = `<div class="tourbox"><div class="sagebox" style="margin:0"><div class="sage"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble"><p id="tourt"></p></div></div>
       <div class="tourrow"><span class="tourdots">${TOUR.map(() => '<i></i>').join('')}</span><button class="btn" id="tourgo" style="flex:none;width:auto;padding:12px 22px">Suivant</button></div></div>`;
     document.body.appendChild(el); document.body.classList.add('touring');
     let k = 0;
@@ -4328,7 +4329,7 @@ function onboarding(step = 0) {
         const step = (n, ic, b, sm) => `<div><span class="n">${n}</span><span class="ic">${ic}</span><span class="t"><b>${b}</b><small>${sm}</small></span></div>`;
         const DOTS = '<span style="font-size:22px;font-weight:900;letter-spacing:1px;line-height:1">•••</span>';
         o.innerHTML = `<div class="body center install">
-          <div class="sage big">🧙</div><div class="bubble" id="ib0" style="flex:none;text-align:left"><p id="it0"></p></div>
+          <div class="sage big"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble" id="ib0" style="flex:none;text-align:left"><p id="it0"></p></div>
           <div class="isteps">${iab
             ? step(1, DOTS, 'Touche •••', 'en haut ou en bas de l’écran') + step(2, '🧭', 'Ouvrir dans Safari', 'ou « Ouvrir dans le navigateur »') + step(3, '<img src="icon-192.png" alt="">', 'Installe Quest Run', 'Safari te montrera comment')
             : step(1, DOTS, 'Touche ••• puis Partager', 'en bas de Safari') + step(2, '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg>', 'Sur l’écran d’accueil', 'puis « Ajouter »') + step(3, '<img src="icon-192.png" alt="">', 'Ouvre Quest Run', 'depuis ton écran d’accueil')}
@@ -4342,12 +4343,12 @@ function onboarding(step = 0) {
       return;
     }
     o.innerHTML = `<div class="body intro">
-      <div class="sage big">🧙</div><div class="bubble" id="ib"><p id="it"></p><span class="more">▼</span></div>
+      <div class="sage big"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble" id="ib"><p id="it"></p><span class="more">▼</span></div>
       <div class="idots">${LINES.map((_, j) => `<i class="${j ? '' : 'on'}"></i>`).join('')}</div></div>
       <button class="btn" id="go">Suivant</button>`;
     const show = () => { typeText($("#it"), LINES[k], $("#ib")); o.querySelectorAll('.idots i').forEach((d, j) => d.classList.toggle('on', j === k)); $('#go').textContent = k === LINES.length - 1 ? 'Je suis prêt !' : 'Suivant'; };
     const askName = () => {
-      o.innerHTML = `<div class="body center"><div class="sage big">🧙</div><div class="bubble" id="nb" style="flex:none;text-align:left"><p id="nt"></p></div>
+      o.innerHTML = `<div class="body center"><div class="sage big"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble" id="nb" style="flex:none;text-align:left"><p id="nt"></p></div>
         <input class="namein" id="nin" maxlength="20" placeholder="Ton nom d'aventurier" autocomplete="nickname" value="${esc(S.name || '')}"></div>
         <button class="btn" id="go">C'est mon nom !</button>`;
       typeText($('#nt'), "Mais dis-moi… quel est ton nom, Élu ?", $('#nb'));
@@ -4397,7 +4398,7 @@ function onboarding(step = 0) {
       // petite phrase qui rassure, puis on passe à la suite
       setTimeout(() => {
         const body = o.querySelector('.body');
-        body.innerHTML = `<div class="reassure"><div class="sage big">🧙</div><div class="bubble" style="flex:none;text-align:left"><b>${opt[3]}</b><p>${opt[4]}</p></div><p class="muted" style="font-size:13px;margin-top:14px">Touche pour continuer</p></div>`;
+        body.innerHTML = `<div class="reassure"><div class="sage big"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble" style="flex:none;text-align:left"><b>${opt[3]}</b><p>${opt[4]}</p></div><p class="muted" style="font-size:13px;margin-top:14px">Touche pour continuer</p></div>`;
         setTimeout(() => go(step + 1), 3600);
         body.onclick = () => go(step + 1);
       }, 200);
@@ -4455,7 +4456,7 @@ function onboarding(step = 0) {
     $('#go').onclick = () => {
       if (isIOS() && !isStandalone()) return onboarding(9); // pas de notifs possibles dans Safari sur iPhone
       // puis il propose les rappels
-      o.querySelector('.body').innerHTML = `<div class="sage big">🧙</div><div class="bubble" id="say8nb" style="flex:none;text-align:left"><p id="say8n"></p></div>`;
+      o.querySelector('.body').innerHTML = `<div class="sage big"><img class="sageimg" src="sage.png" alt=""></div><div class="bubble" id="say8nb" style="flex:none;text-align:left"><p id="say8n"></p></div>`;
       typeText($('#say8n'), "Une dernière chose. Veux-tu que je te prévienne quand une quête t'attend ? Une fois par jour, pas plus. Promis !", $('#say8nb'));
       $('#go').outerHTML = `<div class="acts"><button class="btn" id="nyes">🔔 Oui, préviens-moi !</button><button class="btn ghost" id="nno">Plus tard</button></div>`;
       $('#nyes').onclick = async () => { await enablePush(); onboarding(9); };
@@ -4465,7 +4466,7 @@ function onboarding(step = 0) {
   if (step === 9) {
     const sp = SPORTS[S.sport || 'run'] || SPORTS.run;
     o.innerHTML = `${dots(8)}<div class="body" style="text-align:center">
-      <div class="scan"><div class="ic">🧙</div></div>
+      <div class="scan"><div class="ic"><img class="sageimg" src="sage.png" alt=""></div></div>
       <h1 id="lt" style="font-size:22px">Hmm… je cherche les lieux autour de chez toi…</h1>
       <ul class="steps" id="steps">
         <li><i></i><span>Analyse de ta semaine : <b>${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} de ${S.goal.km} km</b> ${sp.ic}</span></li>
@@ -4512,7 +4513,7 @@ function onboarding(step = 0) {
       mark(4); await wait(1200);
       if (tok !== onbTok) return;
       mark(5);
-      $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span><div style="font-size:15px;color:var(--muted);margin-top:10px">🧙 « Va, Élu Runner. La ville compte sur toi ! »</div>`;
+      $('#lt').innerHTML = `<span class="pixel" style="font-size:16px;color:var(--violet);line-height:1.6">TES ${S.week.quests.length} QUÊTES<br>SONT PRÊTES !</span><div style="font-size:15px;color:var(--muted);margin-top:10px"><img src="sage.png" alt="" style="width:1.3em;height:1.3em;vertical-align:-.3em"> « Va, Élu Runner. La ville compte sur toi ! »</div>`;
       o.querySelector('.scan .ic').textContent = '🗺️';
       vibrate([40, 40, 80]); sfx('ready');
       $('#go').classList.remove('hidden');
