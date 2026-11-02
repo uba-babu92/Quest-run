@@ -634,6 +634,19 @@ button.chip{cursor:pointer}
 #run .gps{font-size:12px;font-weight:700;color:#FFB800}
 #run .gps.ok{color:#4ADE80}
 /* navigation façon Google Maps */
+/* flèche façon Crazy Taxi (02/11) : la carte est cachée pendant la course, un bouton la montre */
+#run.arrowmode{background:radial-gradient(120% 80% at 50% 30%,#2a1458,#0d0a16 70%)}
+#run.arrowmode #runmap{visibility:hidden}
+#run .crazy{position:absolute;left:0;right:0;top:calc(96px + var(--safe-t));bottom:200px;z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;pointer-events:none}
+#run .carrow{width:min(62vw,260px);height:min(62vw,260px);perspective:520px;display:grid;place-items:center}
+#run .ca{width:72%;height:90%;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.2,.8,.3,1);filter:drop-shadow(0 18px 18px rgba(0,0,0,.55)) drop-shadow(0 0 24px rgba(155,92,255,.55))}
+#run .ca svg{width:100%;height:100%;display:block}
+#run .crazy.near .carrow{animation:cpulse .7s ease-in-out infinite}
+@keyframes cpulse{50%{transform:scale(1.1)}}
+#run .ctxt{text-align:center;color:#fff;padding:0 20px}
+#run .ctxt b{display:block;font-size:38px;font-weight:900;letter-spacing:-.02em;line-height:1.05;text-shadow:0 3px 14px rgba(0,0,0,.5)}
+#run .ctxt span{display:block;margin-top:6px;font-size:18px;color:#d9ccff;font-weight:700}
+#run .crazy.uturn .ctxt b{color:#FFD23F}
 #run .rturn{position:relative;z-index:500;margin:8px 12px 0;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,#5A12D6,#7B2FF7);display:flex;gap:12px;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
 #run .rturn .ar{font-size:34px;width:44px;text-align:center;line-height:1;flex:none}
 #run .rturn b{display:block;font-size:24px;font-weight:900;letter-spacing:-.01em}
@@ -718,8 +731,18 @@ button.chip{cursor:pointer}
   <div id="runmap"></div>
   <div class="rtop"><button class="x" id="rclose" aria-label="Fermer">✕</button>
     <div class="tgt" id="rtgt"><div class="dot">★</div><div style="min-width:0"><b id="rname"></b><span id="rleft"></span></div></div>
-    <button class="x sm" id="rview" aria-label="Vue d'ensemble">🗺️</button><button class="x sm" id="rreroute" aria-label="Nouvel itinéraire">↻</button></div>
+    <button class="x sm" id="rview" aria-label="Voir la carte">🗺️</button><button class="x sm" id="rreroute" aria-label="Nouvel itinéraire">↻</button></div>
   <div class="rturn hidden" id="rturn"><div class="ar" id="rtar">⬆</div><div style="min-width:0"><b id="rtd"></b><span id="rtt"></span></div></div>
+  <div class="crazy hidden" id="rcrazy">
+    <div class="carrow"><div class="ca" id="carr"><svg viewBox="0 0 120 150" aria-hidden="true">
+      <defs><linearGradient id="cag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C9A6FF"/><stop offset=".45" stop-color="#9B5CFF"/><stop offset="1" stop-color="#5A12D6"/></linearGradient>
+      <linearGradient id="cas" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3B0A94"/><stop offset="1" stop-color="#4E12B0"/></linearGradient></defs>
+      <path d="M60 14 L112 76 L82 76 L82 140 L38 140 L38 76 L8 76 Z" fill="url(#cas)" transform="translate(0 9)"/>
+      <path d="M60 6 L112 68 L82 68 L82 132 L38 132 L38 68 L8 68 Z" fill="url(#cag)" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M60 18 L96 62 L72 62 L72 80" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg></div></div>
+    <div class="ctxt"><b id="cbig">Tout droit</b><span id="csmall"></span></div>
+  </div>
   <div class="rbottom"><div class="rcard">
     <div class="ttl" id="rttl">Course à pied</div>
     <div class="stats3">
@@ -745,7 +768,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v74';
+const VERSION = 'v75';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3071,9 +3094,54 @@ function goRun() {
   speak((RUN.sport === 'bike' ? 'En selle ! ' : RUN.sport === 'walk' ? 'Bonne balade ! ' : "C'est parti ! ") + 'Direction ' + runTarget().name + '.'
     + (t0 ? ` Tout droit sur ${t0.along >= 1000 ? (t0.along / 1000).toFixed(1).replace('.', ',') + ' kilomètre' : Math.round(t0.along / 50) * 50 + ' mètres'}, puis ${turnText(t0.d).t}.` : ''));
   vibrate(60); sfx('go');
+  compassOn(); RUN.showMap = false;
   RUN.nav = true;
   if (lastPos) followMe([lastPos.lat, lastPos.lng], 17);
   drawRun();
+}
+/* ---------- flèche façon Crazy Taxi (02/11, idée de Bazil) ----------
+   La flèche pointe vers un point ~35 m plus loin sur le trajet (ou vers le trajet si on s'en est écarté),
+   par rapport au sens où tu vas : boussole du téléphone si elle est autorisée, sinon sens du déplacement GPS. */
+const ARW = { aim: null, ang: 0, gpsHead: null, compass: null, compT: 0 };
+function compassOn() {
+  if (compassOn.done) return; compassOn.done = true;
+  const on = e => {
+    let h = null;
+    if (e.webkitCompassHeading != null) h = e.webkitCompassHeading;          // iPhone
+    else if (e.absolute && e.alpha != null) h = (360 - e.alpha) % 360;      // Android
+    if (h == null || isNaN(h)) return;
+    const so = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    ARW.compass = (h + so + 360) % 360; ARW.compT = Date.now(); updateArrow();
+  };
+  const go = () => { window.addEventListener('deviceorientationabsolute', on, true); window.addEventListener('deviceorientation', on, true); };
+  try {
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function')
+      DeviceOrientationEvent.requestPermission().then(r => { if (r === 'granted') go(); }).catch(() => {});
+    else go();
+  } catch (e) {}
+}
+function routePointAt(R, along) {
+  const P = R.pts; if (!P.length) return null;
+  if (along <= 0) return { lat: P[0][0], lng: P[0][1] };
+  for (let i = 1; i < P.length; i++) if (P[i][2] >= along) { const a = P[i - 1], b = P[i], f = (along - a[2]) / Math.max(0.01, b[2] - a[2]); return { lat: a[0] + (b[0] - a[0]) * f, lng: a[1] + (b[1] - a[1]) * f }; }
+  const l = P[P.length - 1]; return { lat: l[0], lng: l[1] };
+}
+function bestHeading() {
+  // boussole tant qu'elle répond ; en pleine course, le sens du déplacement GPS est plus fiable
+  const moving = ARW.gpsHead != null && RUN && !RUN.paused && Date.now() - (ARW.gpsT || 0) < 6000;
+  if (ARW.compass != null && Date.now() - ARW.compT < 2500 && !(moving && ARW.gpsSpeed > 2.2)) return ARW.compass;
+  return moving ? ARW.gpsHead : (ARW.compass != null && Date.now() - ARW.compT < 2500 ? ARW.compass : null);
+}
+function updateArrow() {
+  const el = $('#carr'); if (!el || !ARW.aim || !lastPos) return;
+  const h = bestHeading(), want = h == null ? 0 : bearing(lastPos, ARW.aim) - h;
+  // angle continu (pas de tour complet quand on passe de 359° à 1°)
+  let d = ((want - ARW.ang) % 360 + 540) % 360 - 180; ARW.ang += d;
+  el.style.transform = `rotateX(48deg) rotateZ(${ARW.ang}deg)`;
+  const rel = ((want % 360) + 540) % 360 - 180;
+  const box = $('#rcrazy'); if (box) box.classList.toggle('uturn', h != null && Math.abs(rel) > 140 && ARW.moving);
+  if (box && box.classList.contains('uturn')) { $('#cbig').textContent = 'Demi-tour'; $('#csmall').textContent = 'tu pars dans le mauvais sens'; }
+  else if (h == null && box) $('#csmall').textContent = 'La flèche se cale dès que tu bouges';
 }
 function openRun() {
   $('#run').classList.remove('hidden');
@@ -3095,7 +3163,7 @@ function openRun() {
   showRoute(true);
   setTimeout(() => { runMap.invalidateSize(); showRoute(RUN && RUN.ready); }, 80);
   if (navigator.geolocation && runWatch == null)
-    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, alt: p.coords.altitude, altAcc: p.coords.altitudeAccuracy, heading: p.coords.heading, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
+    runWatch = navigator.geolocation.watchPosition(p => onRunPos({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, alt: p.coords.altitude, altAcc: p.coords.altitudeAccuracy, heading: p.coords.heading, speed: p.coords.speed, t: Date.now() }), () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
   clearInterval(runTick); runTick = setInterval(drawRun, 1000);
   drawRun();
 }
@@ -3140,6 +3208,8 @@ function onRunPos(pos) {
   let hd = pos.heading != null && !isNaN(pos.heading) ? pos.heading : null;
   const P2 = RUN.pts; if (hd == null && P2.length > 1) { const a = P2[Math.max(0, P2.length - 4)], b = P2[P2.length - 1]; if (b[3] - a[3] > 6) hd = bearing({ lat: a[0], lng: a[1] }, { lat: b[0], lng: b[1] }); }
   if (hd != null) { const el = runMe.getElement && runMe.getElement(); const ar = el && el.querySelector('.me-arrow'); if (ar) ar.style.transform = `rotate(${hd}deg)`; }
+  if (hd != null) { ARW.gpsHead = hd; ARW.gpsT = Date.now(); }
+  ARW.gpsSpeed = pos.speed != null && !isNaN(pos.speed) ? pos.speed : ARW.gpsSpeed;
   // hors du chemin plus de 15 s : nouvel itinéraire depuis ta position
   if (!RUN.ready && !RUN.paused && RUN.route && RUN.route.real && !arriving) {
     const n = nearestOnRoute(pos);
@@ -3307,7 +3377,37 @@ function drawRun() {
     $('#rtar').textContent = ar; $('#rtd').textContent = big; $('#rtt').textContent = small;
     banner.classList.remove('hidden');
   } else banner.classList.add('hidden');
-  $('#rview').textContent = RUN.nav === false ? '🧭' : '🗺️';
+  // texte et direction de la flèche Crazy Taxi
+  if (!RUN.ready && here) {
+    const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+    let big = 'Tout droit', small = '', near = false;
+    if (R && R.real && R.pts.length > 1) {
+      const n = nearestOnRoute(here), cur = n ? n.along : 0, toEnd = Math.max(0, R.dist - cur);
+      const nx = (R.turns || []).find(x => x.along > cur + 3);
+      const off = !!(n && n.d > 45 + Math.min(here.acc || 0, 30) / 2);
+      ARW.offRoute = off;
+      ARW.aim = off ? routePointAt(R, cur) : routePointAt(R, Math.min(R.dist, cur + 35));
+      if (off) { big = 'Rejoins le trajet'; small = `à ${Math.round(n.d / 10) * 10} m`; }
+      else if (toEnd < 50) { big = RUN.phase === 'back' ? 'Maison en vue !' : 'Ton lieu est là !'; small = fmtKm(toEnd); ARW.aim = tg || ARW.aim; }
+      else if (nx && nx.along - cur <= 150) {
+        const sh = turnText(nx.d).t.replace(/^tourne (franchement )?/, '').replace(/^fais /, ''), dd = Math.round((nx.along - cur) / 10) * 10;
+        big = dd <= 15 ? cap(sh) + ' !' : `${cap(sh)} dans ${dd} m`; near = dd <= 60;
+        small = `encore ${fmtKm(toEnd)}`;
+      } else small = `sur ${fmtKm(nx ? nx.along - cur : toEnd)}`;
+    } else if (tg) { ARW.offRoute = false; ARW.aim = tg; small = fmtKm(dist(here, tg)); }
+    ARW.moving = ARW.gpsSpeed > 0.8 || Date.now() - (ARW.gpsT || 0) < 4000;
+    ARW.small = small;
+    $('#cbig').textContent = big; $('#csmall').textContent = small;
+    $('#rcrazy').classList.toggle('near', near);
+    updateArrow();
+  }
+  // mode flèche (par défaut en course) / mode carte (bouton 🗺️)
+  const arrowMode = !RUN.ready && !RUN.showMap;
+  $('#run').classList.toggle('arrowmode', arrowMode);
+  $('#rcrazy').classList.toggle('hidden', !arrowMode);
+  if (arrowMode) banner.classList.add('hidden');
+  $('#rview').textContent = RUN.ready ? (RUN.nav === false ? '🧭' : '🗺️') : RUN.showMap ? '🧭' : '🗺️';
+  $('#rview').setAttribute('aria-label', !RUN.ready && RUN.showMap ? 'Revenir à la flèche' : 'Voir la carte');
   $('#rview').classList.toggle('hidden', RUN.ready);
   $('#rreroute').classList.toggle('hidden', RUN.ready);
   $('#rhere').textContent = RUN.phase === 'back' ? '🏠 Rentré' : '📍 J\'y suis';
@@ -3384,6 +3484,8 @@ $('#rclose').onclick = () => {
 };
 $('#rview').onclick = () => {
   if (!RUN) return;
+  if (!RUN.ready && !RUN.showMap) { RUN.showMap = true; RUN.nav = true; drawRun(); setTimeout(() => { runMap.invalidateSize(); if (lastPos) followMe([lastPos.lat, lastPos.lng], 17); }, 60); return; }
+  if (!RUN.ready && RUN.showMap) { RUN.showMap = false; drawRun(); return; }
   if (RUN.nav === false) { RUN.nav = true; if (lastPos) followMe([lastPos.lat, lastPos.lng], 17); }
   else { RUN.nav = false; showRoute(true); }
   drawRun();
