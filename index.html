@@ -14,7 +14,8 @@
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700;800&display=swap">
 <style>
 :root{
   --violet:#7B2FF7; --violet-2:#9B5CFF; --violet-soft:#EFE7FF;
@@ -657,6 +658,91 @@ button.chip{cursor:pointer}
 .runlist .r{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
 .runlist .r:first-child{border-top:0}
 .runlist .r b{font-variant-numeric:tabular-nums}
+/* =====================================================================
+   HABILLAGE NÉO-BRUTALISTE (02/11, d'après l'image de Bazil) : même structure,
+   seul le visuel change. Cadres clairs épais, ombres violettes décalées,
+   2 polices : Bricolage Grotesque (titres) + Inter (texte). Lisibilité d'abord :
+   texte #F5F2FF sur fond #0E0B14, texte secondaire #C4BCDD, étiquettes contrastées.
+   ===================================================================== */
+:root{--ft:'Bricolage Grotesque',system-ui,sans-serif;--fb:'Inter',-apple-system,system-ui,sans-serif;
+  --bl:#16131F;--bw:2.5px;--hard:4px 4px 0 var(--violet);--hard-s:3px 3px 0 var(--violet)}
+[data-theme="dark"]{--bg:#0E0B14;--card:#1A1624;--text:#F5F2FF;--muted:#C4BCDD;--line:#3A3350;--violet-soft:#2A1C48;--bl:#EDE8FF}
+html,body{font-family:var(--fb)}
+.pixel,h1,h2,h3,h4,.logo,.v-title,.ttl{font-family:var(--ft)!important;letter-spacing:-.01em}
+.pixel{font-weight:800}
+.logo{font-size:22px;font-weight:800;color:var(--text);text-transform:none}
+.logo::first-letter{color:inherit}
+h2{font-weight:800;font-size:23px}
+.panel h4{font-family:var(--ft)!important;font-weight:800;font-size:15px;letter-spacing:.03em;color:var(--text)}
+/* pastilles du haut */
+.chip{border:var(--bw) solid var(--bl);box-shadow:var(--hard-s);font-family:var(--fb);font-weight:800}
+/* barre d'onglets */
+.tabbar{border-top:var(--bw) solid var(--bl);padding-left:8px;padding-right:8px}
+.tabbar button{font-weight:700;margin:7px 2px;border-radius:14px}
+.tabbar button.on{background:var(--violet);color:#fff}
+/* blocs */
+#map{border:var(--bw) solid var(--bl);box-shadow:var(--hard)}
+.panel,.monthly,.quest,.bonusbar{border:var(--bw) solid var(--bl)!important;box-shadow:var(--hard)!important;border-radius:16px}
+.bonusbar{background:var(--card)}
+.bonusbar small{color:var(--violet-2)}
+[data-theme="light"] .bonusbar small{color:var(--violet)}
+.bonusbar .bar,.monthly .bar{background:var(--line)}
+.quest{transition:transform .08s,box-shadow .08s}
+.quest:active,.monthly:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--violet)!important}
+.quest .t b{font-family:var(--ft);font-weight:800;font-size:17px;letter-spacing:-.01em}
+.quest .num{border:2px solid var(--bl);border-radius:12px}
+.quest.today{border-color:var(--violet)!important}
+.monthly .t b{font-family:var(--ft);font-weight:800;font-size:16px}
+.monthly em{color:var(--gold)}
+/* étiquettes de rareté : couleurs pleines, texte bien lisible */
+.badge{border:2px solid var(--bl);border-radius:8px;font-family:var(--fb);font-weight:800;letter-spacing:.05em}
+.b-common,[data-theme="dark"] .b-common{background:#4A4F5C;color:#fff}
+.b-rare{background:var(--violet);color:#fff}
+.b-epic,[data-theme="dark"] .b-epic{background:#2563EB;color:#fff}
+.b-legend,[data-theme="dark"] .b-legend{background:var(--gold);color:#1a1200}
+.b-mythic{border-color:var(--bl)}
+.b-done{background:#22C55E;color:#04210f}
+/* boutons */
+.btn{border:var(--bw) solid var(--bl);box-shadow:4px 4px 0 #3B0A94;font-family:var(--fb)}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #3B0A94}
+.btn.ghost{border:var(--bw) solid var(--bl);box-shadow:var(--hard)}
+.btn.gold{box-shadow:4px 4px 0 #8a5d00}
+.btn.swap{border:var(--bw) solid var(--bl);box-shadow:var(--hard-s)}
+.setbtn{font-weight:800}
+/* fenêtres du bas et bulles du sage */
+.sheet{border:var(--bw) solid var(--bl);border-bottom:0}
+.sheet h3{font-family:var(--ft);font-weight:800}
+.bubble{border:var(--bw) solid var(--bl)}
+.bubble::before{border-right-color:var(--bl)}
+.set{border-top-color:var(--line)}
+/* cartes de collection : ombre franche */
+.card{box-shadow:var(--hard-s)}
+.card .cap b{font-family:var(--ft);font-weight:800}
+/* profil */
+.lvl .n{border:var(--bw) solid var(--bl);font-family:var(--ft);font-weight:800;font-size:26px}
+.xp{border:2px solid var(--bl);background:var(--line)}
+/* bloc violet « Mes stats » (coup de cœur de Bazil) */
+.vstats{margin:0 16px 18px;background:var(--violet);color:#fff;border:var(--bw) solid var(--bl);border-radius:16px;box-shadow:4px 4px 0 var(--gold);padding:16px 12px 12px}
+.vstats .hd{display:flex;justify-content:space-between;align-items:center;margin:0 4px 12px}
+.vstats .hd b{font-family:var(--ft);font-weight:800;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
+.vstats .hd span{font-size:12px;font-weight:700;opacity:.9}
+.vstats .big{display:grid;grid-template-columns:repeat(4,1fr)}
+.vstats .big div{text-align:center;padding:6px 2px;border-left:2px solid rgba(255,255,255,.35)}
+.vstats .big div:first-child{border-left:0}
+.vstats .big .ic{font-size:18px;line-height:1}
+.vstats .big b{display:block;font-family:var(--ft);font-weight:800;font-size:28px;line-height:1.1;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.vstats .big span{font-size:12px;font-weight:600}
+.vstats .small{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,.3)}
+.vstats .small div{background:rgba(0,0,0,.18);border-radius:12px;padding:9px 4px;text-align:center}
+.vstats .small b{display:block;font-family:var(--ft);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.vstats .small span{display:block;font-size:11px;font-weight:600;opacity:.92;line-height:1.25;margin-top:2px}
+.logo{white-space:nowrap;font-size:19px;margin-right:8px}
+.qlinks{flex-wrap:nowrap!important;font-size:14px}
+.qlinks button{white-space:nowrap;text-wrap:nowrap}
+.lockimg{border:var(--bw) solid var(--bl)}
+/* écrans de victoire : titres en Bricolage, plus grands */
+.v-title{font-weight:800;font-size:34px;line-height:1.05}
+.v-title.gold{font-size:40px}
 </style>
 </head>
 <body>
@@ -768,7 +854,7 @@ button.chip{cursor:pointer}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v76';
+const VERSION = 'v77';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -3610,12 +3696,17 @@ function renderProf() {
     <div class="muted" style="font-size:13px;margin-top:2px">${lv.to ? `${fmt(lv.to - S.points)} ★ avant <b>${esc(lv.nextName)}</b>` : 'Titre suprême atteint !'}</div>
     <div class="xp"><i style="width:${pct}%"></i></div></div></div></div>
   <div class="panel"><button class="trorow" id="prefbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Ma semaine</h4><b style="font-size:16px">${S.goal.days.length} sortie${S.goal.days.length > 1 ? 's' : ''} · ${String(S.goal.km).replace('.', ',')} km</b></div><span style="flex:1"></span><span class="setbtn">Modifier ›</span></button></div>
-  <div class="panel"><h4>Mes stats</h4><div class="sgrid">
-    ${tile(placeCards().length, 'lieux trouvés')}${tile(placeCards().filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}
-    ${tile(st.n, 'sorties')}${tile(kmTxt(st.km), 'km au total')}${tile(st.n ? hm(st.time) : '0 min', 'de sport')}
-    ${tile(st.runPace || '–:––', 'allure course (/km)')}${tile(st.bikeSpeed || '–', 'vitesse vélo (km/h)')}${tile(kmTxt(st.longest), 'km, plus longue sortie')}
-    ${tile(fmt(st.dplus), 'm de D+ au total')}${tile(fmt(st.maxDplus), 'm, plus gros D+')}${tile(st.km ? Math.round(st.dplus / st.km) : 0, 'm de D+ par km')}
-  </div></div>
+  <div class="vstats"><div class="hd"><b>Mes stats</b><span>depuis le début</span></div>
+    <div class="big">
+      <div><div class="ic">🃏</div><b>${placeCards().length}</b><span>Lieux</span></div>
+      <div><div class="ic">👟</div><b>${st.n}</b><span>Sorties</span></div>
+      <div><div class="ic">📍</div><b>${kmTxt(st.km)}</b><span>Km</span></div>
+      <div><div class="ic">⏱️</div><b>${st.n ? hm(st.time).replace(' min', '′').replace(' h ', 'h') : '0'}</b><span>De sport</span></div>
+    </div>
+    <div class="small">
+      ${tile(st.runPace || '–:––', 'allure (/km)')}${tile(kmTxt(st.longest) + ' km', 'plus longue sortie')}${tile(fmt(st.dplus) + ' m', 'de D+ au total')}
+      ${tile(placeCards().filter(c => c.rarity === 'rare').length, 'lieux rares')}${tile(S.weeksCleared || 0, 'semaines complètes')}${st.bikeSpeed ? tile(st.bikeSpeed, 'vitesse vélo (km/h)') : tile(fmt(st.maxDplus) + ' m', 'plus gros D+')}
+    </div></div>
   <div class="panel"><button class="trorow" id="shopbtn"><div style="flex:none"><h4 style="margin:0 0 4px">Boutique</h4><b style="font-size:18px">${fmt(S.coins || 0)} 🪙</b></div><span style="flex:1"></span><span class="setbtn">Ouvrir ›</span></button></div>
   <div class="panel"><button class="trorow" id="trobtn"><div style="flex:none"><h4 style="margin:0 0 6px">Trophées · ${got.length}/${TROPHIES.length}</h4>
     <div class="mini">${[0, 1, 2].map(i => got[i] ? `<i>${got[i][1]}</i>` : '<i class="off">🔒</i>').join('')}</div></div>
