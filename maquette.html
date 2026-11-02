@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Quest Run · maquette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Maquette « néo-brutaliste » sombre (02/11) : cadres clairs épais, ombres décalées violettes, 2 polices.
+   Lisibilité : texte principal #F5F2FF sur #0E0B14 (≈ 18:1), texte secondaire #C4BCDD (≈ 10:1),
+   étiquettes violettes avec texte blanc (≈ 5,5:1), étiquettes or avec texte noir (≈ 11:1). */
+:root{
+  --bg:#0E0B14; --card:#1A1624; --card2:#221C30; --ink:#F5F2FF; --muted:#C4BCDD; --line:#F5F2FF;
+  --violet:#7B2FF7; --violet-l:#B48CFF; --gold:#FFB800; --red:#FF4D6D;
+  --t-common:#C9CED8; --t-rare:#9B5CFF; --t-epic:#4D9BFF; --t-legend:#FFB800; --t-mythic:#FF5FD2;
+  --bw:2.5px; --sh:4px 4px 0 var(--violet); --r:16px;
+  --title:'Bricolage Grotesque',system-ui,sans-serif; --text:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{background:var(--bg);color:var(--ink);font-family:var(--text);-webkit-font-smoothing:antialiased}
+body{padding:calc(14px + env(safe-area-inset-top)) 16px calc(100px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto}
+h1,h2,h3,.title{font-family:var(--title);letter-spacing:-.02em}
+.top{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.logo{font-family:var(--title);font-weight:800;font-size:24px;flex:1}
+.logo span{color:var(--violet-l)}
+.chip{display:flex;align-items:center;gap:5px;height:34px;padding:0 11px;border:var(--bw) solid var(--line);border-radius:999px;background:var(--card);font-weight:700;font-size:14px;box-shadow:2px 2px 0 var(--violet)}
+/* bloc chiffres, façon « Your library » */
+.lib{background:var(--violet);border:var(--bw) solid var(--line);border-radius:var(--r);box-shadow:4px 4px 0 var(--gold);padding:16px 14px 14px;margin-bottom:22px}
+.lib .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.lib .head b{font-family:var(--title);font-size:15px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.btn-s{font-family:var(--text);font-weight:700;font-size:13px;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:10px;padding:6px 10px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr)}
+.stats div{text-align:center;padding:6px 2px;border-left:2px solid rgba(255,255,255,.35)}
+.stats div:first-child{border-left:0}
+.stats .ic{font-size:18px;line-height:1}
+.stats b{display:block;font-family:var(--title);font-size:30px;font-weight:800;line-height:1.1;margin-top:4px}
+.stats span{font-size:12px;font-weight:600}
+.stats .hl{background:rgba(255,255,255,.16);border-radius:12px;border-left-color:transparent}
+.stats .hl+div{border-left-color:transparent}
+/* titres de section */
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:4px 2px 12px}
+.sec h2{font-size:22px;font-weight:800}
+.sec small{color:var(--muted);font-size:13px;font-weight:600}
+/* défi du mois */
+.defi{display:flex;align-items:center;gap:12px;background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:12px 14px;margin-bottom:22px}
+.defi .em{font-size:30px}
+.defi b{font-family:var(--title);font-size:17px;font-weight:800}
+.defi p{color:var(--muted);font-size:13px;margin-top:2px}
+.bar{height:8px;border-radius:99px;background:#2E2740;margin-top:8px;overflow:hidden}.bar i{display:block;height:100%;width:35%;background:var(--gold)}
+.defi .n{font-family:var(--title);font-weight:800;color:var(--gold);font-size:18px}
+/* carte */
+.map{height:120px;border:var(--bw) solid var(--line);border-radius:var(--r);box-shadow:var(--sh);margin-bottom:22px;position:relative;overflow:hidden;background:
+  linear-gradient(115deg,transparent 46%,#3B82C4 46% 52%,transparent 52%),
+  repeating-linear-gradient(0deg,#2a2438 0 1px,transparent 1px 26px),repeating-linear-gradient(90deg,#2a2438 0 1px,transparent 1px 26px),#1c1828}
+.map .pin{position:absolute;width:30px;height:30px;border-radius:50%;border:2.5px solid #fff;display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff}
+.map .open{position:absolute;right:10px;bottom:10px}
+/* grille des quêtes */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.q{background:var(--card);border:var(--bw) solid var(--line);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.q:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--violet)}
+.q .ph{height:112px;position:relative;display:grid;place-items:center;overflow:hidden;border-bottom:var(--bw) solid var(--line)}
+.q .ph .bg{position:absolute;inset:-12px;filter:blur(7px) saturate(.8) brightness(.7)}
+.q .ph .qm{position:relative;font-family:var(--title);font-weight:800;font-size:46px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35)}
+.tag{position:absolute;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:7px;border:2px solid var(--bg)}
+.tag.new{top:8px;left:8px;background:var(--gold);color:#1a1200;transform:rotate(-6deg)}
+.tag.tier{bottom:8px;left:8px;color:#fff}
+.t-common{background:#4A4F5C}.t-rare{background:var(--violet)}.t-epic{background:#2563EB}.t-legend{background:var(--gold);color:#1a1200!important}.t-mythic{background:linear-gradient(90deg,#ff5fd2,#7B2FF7,#4D9BFF)}
+.tag.done{top:8px;right:8px;background:#22C55E;color:#04210f}
+.q .cap{padding:10px 11px 12px}
+.q .cap b{display:block;font-family:var(--title);font-weight:800;font-size:16px;line-height:1.15;text-wrap:balance}
+.q .cap span{display:flex;align-items:center;gap:5px;margin-top:6px;color:var(--muted);font-size:12.5px;font-weight:600}
+.q.isdone{opacity:.72}
+.legend{grid-column:1/-1;flex-direction:row}
+.legend .ph{width:42%;height:auto;min-height:130px;border-bottom:0;border-right:var(--bw) solid var(--line)}
+.legend .cap{display:flex;flex-direction:column;justify-content:center}
+.legend .cap b{font-size:19px}
+.q .cap .timer{display:inline-block;margin-top:8px;font-size:12px;font-weight:800;color:#1a1200;background:var(--gold);border-radius:7px;padding:3px 7px;width:max-content}
+/* barre d'onglets */
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;padding:0 12px calc(10px + env(safe-area-inset-bottom));pointer-events:none}
+.tabs nav{pointer-events:auto;display:flex;width:100%;max-width:520px;background:var(--card);border:var(--bw) solid var(--line);border-radius:20px;box-shadow:var(--sh);padding:6px}
+.tabs button{flex:1;background:none;border:0;color:var(--muted);font-family:var(--text);font-weight:700;font-size:11px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 0;border-radius:14px}
+.tabs button svg{width:22px;height:22px}
+.tabs button.on{background:var(--violet);color:#fff}
+.note{margin:26px 4px 0;color:var(--muted);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+  <div class="top">
+    <div class="logo">Quest <span>Run</span></div>
+    <div class="chip">🔥 4</div><div class="chip">🪙 35</div>
+  </div>
+
+  <div class="lib">
+    <div class="head"><b>Ta semaine</b><button class="btn-s">Voir tout</button></div>
+    <div class="stats">
+      <div><div class="ic">🎯</div><b>1/3</b><span>Quêtes</span></div>
+      <div class="hl"><div class="ic">🃏</div><b>12</b><span>Cartes</span></div>
+      <div><div class="ic">★</div><b>1,4k</b><span>Points</span></div>
+      <div><div class="ic">👟</div><b>18</b><span>Km</span></div>
+    </div>
+  </div>
+
+  <div class="map">
+    <div class="pin" style="left:22%;top:30%;background:var(--violet)">?</div>
+    <div class="pin" style="left:58%;top:52%;background:#4A4F5C">?</div>
+    <div class="pin" style="left:74%;top:18%;background:#2563EB">?</div>
+    <div class="pin" style="left:42%;top:62%;background:#0E0B14">⌂</div>
+    <button class="btn-s open">🗺️ Agrandir</button>
+  </div>
+
+  <div class="sec"><h2>Quêtes de la semaine</h2><small>Nouvelles dans 4 j</small></div>
+  <div class="grid">
+    <div class="q legend">
+      <div class="ph"><div class="bg" style="background:radial-gradient(circle at 30% 30%,#ffd76a,#b8860b 55%,#3a2600)"></div><div class="qm">?</div><span class="tag tier t-legend">Légendaire</span></div>
+      <div class="cap"><b>La Demeure majestueuse</b><span>Château · 9,8 km</span><span class="timer">⏳ encore 31 h</span></div>
+    </div>
+    <div class="q">
+      <div class="ph"><div class="bg" style="background:linear-gradient(160deg,#5aa0c8,#2f5d7a 50%,#1b3a2a)"></div><div class="qm">?</div><span class="tag new">Nouveau</span><span class="tag tier t-rare">Rare</span></div>
+      <div class="cap"><b>L'Écluse silencieuse</b><span>Écluse · 4,3 km · 🌊</span></div>
+    </div>
+    <div class="q">
+      <div class="ph"><div class="bg" style="background:linear-gradient(160deg,#6db36a,#2c5e2a 60%,#14240f)"></div><div class="qm">?</div><span class="tag new">Nouveau</span><span class="tag tier t-common">Commune</span></div>
+      <div class="cap"><b>Le Bosquet enchanté</b><span>Parc · 3,1 km</span></div>
+    </div>
+    <div class="q">
+      <div class="ph"><div class="bg" style="background:linear-gradient(160deg,#8a8fa0,#4a4e5c 60%,#1c1d24)"></div><div class="qm">?</div><span class="tag tier t-epic">Épique</span></div>
+      <div class="cap"><b>La Sentinelle mélancolique</b><span>Statue · 6,0 km · ↗ 41 m</span></div>
+    </div>
+    <div class="q isdone">
+      <div class="ph"><div class="bg" style="background:linear-gradient(160deg,#c9a46a,#7a5a2f 60%,#2a1d0e);filter:none;inset:0"></div><span class="tag done">✓ Trouvé</span><span class="tag tier t-common">Commune</span></div>
+      <div class="cap"><b>Fontaine des Quatre-Saisons</b><span>Fontaine · 2,8 km</span></div>
+    </div>
+  </div>
+  <p class="note">Maquette · rien n'est cliquable</p>
+
+  <div class="tabs"><nav>
+    <button class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Quêtes</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="12" height="15" rx="2"/><path d="M18 7.5l2.6 1-4.2 11.3"/></svg>Collection</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.6 6.4L21 9.2l-5 4.4 1.5 6.6L12 16.8 6.5 20.2 8 13.6 3 9.2l6.4-.8z"/></svg>Vitrine</button>
+    <button><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Profil</button>
+  </nav></div>
+</body>
+</html>
