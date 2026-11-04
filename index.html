@@ -665,8 +665,8 @@ button.chip{cursor:pointer}
    texte #F5F2FF sur fond #0E0B14, texte secondaire #C4BCDD, étiquettes contrastées.
    ===================================================================== */
 :root{--ft:'Bricolage Grotesque',system-ui,sans-serif;--fb:'Inter',-apple-system,system-ui,sans-serif;
-  --bl:#16131F;--bw:2.5px;--hard:4px 4px 0 var(--violet);--hard-s:3px 3px 0 var(--violet)}
-[data-theme="dark"]{--bg:#0E0B14;--card:#1A1624;--text:#F5F2FF;--muted:#C4BCDD;--line:#3A3350;--violet-soft:#2A1C48;--bl:#8E889E}
+  --bl:rgba(22,19,31,.12);--bw:1px;--hard:none;--hard-s:none}
+[data-theme="dark"]{--bg:#0E0B14;--card:#1A1624;--text:#F5F2FF;--muted:#C4BCDD;--line:#3A3350;--violet-soft:#2A1C48;--bl:rgba(255,255,255,.07)}
 html,body{font-family:var(--fb)}
 .pixel,h1,h2,h3,h4,.logo,.v-title,.ttl{font-family:var(--ft)!important;letter-spacing:-.01em}
 .pixel{font-weight:800}
@@ -688,7 +688,7 @@ h2{font-weight:800;font-size:23px}
 [data-theme="light"] .bonusbar small{color:var(--violet)}
 .bonusbar .bar,.monthly .bar{background:var(--line)}
 .quest{transition:transform .08s,box-shadow .08s}
-.quest:active,.monthly:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--violet)!important}
+.quest:active,.monthly:active{transform:scale(.98)}
 .quest .t b{font-family:var(--ft);font-weight:800;font-size:17px;letter-spacing:-.01em}
 .quest .num{border:2px solid var(--bl);border-radius:12px}
 .quest.today{border-color:var(--violet)!important}
@@ -703,10 +703,10 @@ h2{font-weight:800;font-size:23px}
 .b-mythic{border-color:var(--bl)}
 .b-done{background:#22C55E;color:#04210f}
 /* boutons */
-.btn{border:var(--bw) solid var(--bl);box-shadow:4px 4px 0 #3B0A94;font-family:var(--fb)}
-.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #3B0A94}
+.btn{border:var(--bw) solid var(--bl);box-shadow:none;font-family:var(--fb)}
+.btn:active{transform:scale(.98)}
 .btn.ghost{border:var(--bw) solid var(--bl);box-shadow:var(--hard)}
-.btn.gold{box-shadow:4px 4px 0 #8a5d00}
+.btn.gold{box-shadow:none}
 .btn.swap{border:var(--bw) solid var(--bl);box-shadow:var(--hard-s)}
 .setbtn{font-weight:800}
 /* fenêtres du bas et bulles du sage */
@@ -722,7 +722,7 @@ h2{font-weight:800;font-size:23px}
 .lvl .n{border:var(--bw) solid var(--bl);font-family:var(--ft);font-weight:800;font-size:26px}
 .xp{border:2px solid var(--bl);background:var(--line)}
 /* bloc violet « Mes stats » (coup de cœur de Bazil) */
-.vstats{margin:0 16px 18px;background:var(--violet);color:#fff;border:var(--bw) solid var(--bl);border-radius:16px;box-shadow:4px 4px 0 var(--gold);padding:16px 12px 12px}
+.vstats{margin:0 16px 18px;background:var(--violet);color:#fff;border:var(--bw) solid var(--bl);border-radius:16px;box-shadow:none;padding:16px 12px 12px}
 .vstats .hd{display:flex;justify-content:space-between;align-items:center;margin:0 4px 12px}
 .vstats .hd b{font-family:var(--ft);font-weight:800;font-size:15px;letter-spacing:.04em;text-transform:uppercase}
 .vstats .hd span{font-size:12px;font-weight:700;opacity:.9}
@@ -745,7 +745,7 @@ h2{font-weight:800;font-size:23px}
 .chips button,.days button,.kms button,.gdays i,.recap div,.vcardwrap .card,.stepper button,.seg{border:var(--bw) solid var(--bl)!important;box-shadow:var(--hard-s)!important}
 .isteps>div,.explain>div,.sportpick button,.opt,.swaps button,.pack,.tro,.hint{border-radius:16px}
 .sportpick button,.opt,.swaps button,.chips button,.days button,.kms button,.stepper button{transition:transform .08s,box-shadow .08s}
-.sportpick button:active,.opt:active,.swaps button:active,.chips button:active,.days button:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--violet)!important}
+.sportpick button:active,.opt:active,.swaps button:active,.chips button:active,.days button:active{transform:scale(.98)}
 .sportpick button.on,#onb .sportpick button.on,.chips button.on,.days button.on,.kms button.on{background:var(--violet)!important;color:#fff!important;box-shadow:var(--hard-s)!important}
 .sportpick button.on small{color:#EDE8FF}
 #onb .sportpick button>span,.isteps .ic{border:2px solid var(--bl);background:var(--violet-soft)}
@@ -754,16 +754,16 @@ h2{font-weight:800;font-size:23px}
 .sportpick button div,#onb .quiz button div{font-family:var(--ft);font-weight:800}
 #onb h1,.splash b,.hero .logo,#onb .intro .hero .logo{font-family:var(--ft)!important;font-weight:800;letter-spacing:-.02em}
 .splash b{font-size:40px}
-.splash img{border:3px solid #fff;box-shadow:6px 6px 0 #3B0A94;border-radius:28px}
+.splash img{border:3px solid #fff;box-shadow:none;border-radius:28px}
 #onb .obar{border:2px solid var(--bl);height:12px}
 #onb .obar i{background:var(--violet)}
 #onb .namein{border-radius:16px}
-#onb .namein:focus{outline:none;box-shadow:4px 4px 0 var(--gold)!important}
+#onb .namein:focus{outline:none;box-shadow:none!important}
 .idots i{border:1.5px solid var(--bl)}
 #toast{border:var(--bw) solid var(--bl);box-shadow:var(--hard-s);font-weight:700}
 .link{font-weight:700}
 /* victoire, cadeau, bilan : fond noir gardé, mêmes cadres */
-#victory .bubble,#victory .fiche .box,.fiche .box{border:var(--bw) solid var(--bl);box-shadow:4px 4px 0 var(--violet)}
+#victory .bubble,#victory .fiche .box,.fiche .box{border:var(--bw) solid var(--bl);box-shadow:none}
 #victory .btn{border:var(--bw) solid var(--bl)}
 .v-sub,.v-pts,.v-coins{font-family:var(--fb)}
 .v-pts{font-family:var(--ft)!important;font-weight:800}
@@ -778,12 +778,12 @@ h2{font-weight:800;font-size:23px}
 .backbtn{font-weight:800}
 .switch{border:2px solid var(--bl)}
 /* écran de course */
-#run .rtop,#run .rcard{border:var(--bw) solid var(--bl);box-shadow:4px 4px 0 var(--violet);background:#1A1624}
+#run .rtop,#run .rcard{border:var(--bw) solid var(--bl);box-shadow:none;background:#1A1624}
 #run .rtop .x,#run .vbtn{border:2px solid var(--bl)}
 #run .round{border:var(--bw) solid var(--bl)}
-#run .fab{border:var(--bw) solid var(--bl);box-shadow:4px 4px 0 #3B0A94}
+#run .fab{border:var(--bw) solid var(--bl);box-shadow:none}
 #run .tgt b,#run .stats3 b,#run .ctxt b{font-family:var(--ft);font-weight:800}
-#run .rturn{border:var(--bw) solid var(--bl);box-shadow:4px 4px 0 #3B0A94}
+#run .rturn{border:var(--bw) solid var(--bl);box-shadow:none}
 #run .sports button{border:2px solid var(--bl)}
 #run .sports button.on{background:var(--violet);color:#fff}
 #onb .intro .bubble::before{border-bottom-color:var(--bl)!important}
@@ -796,19 +796,120 @@ h2{font-weight:800;font-size:23px}
 .t-mythic{background:#FF4FC8!important;color:#1a0b2e!important}
 .pin,.pin.rare,.pin.legend,.pin.done{background-image:none}
 .pin.rare{background:#7B2FF7}.pin.legend{background:#FFB800;color:#1a1200}.pin.done{background:#22C55E;color:#04210f}
-.pin{border:2.5px solid #fff;box-shadow:2px 2px 0 #16131F}
+.pin{border:2.5px solid #fff;box-shadow:none}
 .quest.rare .num{background:#7B2FF7}
 .quest.done .num{background:#22C55E;color:#04210f}
 .quest .num.qm,.pin.qm{text-shadow:none}
 .sageimg{width:82%;height:82%;object-fit:contain;display:block;pointer-events:none;-webkit-user-drag:none}
-.vstats .vmore{font-family:var(--fb);font-weight:800;font-size:13px;color:var(--text);background:var(--bg);border:2px solid var(--bl);border-radius:10px;padding:6px 10px;box-shadow:2px 2px 0 #3B0A94}
+.vstats .vmore{font-family:var(--fb);font-weight:800;font-size:13px;color:var(--text);background:var(--bg);border:2px solid var(--bl);border-radius:10px;padding:6px 10px;box-shadow:none}
 .vstats .big.more{display:none;margin-top:12px;padding-top:12px;border-top:2px solid rgba(255,255,255,.3)}
 .vstats.open .big.more{display:grid;animation:rise .3s ease-out}
 .vstats .big b{font-size:clamp(20px,6.6vw,28px)}
-#run,#victory{--bl:#8E889E}
+#run,#victory{--bl:rgba(255,255,255,.07)}
 /* écrans de victoire : titres en Bricolage, plus grands */
 .v-title{font-weight:800;font-size:34px;line-height:1.05}
 .v-title.gold{font-size:40px}
+
+/* =====================================================================
+   HABILLAGE « DOUX » (04/11, d'après l'image de Bazil) : fond presque noir, cartes sombres
+   sans cadre épais, violet lumineux, formes violettes dans les coins, carte violette sombre,
+   barre d'onglets flottante, gros logo « Quest Run ✦ ». Même structure d'appli.
+   ===================================================================== */
+[data-theme="dark"]{--bg:#0A0810;--card:#16131F;--card2:#1F1A2C;--text:#F6F3FF;--muted:#A9A1C2;--line:#272236;--violet-soft:#241840}
+body{background:var(--bg)}
+/* formes violettes dans les coins */
+body::before,body::after{content:"";position:fixed;z-index:0;pointer-events:none;background:linear-gradient(135deg,#8B3DFF,#6A1FE0)}
+body::before{top:-70px;left:-90px;width:230px;height:190px;border-radius:0 0 120px 0;transform:rotate(-8deg);opacity:.95}
+body::after{bottom:-60px;right:-80px;width:220px;height:170px;border-radius:120px 0 0 0;transform:rotate(-8deg);opacity:.9}
+[data-theme="light"] body::before,[data-theme="light"] body::after{opacity:.25}
+.screen{z-index:1;bottom:calc(88px + var(--safe-b))!important}
+/* logo */
+.brand{position:relative;font-family:var(--ft);font-weight:800;font-size:44px;line-height:.86;letter-spacing:-.045em;color:var(--text);margin-top:4px}
+.brand svg{position:absolute;right:-26px;top:-12px;width:26px;height:26px;fill:#9B5CFF;filter:drop-shadow(0 0 8px rgba(155,92,255,.8))}
+.brand #testtag{font-size:10px;letter-spacing:0;vertical-align:top}
+.topbar{align-items:center;padding:16px 18px 18px}
+#s-quests .topbar .chip:has(.star){display:none}
+.logo:not(.brand){font-size:26px;font-weight:800;text-transform:lowercase;letter-spacing:-.02em;color:var(--text)}
+.logo:not(.brand)::first-letter{text-transform:uppercase}
+/* pastilles du haut */
+.chip{background:var(--card);border:1.5px solid var(--line)!important;box-shadow:none!important;height:44px;padding:0 16px;font-size:16px;font-weight:700}
+.chip[data-shop]{border-color:var(--violet)!important}
+/* carte violette sombre */
+#map{height:38vh;min-height:250px;border:0!important;box-shadow:none!important;border-radius:26px;background:#1d1640;position:relative}
+#map .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.55) contrast(.78) sepia(1) hue-rotate(212deg) saturate(3.2) brightness(.68)}
+#map .leaflet-control-attribution{background:rgba(10,8,16,.55)!important;color:#8d84a8}
+#map .leaflet-control-attribution a{color:#b49cff}
+.locbtn{position:absolute;z-index:500;top:14px;left:14px;width:46px;height:46px;border-radius:14px;background:#0E0B16;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.locbtn svg{width:22px;height:22px;fill:#fff}
+/* pastilles de mission sur la carte */
+.pin{background:#16131F!important;border:2.5px solid #fff!important;box-shadow:0 3px 10px rgba(0,0,0,.5)!important;color:#fff!important}
+.pin.qm:not(.t-common){box-shadow:0 0 0 9px rgba(123,47,247,.28),0 0 26px rgba(155,92,255,.7)!important}
+.pin.t-rare{background:#3A1A7A!important;border-color:#C9A6FF!important}
+.pin.t-epic{background:#13306B!important;border-color:#8EC5FF!important;box-shadow:0 0 0 9px rgba(37,99,235,.25),0 0 26px rgba(77,155,255,.6)!important}
+.pin.t-legend{background:#4A3300!important;border-color:#FFD23F!important;color:#FFD23F!important;box-shadow:0 0 0 9px rgba(255,184,0,.22),0 0 26px rgba(255,184,0,.6)!important}
+.pin.t-mythic{background:#4A1340!important;border-color:#FF8FDD!important;box-shadow:0 0 0 9px rgba(255,79,200,.22),0 0 26px rgba(255,79,200,.6)!important}
+.pin.done{background:#14532D!important;border-color:#4ADE80!important;color:#4ADE80!important}
+.pin.home{background:#0E0B16!important}
+.me{background:#2F80ED;box-shadow:0 0 0 14px rgba(47,128,237,.28)}
+/* titres de section */
+.week{margin:22px 18px 12px;align-items:center}
+.week b{font-family:var(--ft);font-weight:700;font-size:21px;letter-spacing:-.02em;white-space:nowrap}
+#daysleft{flex:none;background:var(--card);color:var(--muted);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:600}
+/* blocs : cartes sombres douces, sans cadre épais */
+.panel,.monthly,.bonusbar,.quest,.isteps>div,.explain>div,.sportpick button,#onb .sportpick button,.opt,.swaps button,.pack,.tro,.hint,.mythhero,.wallet,
+.bubble,.sheet,#toast,#onb .namein,.days button,.kms button,.chips button,.stepper button,.seg,.lockimg,.recap div,.gdays i{border:1px solid rgba(255,255,255,.06)!important;box-shadow:none!important}
+.panel,.monthly,.bonusbar,.quest,.sportpick button,#onb .sportpick button,.opt,.swaps button{border-radius:22px}
+.panel,.monthly,.bonusbar{background:var(--card)}
+.panel h4{font-family:var(--ft)!important;font-weight:700;letter-spacing:0;text-transform:none;font-size:18px;color:var(--text)}
+/* barre du bonus */
+.bonusbar{margin:0 16px 18px;padding:16px 18px;gap:14px}
+.bonusbar::before{content:"★";color:#9B5CFF;font-size:22px;line-height:1}
+.bonusbar .bar{height:12px;background:#2A2440}
+.bonusbar .bar i{background:linear-gradient(90deg,#7B2FF7,#A06BFF)}
+.bonusbar small{font-family:var(--ft);font-weight:700;font-size:17px;color:#A06BFF!important}
+/* défi du mois */
+.monthly{background:transparent!important;border:0!important;padding:8px 18px;margin:0 0 6px;width:100%}
+.monthly .ic{width:64px;height:64px;border-radius:18px;background:var(--card);display:grid;place-items:center;font-size:32px}
+.monthly .t b{font-family:var(--ft);font-weight:700;font-size:18px}
+.monthly em{background:var(--card);color:var(--text)!important;padding:10px 16px;border-radius:999px;font-family:var(--ft);font-weight:700;font-size:16px}
+/* quêtes : ligne simple, vignette + bouton « Commencer » */
+.qlist{gap:4px;padding:0 0 20px}
+.quest{background:transparent!important;border:0!important;padding:10px 18px;border-radius:0;gap:14px}
+.quest .num{width:64px;height:64px;border-radius:18px;border:0!important;font-size:28px}
+.quest .t b{font-family:var(--ft);font-weight:700;font-size:18px;letter-spacing:-.01em}
+.quest .t span{font-size:14px;margin-top:3px}
+.quest .tier{font-style:normal;font-weight:700}
+.tc-common{color:#B9BEC9}.tc-rare{color:#B48CFF}.tc-epic{color:#7FB4FF}.tc-legend{color:#FFD23F}.tc-mythic{color:#FF8FDD}
+.gobtn{flex:none;background:var(--violet);color:#fff;font-family:var(--fb);font-weight:700;font-size:15px;padding:12px 18px;border-radius:999px;box-shadow:0 6px 18px rgba(123,47,247,.35)}
+.quest.done .num{background:#14532D;color:#4ADE80}
+.badge{border:0!important;border-radius:999px;padding:6px 10px}
+/* boutons */
+.btn{border:0!important;border-radius:999px;box-shadow:0 8px 22px rgba(123,47,247,.35)!important;background:var(--violet)}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:var(--card);box-shadow:none!important;border:1px solid rgba(255,255,255,.08)!important}
+.btn.gold{box-shadow:0 8px 22px rgba(255,184,0,.3)!important}
+.btn.swap{box-shadow:none!important}
+/* barre d'onglets flottante */
+.tabbar{left:12px;right:12px;bottom:calc(10px + var(--safe-b));height:72px;padding:6px!important;border:1px solid rgba(255,255,255,.06)!important;border-radius:30px;background:rgba(22,19,31,.92);backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.45);z-index:500}
+.tabbar button{margin:0 2px!important;border-radius:24px!important;font-size:12px}
+.tabbar button.on{background:var(--violet);color:#fff;box-shadow:0 6px 18px rgba(123,47,247,.45)}
+/* bloc violet des stats : sans cadre épais */
+.vstats{border:0!important;box-shadow:0 12px 30px rgba(123,47,247,.35)!important;border-radius:24px}
+.vstats .vmore{border:0!important;box-shadow:none!important;background:rgba(0,0,0,.28);color:#fff}
+/* sage, bulles, accueil */
+.sage{border:0!important}
+.bubble{background:var(--card);border-radius:20px}
+.bubble::before{border-right-color:var(--card)!important}
+#onb .intro .bubble::before{border-bottom-color:var(--card)!important}
+#onb{background:var(--bg)}
+#onb .obar{border:0!important;background:#2A2440}
+.sportpick button.on,#onb .sportpick button.on,.chips button.on,.days button.on,.kms button.on{box-shadow:0 6px 18px rgba(123,47,247,.4)!important}
+/* écran de course */
+#run .rtop,#run .rcard,#run .rturn{border:0!important;box-shadow:0 10px 30px rgba(0,0,0,.45)!important;border-radius:22px}
+#run .round,#run .fab,#run .rtop .x,#run .vbtn,#run .sports button{border:0!important}
+#run .fab{box-shadow:0 8px 22px rgba(123,47,247,.4)!important}
+/* cartes à collectionner : ombre douce */
+.card{box-shadow:0 8px 20px rgba(0,0,0,.35)}
 </style>
 </head>
 <body>
@@ -816,10 +917,10 @@ h2{font-weight:800;font-size:23px}
 <!-- ============ ÉCRAN QUÊTES ============ -->
 <section id="s-quests" class="screen">
   <div class="topbar">
-    <div class="logo pixel">QUEST RUN <span id="testtag" class="hidden" style="color:#E0245E;font-size:9px">· TEST</span></div>
+    <div class="brand">Quest<br>Run<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c.9 6.2 5.8 11.1 12 12-6.2.9-11.1 5.8-12 12-.9-6.2-5.8-11.1-12-12C6.2 11.1 11.1 6.2 12 0z"/></svg> <span id="testtag" class="hidden" style="color:#E0245E">· TEST</span></div>
     <div style="display:flex;gap:6px"><div class="chip fire" id="firechip"><span>🔥</span><b id="fire">0</b></div><button class="chip" data-shop><span class="coin">🪙</span><span id="coins">0</span></button><div class="chip"><span class="star">★</span><span id="pts">0</span></div></div>
   </div>
-  <div id="map"></div>
+  <div id="map"><button class="locbtn" id="locbtn" aria-label="Me localiser"><svg viewBox="0 0 24 24"><path d="M21 3 3 10.5l7.2 2.3L12.5 20z"/></svg></button></div>
   <div class="week"><b>Quêtes de la semaine</b><span class="muted" id="daysleft"></span></div>
   <div class="bonusbar"><div class="bar"><i id="bonusfill" style="width:0"></i></div><small id="bonustxt"></small></div>
   <button class="monthly" id="monthly"></button>
@@ -920,7 +1021,7 @@ h2{font-weight:800;font-size:23px}
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v82';
+const VERSION = 'v83';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -2046,6 +2147,8 @@ function initMap() {
   setTiles(map);
   layer = L.layerGroup().addTo(map);
   startWatch();
+  const lb = $('#locbtn');
+  if (lb) { L.DomEvent.disableClickPropagation(lb); lb.onclick = async () => { try { const p = await getPos(); map.setView([p.lat, p.lng], 15); } catch (e) { if (S.home) map.setView([S.home.lat, S.home.lng], 14); } }; }
 }
 function startWatch() {
   if (!navigator.geolocation || watchId != null) return;
@@ -2115,8 +2218,8 @@ function renderQuests() {
       // plus de jours (28/10) : on fait ses quêtes dans l'ordre qu'on veut ; un « ? » de la couleur de la rareté
       return `<button class="quest ${p.rarity} ${done ? 'done' : ''}" data-i="${i}">
         <div class="num ${done ? '' : 'qm t-' + t} ${!done && !q.seen ? 'new' : ''}">${done ? '✓' : '?'}</div>
-        <div class="t"><b>${esc(done ? shownName(p, true) : mysteryName(p))}</b><span>${q.bought && !done ? '🪙 Achetée' : esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km ${hillBadge(done ? null : questDplus(p))}</span></div>
-        ${done ? `<span class="badge b-done">+${PTS[t]}</span>` : tierBadge(t)}
+        <div class="t"><b>${esc(done ? shownName(p, true) : mysteryName(p))}</b><span>${done ? '' : `<em class="tier tc-${t}">${TIER_NAME[t]}</em> · `}${q.bought && !done ? '🪙 Achetée' : esc(p.label)} · ${roundTripKm(p).toFixed(1).replace('.', ',')} km</span></div>
+        ${done ? `<span class="badge b-done">+${PTS[t]}</span>` : '<span class="gobtn">Commencer</span>'}
       </button>`;
     }).join('');
     $('#qlist').querySelectorAll('.quest').forEach(b => b.onclick = () => openQuest(+b.dataset.i));
