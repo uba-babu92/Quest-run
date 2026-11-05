@@ -1042,7 +1042,7 @@ body::after{bottom:-60px;right:-80px;width:220px;height:170px;border-radius:120p
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v87';
+const VERSION = 'v88';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1335,7 +1335,7 @@ async function fetchRouteKm(p) {
     const rare = p.rarity === 'rare', t = { lat: rare ? p.zlat : p.lat, lng: rare ? p.zlng : p.lng };
     const R = await makeRoute({ lat: S.home.lat, lng: S.home.lng }, t, null, sportOf({ sport: S.sport }).router);
     if (!R || !R.real || !R.dist) return null;
-    S.rkm = S.rkm || {}; S.rkm[p.id] = R.dist * 2 / 1000; save();
+    setRouteKm(p, R.dist * 2 / 1000);
     return S.rkm[p.id];
   } catch (e) { return null; } finally { delete rkmBusy[p.id]; }
 }
@@ -1623,7 +1623,16 @@ function climb(alts) {
 // D+ estimé d'un aller-retour vers un lieu : la différence d'altitude avec la maison
 const questDplus = p => p && p.ele != null && S.homeEle != null ? Math.round(Math.abs(p.ele - S.homeEle) * 1.2) : null;
 // distance « effort » : 100 m de montée ≈ 1 km de plat
-const effortM = p => p.dist * 2 * ROAD + (questDplus(p) || 0) * 10;
+// 05/11 : l'effort se base sur le VRAI trajet quand il est connu (S.rkm), sinon sur l'estimation
+// corrigée par le détour moyen constaté (S.detK : les trajets par les quais rallongent)
+const effortM = p => (S.rkm && S.rkm[p.id] ? S.rkm[p.id] * 1000 : p.dist * 2 * ROAD * (S.detK || 1)) + (questDplus(p) || 0) * 10;
+function setRouteKm(p, km) {
+  S.rkm = S.rkm || {}; S.rkm[p.id] = km;
+  // détour moyen = médiane (vrai trajet / estimation) sur les trajets connus, entre ×1 et ×1,7
+  const r = Object.entries(S.rkm).map(([id, k]) => { const q = placeById(id); return q && q.dist ? k * 1000 / (q.dist * 2 * ROAD) : null; }).filter(Boolean).sort((a, b) => a - b);
+  S.detK = r.length >= 2 ? Math.min(1.7, Math.max(1, r[Math.floor(r.length / 2)])) : 1;
+  save();
+}
 function hillBadge(dp) {
   if (dp == null) return '';
   const k = dp < 40 ? 0 : dp < 120 ? 1 : 2;
@@ -1909,6 +1918,35 @@ function pickQuests(n, seed, exclude, o = {}) {
   left = take(commons, n - wantRare + left);
   if (picked.length < n) take(rares.concat(commons), n - picked.length);
   return picked;
+}
+
+// 05/11 (Bazil) : le trajet peut faire un détour (quais), mais la quête doit garder le bon nombre de km.
+// En arrière-plan, on calcule le vrai trajet de chaque quête ; s'il dépasse la distance prévue de plus de 20 %,
+// on prend un lieu plus proche (même rareté), dont le vrai trajet colle mieux.
+let fitBusy = false;
+async function fitQuests() {
+  if (fitBusy || !S.week || !S.home || RUN) return; fitBusy = true;
+  let changed = 0;
+  try {
+    for (let i = 0; i < S.week.quests.length; i++) {
+      const q = S.week.quests[i];
+      if (q.status !== 'todo' || q.fit || q.legend || q.friend || q.bought || q.star || q.mythic || !q.km) continue;
+      for (let tries = 0; tries < 3; tries++) {
+        const p = placeById(q.pid); if (!p) break;
+        const k = S.rkm && S.rkm[p.id] || await fetchRouteKm(p);
+        if (!k) break; // pas de serveur : on réessaiera plus tard
+        if (k <= q.km * 1.2 || !navigator.onLine) { q.fit = 1; break; }
+        const ex = new Set(S.week.quests.map(x => x.pid).concat(Object.keys(S.rkm || {}).filter(id => S.rkm[id] > q.km * 1.2)));
+        const pool = pickQuests(4, 'fit|' + p.id + '|' + tries, ex, { km: q.km, water: nearWater(p) });
+        const np = pool.find(x => x.rarity === p.rarity) || pool[0];
+        if (!np) { q.fit = 1; break; }
+        if (!S.week || S.week.quests[i] !== q || q.status !== 'todo' || RUN) return;
+        q.pid = np.id; q.seen = false; changed++;
+        if (tries === 2) q.fit = 1;
+      }
+    }
+  } finally { fitBusy = false; save(); }
+  if (changed && current === 'quests' && !$('#bd')) { renderQuests(); toast('🧭 Quête ajustée : même distance, vrai trajet'); }
 }
 
 function ensureWeek(force, opt = {}) {
@@ -2226,6 +2264,7 @@ function renderPoints() {
 }
 function renderQuests() {
   renderPoints();
+  if (Date.now() - (renderQuests.fitAt || 0) > 120e3) { renderQuests.fitAt = Date.now(); setTimeout(fitQuests, 1500); }
   $('#testtag').classList.toggle('hidden', !S.testMode);
   expireLegend();
   const qs = S.week.quests, norm = qs.filter(q => !q.legend && !q.friend), done = norm.filter(q => q.status === 'done').length;
@@ -3478,7 +3517,7 @@ async function planRoute() {
   const R = await makeRoute(from, t, RUN.phase === 'back' ? RUN.goRoute : null, sportOf(RUN).router);
   if (!RUN || RUN.sport !== want) return; // sport changé entre-temps
   RUN.route = R;
-  if (RUN.phase === 'go' && !RUN.rerouted && R.real && R.dist && S.home && dist(from, S.home) < 300) { const p0 = placeById(RUN.pid); if (p0) { S.rkm = S.rkm || {}; S.rkm[p0.id] = R.dist * 2 / 1000; save(); } }
+  if (RUN.phase === 'go' && !RUN.rerouted && R.real && R.dist && S.home && dist(from, S.home) < 300) { const p0 = placeById(RUN.pid); if (p0) setRouteKm(p0, R.dist * 2 / 1000); }
   if (RUN.phase === 'go' && !RUN.goRoute) RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
   if (RUN.phase === 'go' && RUN.rerouted) RUN.goRoute = RUN.goRoute.concat(RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]));
   saveRun(); showRoute(RUN.ready || RUN.nav === false); drawRun();
@@ -4449,7 +4488,7 @@ function renderCamp() {
     try {
       const pl = await fetchPlaces(chosen, S.goal.km);
       if (!pl || !pl.length) throw new Error('aucun lieu');
-      S.home = chosen; S.homeEle = null; S.rkm = {};
+      S.home = chosen; S.homeEle = null; S.rkm = {}; S.detK = 1;
       S.places = keepQuestPlaces(pl); S.placesFor = { lat: chosen.lat, lng: chosen.lng, km: S.goal.km, at: Date.now() };
       for (const k in greenPathCache) delete greenPathCache[k];
       try { await Promise.race([Promise.all([loadElevations(), loadGreen(), loadTrails()]), new Promise(r => setTimeout(r, 7000))]); } catch (e) {}
@@ -4558,6 +4597,12 @@ function quizFor(sp) {
 }
 let onbMap = null;
 /* ---------- écran d'ouverture (04/11) : le logo « Quest Run ✦ » en grand, puis on « rentre » dans l'appli ---------- */
+// 05/11 (Bazil) : le logo à chaque lancement, aussi quand l'iPhone rouvre l'appli restée en arrière-plan
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+  if (hiddenAt && Date.now() - hiddenAt > 30e3 && !RUN && S.onboarded) { showSplash.done = false; showSplash(); }
+});
 function showSplash() {
   if (showSplash.done) return; showSplash.done = true;
   const sp = document.createElement('div'); sp.className = 'splash';
@@ -4698,7 +4743,7 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      if (!first()) return; S.home = chosen; S.rkm = {}; save(); onboarding(S.onboarded ? 9 : 8);
+      if (!first()) return; S.home = chosen; S.rkm = {}; S.detK = 1; save(); onboarding(S.onboarded ? 9 : 8);
     };
   }
   if (step === 8) {
