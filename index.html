@@ -1042,7 +1042,7 @@ body::after{bottom:-60px;right:-80px;width:220px;height:170px;border-radius:120p
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v86';
+const VERSION = 'v87';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1324,7 +1324,21 @@ function weekId(d = new Date()) {
   return y + '-W' + String(w).padStart(2, '0');
 }
 function daysLeft() { const d = new Date().getDay() || 7; return 8 - d; }
-function roundTripKm(p) { return (p.dist * 2 * ROAD / 1000); }
+// 05/11 : si le vrai trajet est connu (calculé une fois), on affiche sa distance partout (S.rkm)
+function roundTripKm(p) { const k = S.rkm && S.rkm[p.id]; return k || (p.dist * 2 * ROAD / 1000); }
+// calcule le vrai trajet maison → lieu en arrière-plan et le garde
+const rkmBusy = {};
+async function fetchRouteKm(p) {
+  if (!p || !S.home || (S.rkm && S.rkm[p.id]) || rkmBusy[p.id]) return null;
+  rkmBusy[p.id] = 1;
+  try {
+    const rare = p.rarity === 'rare', t = { lat: rare ? p.zlat : p.lat, lng: rare ? p.zlng : p.lng };
+    const R = await makeRoute({ lat: S.home.lat, lng: S.home.lng }, t, null, sportOf({ sport: S.sport }).router);
+    if (!R || !R.real || !R.dist) return null;
+    S.rkm = S.rkm || {}; S.rkm[p.id] = R.dist * 2 / 1000; save();
+    return S.rkm[p.id];
+  } catch (e) { return null; } finally { delete rkmBusy[p.id]; }
+}
 let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2600); }
 
@@ -2286,7 +2300,7 @@ function openQuest(i) {
       <button class="qsharei" id="qshare" aria-label="Partager la quête avec un ami"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg></button></div>
     ${tierBadge(qTier(q), ` · +${PTS[qTier(q)]} ★`)}${q.legend && !q.star && !q.bought ? ` <span class="legtime" style="font-size:13px">⏳ encore ${hoursLeft(q)} h</span>` : ''}
     <h3 style="margin:8px 0 2px">${esc(q.mythic ? q.mythName : mysteryName(p))}</h3>
-    <p class="muted" style="margin:0 0 12px">${esc(p.label)} · ≈ ${roundTripKm(p).toFixed(1).replace('.', ',')} km aller-retour ${hillBadge(questDplus(p))}</p>
+    <p class="muted" style="margin:0 0 12px">${esc(p.label)} · <span id="qkm">${S.rkm && S.rkm[p.id] ? '' : '≈ '}${roundTripKm(p).toFixed(1).replace('.', ',')}</span> km aller-retour ${hillBadge(questDplus(p))}</p>
     ${sageBox('', 'qsay')}
     <div class="row" style="margin-top:0"><button class="btn run" id="gorun">🏃 J'y vais !</button></div>
     ${S.testMode ? '<button class="link" id="here" style="margin:4px auto 0">✅ J\'y suis (test)</button>' : ''}
@@ -2300,6 +2314,8 @@ function openQuest(i) {
   sh.querySelector('#lost').onclick = () => report(i);
   sh.querySelector('#qshare').onclick = () => shareQuest(q, p);
   typeText(sh.querySelector('#qsay'), say, sh.querySelector('#qsayb'));
+  // vraie distance du trajet (même calcul que l'écran de départ)
+  fetchRouteKm(p).then(k => { const e = sh.querySelector('#qkm'); if (k && e && e.isConnected) e.textContent = k.toFixed(1).replace('.', ','); });
   const row = document.querySelector(`#qlist .quest[data-i="${i}"] .num`); if (row) row.classList.remove('new');
 }
 
@@ -3462,6 +3478,7 @@ async function planRoute() {
   const R = await makeRoute(from, t, RUN.phase === 'back' ? RUN.goRoute : null, sportOf(RUN).router);
   if (!RUN || RUN.sport !== want) return; // sport changé entre-temps
   RUN.route = R;
+  if (RUN.phase === 'go' && !RUN.rerouted && R.real && R.dist && S.home && dist(from, S.home) < 300) { const p0 = placeById(RUN.pid); if (p0) { S.rkm = S.rkm || {}; S.rkm[p0.id] = R.dist * 2 / 1000; save(); } }
   if (RUN.phase === 'go' && !RUN.goRoute) RUN.goRoute = RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]);
   if (RUN.phase === 'go' && RUN.rerouted) RUN.goRoute = RUN.goRoute.concat(RUN.route.pts.filter((_, i) => i % 3 === 0).map(p => [p[0], p[1]]));
   saveRun(); showRoute(RUN.ready || RUN.nav === false); drawRun();
@@ -4432,7 +4449,7 @@ function renderCamp() {
     try {
       const pl = await fetchPlaces(chosen, S.goal.km);
       if (!pl || !pl.length) throw new Error('aucun lieu');
-      S.home = chosen; S.homeEle = null;
+      S.home = chosen; S.homeEle = null; S.rkm = {};
       S.places = keepQuestPlaces(pl); S.placesFor = { lat: chosen.lat, lng: chosen.lng, km: S.goal.km, at: Date.now() };
       for (const k in greenPathCache) delete greenPathCache[k];
       try { await Promise.race([Promise.all([loadElevations(), loadGreen(), loadTrails()]), new Promise(r => setTimeout(r, 7000))]); } catch (e) {}
@@ -4681,7 +4698,7 @@ function onboarding(step = 0) {
     };
     $('#go').onclick = () => {
       if (!chosen) { toast('Place ton point de départ sur la carte'); return; }
-      if (!first()) return; S.home = chosen; save(); onboarding(S.onboarded ? 9 : 8);
+      if (!first()) return; S.home = chosen; S.rkm = {}; save(); onboarding(S.onboarded ? 9 : 8);
     };
   }
   if (step === 8) {

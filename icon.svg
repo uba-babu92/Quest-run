@@ -7,7 +7,7 @@
   <rect width="512" height="512" fill="#0F0B19"/>
   <path d="M-40-40H330C300 60 220 150 90 170 30 180-10 200-40 220Z" fill="url(#v)"/>
   <path d="M552 552H260C290 470 360 420 470 400 510 393 535 380 552 365Z" fill="url(#v)" opacity=".85"/>
-  <g transform="translate(256 250) scale(.86) translate(-250 -280)">
+  <g transform="translate(256 256) scale(.86) translate(-266.5 -271)">
     <circle cx="238" cy="276" r="132" fill="none" stroke="#fff" stroke-width="66"/>
     <path d="M318 381 364 440" stroke="#fff" stroke-width="66" stroke-linecap="square"/>
     <circle cx="404" cy="112" r="78" fill="url(#g)"/>
