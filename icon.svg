@@ -1,17 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Icône officielle Quest Run (04/11) : le Q et la petite étoile du logo, sur fond nuit avec une forme violette -->
+  <!-- Icône officielle Quest Run (05/11) : le Q (queue à bout carré) et la petite étoile, centrés -->
   <defs>
     <linearGradient id="v" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9B4DFF"/><stop offset="1" stop-color="#6A1FE0"/></linearGradient>
     <radialGradient id="g" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#B98CFF" stop-opacity=".9"/><stop offset="1" stop-color="#7B2FF7" stop-opacity="0"/></radialGradient>
-    <clipPath id="c"><rect width="512" height="512" rx="0"/></clipPath>
   </defs>
-  <g clip-path="url(#c)">
-    <rect width="512" height="512" fill="#0F0B19"/>
-    <path d="M-40-40H330C300 60 220 150 90 170 30 180-10 200-40 220Z" fill="url(#v)"/>
-    <path d="M552 552H260C290 470 360 420 470 400 510 393 535 380 552 365Z" fill="url(#v)" opacity=".85"/>
+  <rect width="512" height="512" fill="#0F0B19"/>
+  <path d="M-40-40H330C300 60 220 150 90 170 30 180-10 200-40 220Z" fill="url(#v)"/>
+  <path d="M552 552H260C290 470 360 420 470 400 510 393 535 380 552 365Z" fill="url(#v)" opacity=".85"/>
+  <g transform="translate(256 250) scale(.86) translate(-250 -280)">
     <circle cx="238" cy="276" r="132" fill="none" stroke="#fff" stroke-width="66"/>
-    <path d="M318 381 364 440" stroke="#fff" stroke-width="66" stroke-linecap="round"/>
-    <circle cx="398" cy="118" r="78" fill="url(#g)"/>
-    <path d="M398 62c5 34 28 51 56 56-28 5-51 22-56 56-5-34-28-51-56-56 28-5 51-22 56-56z" fill="#C9A6FF"/>
+    <path d="M318 381 364 440" stroke="#fff" stroke-width="66" stroke-linecap="square"/>
+    <circle cx="404" cy="112" r="78" fill="url(#g)"/>
+    <path d="M404 56c5 34 28 51 56 56-28 5-51 22-56 56-5-34-28-51-56-56 28-5 51-22 56-56z" fill="#C9A6FF"/>
   </g>
 </svg>
