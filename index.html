@@ -1042,7 +1042,7 @@ body::after{bottom:-60px;right:-80px;width:220px;height:170px;border-radius:120p
    ========================================================= */
 
 const KEY = 'questrun.v1';
-const VERSION = 'v84';
+const VERSION = 'v85';
 const PTS = { common: 100, rare: 250, epic: 500, legend: 1000, mythic: 2000 };
 // rareté d'une carte = effort pour y aller et revenir (km A/R + D+) ; un trésor caché monte d'un cran (27/10)
 const TIERS = ['common', 'rare', 'epic', 'legend'];
@@ -1788,7 +1788,7 @@ async function loadTrails() {
   const parts = await Promise.all(need.map(k => fetch(`data/trails/${k}.json`).then(r => r.ok ? r.json() : null).catch(() => null)));
   const raw = { updated: idx.updated, dlat: idx.dlat, dlng: idx.dlng, nr: idx.nr, nc: idx.nc, tiles: {} };
   const pts = [];
-  need.forEach((k, i) => { const t = parts[i]; if (!t) return; raw.tiles[k] = { s: t.s, w: t.w, b: t.b }; (t.l || []).forEach(l => { let L = 0; for (let i = 1; i < l.length; i++) L += dist({ lat: l[i - 1][0], lng: l[i - 1][1] }, { lat: l[i][0], lng: l[i][1] }); if (L >= 500) l.forEach(([a, b]) => pts.push({ lat: a, lng: b })); }); });
+  need.forEach((k, i) => { const t = parts[i]; if (!t) return; raw.tiles[k] = { s: t.s, w: t.w, b: t.b }; (t.l || []).forEach(l => { let L = 0; for (let i = 1; i < l.length; i++) L += dist({ lat: l[i - 1][0], lng: l[i - 1][1] }, { lat: l[i][0], lng: l[i][1] }); if (L >= 500) { const lid = pts.length; l.forEach(([a, b]) => pts.push({ lat: a, lng: b, lid })); } }); });
   const fresh = !TRAIL || TRAIL.updated !== idx.updated;
   try { localStorage.setItem(TRAIL_KEY, JSON.stringify(raw)); } catch (e) {}
   TRAIL = greenDecode(raw); TRAIL_PTS = pts; for (const k in greenPathCache) delete greenPathCache[k];
@@ -3259,15 +3259,125 @@ function overlap(a, b) {
   for (let i = 0; i < a.length; i += step) { n++; const p = { lat: a[i][0], lng: a[i][1] }; for (let j = 0; j < b.length; j += 2) if (dist(p, { lat: b[j][0], lng: b[j][1] }) < 30) { hit++; break; } }
   return n ? hit / n : 0;
 }
+/* ---------- trajet « par les quais » (05/11, Bazil : passer par l'eau, même si c'est plus long) ----------
+   On rejoint le bord de l'eau le plus proche qui va dans le bon sens, on le longe, on le quitte près du lieu. */
+// rives : chaque morceau de terre séparé par l'eau reçoit un numéro (remplissage de la grille « eau »),
+// pour ne jamais faire un saut d'une rive à l'autre
+let BANKS = null;
+function buildBanks() {
+  if (!GREEN) return null;
+  const ks = Object.keys(GREEN.tiles); if (!ks.length) return null;
+  const ij = ks.map(k => k.split('_').map(Number));
+  const i0 = Math.min(...ij.map(x => x[0])), i1 = Math.max(...ij.map(x => x[0])), j0 = Math.min(...ij.map(x => x[1])), j1 = Math.max(...ij.map(x => x[1]));
+  const NR = GREEN.nr, NC = GREEN.nc, H = (i1 - i0 + 1) * NR, Wd = (j1 - j0 + 1) * NC;
+  const lab = new Int32Array(H * Wd);   // 0 = pas encore vu, -1 = eau
+  const s0 = i0 * TILE_STEP, w0 = j0 * TILE_STEP;
+  const isW = (r, c) => waterAt(s0 + (r + .5) * GREEN.dlat, w0 + (c + .5) * GREEN.dlng);
+  let id = 0; const st = new Int32Array(H * Wd);
+  for (let x = 0; x < H * Wd; x++) {
+    if (lab[x]) continue;
+    const r = (x / Wd) | 0, c = x % Wd;
+    if (isW(r, c)) { lab[x] = -1; continue; }
+    id++; let top = 0; st[top++] = x; lab[x] = id;
+    while (top) {
+      const y = st[--top], yr = (y / Wd) | 0, yc = y % Wd;
+      for (const [dr, dc] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nr = yr + dr, nc = yc + dc; if (nr < 0 || nc < 0 || nr >= H || nc >= Wd) continue;
+        const z = nr * Wd + nc; if (lab[z]) continue;
+        if (isW(nr, nc)) { lab[z] = -1; continue; }
+        lab[z] = id; st[top++] = z;
+      }
+    }
+  }
+  return BANKS = { lab, s0, w0, H, Wd, upd: GREEN.updated };
+}
+// numéro de la rive d'un point (s'il est sur l'eau : la terre la plus proche, à 250 m au plus)
+function bankOf(p) {
+  const B = BANKS && BANKS.upd === GREEN.updated ? BANKS : buildBanks(); if (!B) return 0;
+  const r0 = Math.floor((p.lat - B.s0) / GREEN.dlat), c0 = Math.floor((p.lng - B.w0) / GREEN.dlng);
+  for (let rad = 0; rad <= 4; rad++) for (let dr = -rad; dr <= rad; dr++) for (let dc = -rad; dc <= rad; dc++) {
+    if (Math.max(Math.abs(dr), Math.abs(dc)) !== rad) continue;
+    const r = r0 + dr, c = c0 + dc; if (r < 0 || c < 0 || r >= B.H || c >= B.Wd) continue;
+    const v = B.lab[r * B.Wd + c]; if (v > 0) return v;
+  }
+  return 0;
+}
+function waterVia(from, to) {
+  if (!TRAIL_PTS || !TRAIL_PTS.length || !GREEN) return null;
+  const D = dist(from, to); if (D < 600) return null;
+  const k = Math.cos(from.lat * Math.PI / 180), vx = (to.lng - from.lng) * k, vy = to.lat - from.lat, v2 = vx * vx + vy * vy;
+  const prog = q => ((q.lng - from.lng) * k * vx + (q.lat - from.lat) * vy) / v2;
+  const wet = q => q.w ?? (q.w = waterAt(q.lat, q.lng) || waterAt(q.lat + 0.0006, q.lng) || waterAt(q.lat - 0.0006, q.lng) || waterAt(q.lat, q.lng + 0.0009) || waterAt(q.lat, q.lng - 0.0009) ? 1 : 0);
+  const W = TRAIL_PTS.filter(t => Math.abs(t.lat - from.lat) < 0.05 && wet(t));
+  if (W.length < 5) return null;
+  // entrée sur les quais : la plus proche de chez toi, sans trop s'éloigner du but
+  let E = null, be = Infinity;
+  for (const t of W) { const a = dist(from, t), pr = prog(t); if (pr < -0.15 || pr > 0.6 || a > Math.max(1300, D * 0.55)) continue; if (a + dist(t, to) > D * 1.75) continue; if (a < be) { be = a; E = t; } }
+  if (!E) return null;
+  // on longe la rive pas à pas (même chemin en priorité, jamais d'un saut de l'autre côté de l'eau)
+  const bank = E.bank ?? (E.bank = bankOf(E));
+  const chain = [E]; let cur = E, bestD = dist(E, to);
+  for (let n = 0; n < 60; n++) {
+    let nx = null, sc = -Infinity;
+    for (const t of W) {
+      const same = t.lid === cur.lid, d = dist(cur, t); if (d < 15 || d > 650) continue;
+      if (!same && (t.bank ?? (t.bank = bankOf(t))) !== bank) continue; // toujours sur la même rive
+      const gain = prog(t) - prog(cur); if (gain <= 0.005) continue;
+      const s2 = gain * Math.sqrt(v2) * 111320 - (t.lid === cur.lid ? 0 : 90) - Math.max(0, dist(t, to) - dist(cur, to)) * 0.5;
+      if (s2 > sc) { sc = s2; nx = t; }
+    }
+    if (!nx) break;
+    const dt = dist(nx, to); if (dt > bestD + 150) break;   // la rive s'éloigne du lieu : on la quitte
+    chain.push(nx); cur = nx; bestD = Math.min(bestD, dt);
+    if (dt < 350) break;
+  }
+  // on quitte l'eau au point le plus proche du lieu
+  let bi = 0; chain.forEach((t, i) => { if (dist(t, to) < dist(chain[bi], to)) bi = i; });
+  const path = chain.slice(0, bi + 1);
+  if (path.length < 3 || dist(path[0], path[path.length - 1]) < 400) return null;
+  // 5 points de passage au plus, bien répartis le long de la rive
+  const out = [], step = Math.max(1, Math.ceil((path.length - 1) / 4));
+  for (let i = 0; i < path.length; i += step) out.push(path[i]);
+  if (out[out.length - 1] !== path[path.length - 1]) out.push(path[path.length - 1]);
+  return out.slice(0, 6);
+}
+// beauté d'un trajet : part du parcours au bord de l'eau (compte double) ou dans le vert
+function routeBeauty(P) {
+  if (!GREEN || !P || P.length < 2) return 0;
+  let n = 0, sc = 0, acc = 0;
+  for (let i = 1; i < P.length; i++) {
+    acc += dist({ lat: P[i - 1][0], lng: P[i - 1][1] }, { lat: P[i][0], lng: P[i][1] }); if (acc < 40) continue; acc = 0; n++;
+    const lat = P[i][0], lng = P[i][1];
+    if (waterAt(lat, lng) || waterAt(lat + 0.0005, lng) || waterAt(lat - 0.0005, lng) || waterAt(lat, lng + 0.00075) || waterAt(lat, lng - 0.00075)) sc += 1;
+    else if (greenAt(lat, lng)) sc += 0.6;
+  }
+  return n ? sc / n : 0;
+}
 async function makeRoute(from, to, avoid, prof) {
   try {
     // suivre les parcours de runners quand il y en a (sinon itinéraire agréable direct)
     // 29/10 : le trajet par les parcours n'est gardé que s'il fait au plus +15 % par rapport au trajet agréable direct
+    // 05/11 : on compare 3 trajets (direct agréable, par les parcours, par les quais) sur leur beauté ;
+    // le plus beau gagne, un peu pénalisé s'il est plus long (jusqu'à +90 % accepté pour longer l'eau, choix de Bazil)
     let cands = null;
-    const via = trailVia(from, to);
-    const [direct, viaT] = await Promise.all([routeVia([from, to], prof).catch(() => null), via ? routeVia([from, ...via, to], prof).catch(() => null) : null]);
-    if (viaT && viaT.length && (!direct || !direct.length || viaT[0].dist <= direct[0].dist * 1.15)) { cands = viaT; viaT.forEach(c => c.engine += ' + parcours'); }
-    if (!cands) cands = direct;
+    const via = trailVia(from, to), wv = waterVia(from, to);
+    const [direct, viaT, viaW] = await Promise.all([routeVia([from, to], prof).catch(() => null),
+      via ? routeVia([from, ...via, to], prof).catch(() => null) : null,
+      wv ? routeVia([from, ...wv, to], prof).catch(() => null) : null]);
+    const base = direct && direct.length ? direct[0].dist : null;
+    const opts = [];
+    if (direct && direct.length) opts.push({ c: direct, max: Infinity, tag: '' });
+    if (viaT && viaT.length) opts.push({ c: viaT, max: 1.25, tag: ' + parcours' });
+    if (viaW && viaW.length) opts.push({ c: viaW, max: 1.9, tag: ' + quais' });
+    let best = null, bs = -Infinity;
+    for (const o of opts) {
+      const r = o.c[0], ratio = base ? r.dist / base : 1;
+      if (ratio > o.max) continue;
+      const sc = routeBeauty(r.pts) - 0.35 * Math.max(0, ratio - 1);
+      r.beauty = Math.round(routeBeauty(r.pts) * 100);
+      if (sc > bs) { bs = sc; best = o; }
+    }
+    if (best) { cands = best.c; if (best.tag) cands.forEach(c => { if (!c.engine.endsWith(best.tag)) c.engine += best.tag; }); }
     if (!cands || !cands.length) throw new Error('itinéraire');
     if (avoid && avoid.length > 4) {
       // détour par un point du côté opposé à l'aller, pour faire une boucle
